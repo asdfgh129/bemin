@@ -332,3 +332,8 @@
  # Cake - Uncomment if you are using it 
  # tools/** 
  # !tools/packages.config 
+
+## Office 临时文件
+
+ ~$*.docx
+ ~$*.xlsx
