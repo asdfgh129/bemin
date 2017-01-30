@@ -335,6 +335,6 @@
 
 ## Office 临时文件
 
- ~$*.docx
- ~$*.xlsx
-  *.docx
+~$*.docx
+~$*.xlsx
+*.docx
