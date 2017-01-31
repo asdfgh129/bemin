@@ -74,10 +74,23 @@
 #include "VisualStylesXP.h"
 
 #ifdef _DEBUG
-#define new DEBUG_NEW
+#define new DEBUG_NEW  
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+/*********************************************** by snow start
+’‚∂Œ¥˙¬Î‘⁄°∞ƒ⁄¥Ê–π¬©∑÷Œˆº∞≥£”√ƒ⁄¥Ê–π¬©ºÏ≤‚π§æﬂ∑÷œÌ °±µƒµ⁄ÀƒΩ⁄”–œÍœ∏ΩÈ…‹
+
+#if defined(_DEBUG) && !defined(_AFX_NO_DEBUG_CRT)
+
+// Memory tracking allocation
+void* AFX_CDECL operator new(size_t nSize, LPCSTR lpszFileName, int nLine);
+#define DEBUG_NEW new(THIS_FILE, __LINE__)
+#if _MSC_VER >= 1200
+void AFX_CDECL operator delete(void* p, LPCSTR lpszFileName, int nLine);
+#endif
+ **********************************************/ by snow end
 
 
 #if _MSC_VER>=1400 && defined(_UNICODE)
@@ -162,8 +175,30 @@ extern "C" HMODULE (__stdcall *_PfnLoadUnicows)(void) = &ExplicitPreLoadUnicows;
 ///////////////////////////////////////////////////////////////////////////////
 // C-RTL Memory Debug Support
 // 
+
 #ifdef _DEBUG
+
+////by snow start
+//  CMemoryState∂®“Â‘⁄afx.h÷–£¨ «MFCµƒ“ª∏ˆƒ⁄¥Êµ˜ ‘¿‡
+   /* Memory state for snapshots/leak detection
+    struct CMemoryState  */
+//  MFC¿‡‘⁄∑«MFC≥Ã–Ú÷–“≤ø…“‘ π”√£ø
+//  ∏„¥Ì¡À£¨eMule «MFC≥Ã–Ú£° use MFC in a static library
+//// by snow end
+
 static CMemoryState oldMemState, newMemState, diffMemState;
+
+//// by snow start
+//   œ¬¡–¥˙¬Î√ª”–∆Ù”√£¨‘⁄InitInstance()÷–±ª◊¢ ÕµÙ¡À  
+
+    /* Installing that memory debug code works fine in Debug builds when running within VS Debugger,
+	   but some other test applications don't like that all....
+
+	//g_pfnPrevCrtAllocHook = _CrtSetAllocHook(&eMuleAllocHook);   
+    
+	*/
+
+//// by snow end
 
 _CRT_ALLOC_HOOK g_pfnPrevCrtAllocHook = NULL;
 CMap<const unsigned char*, const unsigned char*, UINT, UINT> g_allocations;
@@ -195,6 +230,7 @@ extern "C" BYTE  __safe_se_handler_count;
 
 void InitSafeSEH()
 {
+	//// by snow start ºÏ≤È __safe_se_handler_table «∑Òµ»”⁄NULL£¨»Ù «£¨‘ÚŒ¥∆Ù”√SafeSEH
 	// Need to workaround the optimizer of the C-compiler...
 	volatile PVOID safe_se_handler_table = __safe_se_handler_table;
 	if (safe_se_handler_table == NULL)
@@ -219,6 +255,9 @@ void InitSafeSEH()
 #ifndef PROCESS_DEP_ENABLE
 #define	PROCESS_DEP_ENABLE						0x00000001
 #define	PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION	0x00000002
+//// by snow start
+//   œ¬√Ê’‚¡Ω∏ˆ∫Ø ˝∂®“Â≤¢√ª”–±ªµ˜”√£¨ «≤ª «∂‡”‡£ø
+//// by snow end
 BOOL WINAPI GetProcessDEPPolicy(HANDLE hProcess, LPDWORD lpFlags, PBOOL lpPermanent);
 BOOL WINAPI SetProcessDEPPolicy(DWORD dwFlags);
 #endif//!PROCESS_DEP_ENABLE
@@ -227,6 +266,9 @@ void InitDEP()
 {
 	BOOL (WINAPI *pfnGetProcessDEPPolicy)(HANDLE hProcess, LPDWORD lpFlags, PBOOL lpPermanent);
 	BOOL (WINAPI *pfnSetProcessDEPPolicy)(DWORD dwFlags);
+	////  by snow start
+	//  GetProcessDEPPolicy∫ÕSetProcessDEPPolicy∫Ø ˝Œ™kernel32.dll÷–µƒ∫Ø ˝£¨Õ®π˝WinApi∫Ø ˝GetProcAddress∫ÕGetModuleHandleªÒ»°
+    ////  by snow end
 	(FARPROC&)pfnGetProcessDEPPolicy = GetProcAddress(GetModuleHandle(_T("kernel32")), "GetProcessDEPPolicy");
 	(FARPROC&)pfnSetProcessDEPPolicy = GetProcAddress(GetModuleHandle(_T("kernel32")), "SetProcessDEPPolicy");
 	if (pfnGetProcessDEPPolicy && pfnSetProcessDEPPolicy)
@@ -301,6 +343,9 @@ void InitDEP()
 // 
 #ifndef HeapEnableTerminationOnCorruption
 #define HeapEnableTerminationOnCorruption (HEAP_INFORMATION_CLASS)1
+//// by snow start
+//   ’‚∏ˆ∂®“Â√ª”–±ªµ˜”√£¨ «≤ª «∂‡”‡£ø
+//// by snow end
 WINBASEAPI BOOL WINAPI HeapSetInformation(HANDLE HeapHandle, HEAP_INFORMATION_CLASS HeapInformationClass, PVOID HeapInformation, SIZE_T HeapInformationLength);
 #endif//!HeapEnableTerminationOnCorruption
 
@@ -709,7 +754,7 @@ BOOL CemuleApp::InitInstance()
 
 	::CloseHandle(m_hMutexOneInstance);
 #ifdef _DEBUG
-	if (g_pfnPrevCrtAllocHook)
+	if (g_pfnPrevCrtAllocHook)  ////by snow start  «∞√Êµƒ∏≥÷µ”Ôæ‰±ª◊¢ ÕµÙ¡À£¨g_pfnPrevCrtAllocHookæÕ“ª÷± «NULL  by snow end ////
 		_CrtSetAllocHook(g_pfnPrevCrtAllocHook);
 
 	newMemState.Checkpoint();
@@ -757,6 +802,17 @@ int CrtDebugReportCB(int reportType, char* message, int* returnValue)
 }
 
 // allocation hook - for memory statistics gatering
+
+//// by snow start
+//   √øµ˜”√“ª¥Œmalloc£¨count+1£¨µ˜”√“ª¥Œfree£¨count-1£¨◊Ó∫ÛºÏ≤Ècount «∑Òµ»”⁄0≈–∂œ «∑Ò¥Ê‘⁄ƒ⁄¥Ê–π¬©
+//   µ´ «ø¥≤ª∂Æ£¨Œ™ ≤√¥“™
+	//	_CrtSetAllocHook(g_pfnPrevCrtAllocHook);
+	//	g_allocations.SetAt(pszFileName, count + 1);
+	//	_CrtSetAllocHook(&eMuleAllocHook);
+//’‚—˘≤Ÿ◊˜£¨’‚—˘◊ˆµƒƒøµƒ « ≤√¥£ø
+//   returnµƒ ±∫Ú”÷µ˜”√“ªœ¬◊‘…Ì, « ≤√¥“‚Àº£ø
+//// by snow end 
+
 int eMuleAllocHook(int mode, void* pUserData, size_t nSize, int nBlockUse, long lRequest, const unsigned char* pszFileName, int nLine)
 {
 	UINT count = 0;
@@ -1541,7 +1597,7 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 			else
 			{
 				// WINBUG???: 'ExtractIcon' does not work well on ICO-files when using the color 
-				// scheme 'Windows-Standard (extragroﬂ)' -> always try to use 'LoadImage'!
+				// scheme 'Windows-Standard (extragro?' -> always try to use 'LoadImage'!
 				//
 				// If the ICO file contains a 16x16 icon, 'LoadImage' will though return a 32x32 icon,
 				// if LR_DEFAULTSIZE is specified! -> always specify the requested size!
