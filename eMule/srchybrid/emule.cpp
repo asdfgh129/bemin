@@ -108,7 +108,7 @@ void AFX_CDECL operator delete(void* p, LPCSTR lpszFileName, int nLine);
 #endif
 #endif
 
- /// <summary>
+/// <summary>
 /// The log
 /// </summary>
 CLogFile theLog;
@@ -134,6 +134,9 @@ bool g_bGdiPlusInstalled = false;
 /// <summary>
 /// The G_B unico ws
 /// </summary>
+/// #define USE_16COLOR_ICONS
+/// /////////////////////////////////////////////////////////////////////////////
+/// MSLU (Microsoft Layer for Unicode) support - UnicoWS
 bool g_bUnicoWS = false;
 
 /// <summary>
@@ -197,6 +200,7 @@ extern "C" HMODULE __stdcall ExplicitPreLoadUnicows()
 /// <summary>
 /// The _ PFN load unicows
 /// </summary>
+/// NOTE: Do *NOT* change the name of this function. It *HAS* to be named "_PfnLoadUnicows" !
 extern "C" HMODULE (__stdcall *_PfnLoadUnicows)(void) = &ExplicitPreLoadUnicows;
 
 
@@ -215,6 +219,7 @@ extern "C" HMODULE (__stdcall *_PfnLoadUnicows)(void) = &ExplicitPreLoadUnicows;
 /// <summary>
 /// The difference memory state
 /// </summary>
+/// / / MFC类在非MFC程序中也可以使用？
 static CMemoryState oldMemState, newMemState, diffMemState;
 
 //// by snow start
@@ -227,11 +232,10 @@ static CMemoryState oldMemState, newMemState, diffMemState;
     
 	*/
 
-//// by snow end
-
 /// <summary>
 /// The G_PFN previous CRT alloc hook
 /// </summary>
+/// // by snow end
 _CRT_ALLOC_HOOK g_pfnPrevCrtAllocHook = NULL;
 /// <summary>
 /// The g_allocations
@@ -414,19 +418,20 @@ void InitHeapCorruptionDetection()
 struct SLogItem
 {
 	/// <summary>
-	/// The u flags
+	/// flags
 	/// </summary>
 	UINT uFlags;
 	/// <summary>
-	/// The line
+	/// Log line
 	/// </summary>
 	CString line;
 };
 
+///snow:下面这几个回调函数没有被调用
 /// <summary>
-/// Mies the error handler.
+/// error handler.
 /// </summary>
-/// <param name="error">The error.</param>
+/// <param name="error"> error.</param>
 void CALLBACK myErrHandler(Kademlia::CKademliaError *error)
 {
 	CString msg;
@@ -436,7 +441,7 @@ void CALLBACK myErrHandler(Kademlia::CKademliaError *error)
 }
 
 /// <summary>
-/// Mies the debug and log handler.
+/// debug and log handler.
 /// </summary>
 /// <param name="lpMsg">The lp MSG.</param>
 void CALLBACK myDebugAndLogHandler(LPCSTR lpMsg)
@@ -446,9 +451,9 @@ void CALLBACK myDebugAndLogHandler(LPCSTR lpMsg)
 }
 
 /// <summary>
-/// Mies the log handler.
+/// log handler.
 /// </summary>
-/// <param name="lpMsg">The lp MSG.</param>
+/// <param name="lpMsg">lpMSG.</param>
 void CALLBACK myLogHandler(LPCSTR lpMsg)
 {
 	if(theApp.emuledlg && theApp.emuledlg->IsRunning())
@@ -456,7 +461,7 @@ void CALLBACK myLogHandler(LPCSTR lpMsg)
 }
 
 /// <summary>
-/// The uw m_ ar e_ yo u_ emule
+/// 注册eMule 窗口信息
 /// </summary>
 const static UINT UWM_ARE_YOU_EMULE = RegisterWindowMessage(EMULE_GUID);
 
@@ -470,9 +475,9 @@ BEGIN_MESSAGE_MAP(CemuleApp, CWinApp)
 END_MESSAGE_MAP()
 
 /// <summary>
-/// Initializes a new instance of the <see cref="CemuleApp"/> class.
+/// Initializes a new instance of the <see cref="CemuleApp" /> class.
 /// </summary>
-/// <param name="lpszAppName">Name of the LPSZ application.</param>
+/// <param name="lpszAppName">Name of the application.</param>
 CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	:CWinApp(lpszAppName)
 {
@@ -578,6 +583,7 @@ void __cdecl __AfxSocketTerm()
 /// Initializes the instance.
 /// </summary>
 /// <returns>BOOL.</returns>
+/// CemuleApp Initialisierung
 BOOL CemuleApp::InitInstance()
 {
 #ifdef _DEBUG
@@ -838,7 +844,7 @@ BOOL CemuleApp::InitInstance()
 	m_pPeerCache = new CPeerCacheFinder();
 	
 	thePerfLog.Startup();
-	dlg.DoModal();
+	dlg.DoModal();  ///snow:启动主窗口
 
 	DisableRTLWindowsLayout();
 
@@ -848,7 +854,7 @@ BOOL CemuleApp::InitInstance()
 
 	::CloseHandle(m_hMutexOneInstance);
 #ifdef _DEBUG
-	if (g_pfnPrevCrtAllocHook)  ////by snow start  前面的赋值语句被注释掉了，g_pfnPrevCrtAllocHook就一直是NULL  by snow end ////
+	if (g_pfnPrevCrtAllocHook)  ///snow ：前面的赋值语句被注释掉了，g_pfnPrevCrtAllocHook就一直是NULL 
 		_CrtSetAllocHook(g_pfnPrevCrtAllocHook);
 
 	newMemState.Checkpoint();
@@ -908,16 +914,15 @@ int CrtDebugReportCB(int reportType, char* message, int* returnValue)
 
 // allocation hook - for memory statistics gatering
 
-//// by snow start
-//   每调用一次malloc，count+1，调用一次free，count-1，最后检查count是否等于0判断是否存在内存泄漏
-//   但是看不懂，为什么要
+///  snow start：
+///   每调用一次malloc，count+1，调用一次free，count-1，最后检查count是否等于0判断是否存在内存泄漏
+///   但是看不懂，为什么要
 	//	_CrtSetAllocHook(g_pfnPrevCrtAllocHook);
 	//	g_allocations.SetAt(pszFileName, count + 1);
 	//	_CrtSetAllocHook(&eMuleAllocHook);
-//这样操作，这样做的目的是什么？
-//   return的时候又调用一下自身,是什么意思？
-//// by snow end 
-
+///  这样操作，这样做的目的是什么？
+///   return的时候又调用一下自身,是什么意思？
+/// snow end
 /// <summary>
 /// Es the mule alloc hook.
 /// </summary>
@@ -948,7 +953,10 @@ int eMuleAllocHook(int mode, void* pUserData, size_t nSize, int nBlockUse, long 
 #endif
 
 /***********************snow start: 命令行处理，
-//    可以处理两个参数ignoreinstances和AutoStart，以"-"或"/"开始
+//    可以处理两个参数ignoreinstances和AutoStart，以"-"或"/"开始,debug版还可以处理assertfile参数
+//    处理三种命令情况：OP_ED2KLINK,OP_COLLECTION,OP_CLCOMMAND
+//    通过EnumWindows(SearchEmuleWindow, (LPARAM)&maininst)获得eMule窗口句柄，向eMule窗口发送消息
+//    SendMessage(maininst, WM_COPYDATA, (WPARAM)0, (LPARAM)(PCOPYDATASTRUCT)&sendstruct);
 *******************************/
 /// <summary>
 /// Processes the commandline.
@@ -1071,22 +1079,24 @@ BOOL CALLBACK CemuleApp::SearchEmuleWindow(HWND hWnd, LPARAM lParam){
 } 
 
 
-// snow : 更新接收字节数
+
 /// <summary>
 /// Updates the received bytes.
 /// </summary>
 /// <param name="bytesToAdd">The bytes to add.</param>
+/// snow : 更新接收字节数
 void CemuleApp::UpdateReceivedBytes(uint32 bytesToAdd) {
 	SetTimeOnTransfer();
 	theStats.sessionReceivedBytes+=bytesToAdd;
 }
 
-// snow : 更新发送字节数
+
 /// <summary>
 /// Updates the sent bytes.
 /// </summary>
 /// <param name="bytesToAdd">The bytes to add.</param>
 /// <param name="sentToFriend">The sent to friend.</param>
+/// snow : 更新发送字节数
 void CemuleApp::UpdateSentBytes(uint32 bytesToAdd, bool sentToFriend) {
 	SetTimeOnTransfer();
 	theStats.sessionSentBytes+=bytesToAdd;
@@ -1096,22 +1106,24 @@ void CemuleApp::UpdateSentBytes(uint32 bytesToAdd, bool sentToFriend) {
     }
 }
 
-// snow : 更新传送时间
+
 /// <summary>
 /// Sets the time on transfer.
 /// </summary>
+/// snow : 更新传送时间
 void CemuleApp::SetTimeOnTransfer() {
 	if (theStats.transferStarttime>0) return;
 	
 	theStats.transferStarttime=GetTickCount();
 }
 
-// snow : 建立KADSource链接
+
 /// <summary>
 /// Creates the kad source link.
 /// </summary>
 /// <param name="f">The f.</param>
 /// <returns>CString.</returns>
+/// snow : 建立KADSource链接
 CString CemuleApp::CreateKadSourceLink(const CAbstractFile* f)
 {
 	CString strLink;
@@ -1128,13 +1140,15 @@ CString CemuleApp::CreateKadSourceLink(const CAbstractFile* f)
 	return strLink;
 }
 
-// snow : 从剪贴板拷贝复制
+
 //TODO: Move to emule-window
 /// <summary>
 /// Copies the text to clipboard.
 /// </summary>
 /// <param name="strText">The string text.</param>
 /// <returns>bool.</returns>
+/// snow : 从剪贴板拷贝复制
+/// TODO: Move to emule-window
 bool CemuleApp::CopyTextToClipboard(CString strText)
 {
 	if (strText.IsEmpty())
@@ -1220,11 +1234,12 @@ bool CemuleApp::CopyTextToClipboard(CString strText)
 	return (iCopied != 0);
 }
 
-//TODO: Move to emule-window
+
 /// <summary>
 /// Copies the text from clipboard.
 /// </summary>
 /// <returns>CString.</returns>
+/// TODO: Move to emule-window
 CString CemuleApp::CopyTextFromClipboard()
 {
 	if (IsClipboardFormatAvailable(CF_UNICODETEXT))
@@ -1283,6 +1298,9 @@ CString CemuleApp::CopyTextFromClipboard()
 //       "download data rate|upload data rate|waitusercount for upload";
 //snow end
 
+/// <summary>
+/// Called when [sig].
+/// </summary>
 /// <summary>
 /// Called when [sig].
 /// </summary>
@@ -1384,12 +1402,13 @@ void CemuleApp::OnlineSig() // Added By Bouc7
 	}
 } //End Added By Bouc7
 
-//snow: 帮助文件处理
+
 /// <summary>
 /// Gets the language help file path.
 /// </summary>
 /// <param name="strResult">The string result.</param>
 /// <returns>bool.</returns>
+/// snow: 帮助文件处理
 bool CemuleApp::GetLangHelpFilePath(CString& strResult)
 {
 	// Change extension for help file
@@ -1557,12 +1576,13 @@ int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -
 	return (int)vData;
 }
 
-// snow : 处理跟连接有关的相关事务
+
 /// <summary>
 /// Determines whether the specified b ignore ed2k is connected.
 /// </summary>
 /// <param name="bIgnoreEd2k">The b ignore ed2k.</param>
 /// <param name="bIgnoreKad">The b ignore kad.</param>
+/// snow : 处理跟连接有关的相关事务
 bool CemuleApp::IsConnected(bool bIgnoreEd2k, bool bIgnoreKad)
 {
 	return ( (theApp.serverconnect->IsConnected() && !bIgnoreEd2k) || (Kademlia::CKademlia::IsConnected() && !bIgnoreKad));
@@ -1645,11 +1665,12 @@ bool CemuleApp::IsFirewalled()
 	return true; // firewalled
 }
 
-//snow :判断是否可以回叫，根据serverconnect是否LowID和KAD是否OPEN来分别讨论
+
 /// <summary>
 /// Determines whether this instance [can do callback] the specified client.
 /// </summary>
 /// <param name="client">The client.</param>
+/// snow :判断是否可以回叫，根据serverconnect是否LowID和KAD是否OPEN来分别讨论
 bool CemuleApp::CanDoCallback( CUpDownClient *client )
 {
 	if(Kademlia::CKademlia::IsConnected())
@@ -1721,13 +1742,14 @@ bool CemuleApp::CanDoCallback( CUpDownClient *client )
 	}
 }
 
-//snow : GUI处理--Icon ,image,skin
+
 
 /// <summary>
 /// Loads the icon w.
 /// </summary>
 /// <param name="nIDResource">The n identifier resource.</param>
 /// <returns>HICON.</returns>
+/// snow : GUI处理--Icon ,image,skin
 HICON CemuleApp::LoadIcon(UINT nIDResource) const
 {
 	// use string resource identifiers!!
@@ -2041,7 +2063,7 @@ void CemuleApp::ApplySkin(LPCTSTR pszSkinProfile)
 }
 
 /// <summary>
-/// Initializes a new instance of the <see cref="CTempIconLoader"/> class.
+/// Initializes a new instance of the <see cref="CTempIconLoader" /> class.
 /// </summary>
 /// <param name="pszResourceID">The PSZ resource identifier.</param>
 /// <param name="cx">The cx.</param>
@@ -2053,7 +2075,7 @@ CTempIconLoader::CTempIconLoader(LPCTSTR pszResourceID, int cx, int cy, UINT uFl
 }
 
 /// <summary>
-/// Initializes a new instance of the <see cref="CTempIconLoader"/> class.
+/// Initializes a new instance of the <see cref="CTempIconLoader" /> class.
 /// </summary>
 /// <param name="uResourceID">The u resource identifier.</param>
 /// <param name="cx">The cx.</param>
@@ -2067,7 +2089,7 @@ CTempIconLoader::CTempIconLoader(UINT uResourceID, int /*cx*/, int /*cy*/, UINT 
 }
 
 /// <summary>
-/// Finalizes an instance of the <see cref="CTempIconLoader"/> class.
+/// Finalizes an instance of the <see cref="CTempIconLoader" /> class.
 /// </summary>
 CTempIconLoader::~CTempIconLoader()
 {
@@ -2075,12 +2097,13 @@ CTempIconLoader::~CTempIconLoader()
 		VERIFY( DestroyIcon(m_hIcon) );
 }
 
-//snow : 添加ed2k链接到下载列表
+
 /// <summary>
 /// Adds the ed2k links to download.
 /// </summary>
 /// <param name="strLinks">The string links.</param>
 /// <param name="cat">The cat.</param>
+/// snow : 添加ed2k链接到下载列表
 void CemuleApp::AddEd2kLinksToDownload(CString strLinks, int cat)
 {
 	int curPos = 0;
@@ -2117,10 +2140,11 @@ void CemuleApp::AddEd2kLinksToDownload(CString strLinks, int cat)
 	}
 }
 
-// snow : 剪贴板处理，是否存在ed2k链接
+
 /// <summary>
 /// Searches the clipboard.
 /// </summary>
+/// snow : 剪贴板处理，是否存在ed2k链接
 void CemuleApp::SearchClipboard()
 {
 	if (m_bGuardClipboardPrompt)
@@ -2201,10 +2225,11 @@ bool CemuleApp::IsEd2kLinkInClipboard(LPCSTR pszLinkType, int iLinkTypeLen)
 	return bFoundLink;
 }
 
-//snow : downloadlistctrl中调用
+
 /// <summary>
 /// Determines whether [is ed2k file link in clipboard].
 /// </summary>
+/// snow : downloadlistctrl中调用
 bool CemuleApp::IsEd2kFileLinkInClipboard()
 {
 	static const CHAR _szEd2kFileLink[] = "ed2k://|file|"; // Use the ANSI string
@@ -2228,6 +2253,7 @@ bool CemuleApp::IsEd2kServerLinkInClipboard()
 /// <param name="bAddToStatusBar">The b add to status bar.</param>
 /// <param name="line">The line.</param>
 /// <param name="">The .</param>
+
 void CemuleApp::QueueDebugLogLine(bool bAddToStatusbar, LPCTSTR line, ...)
 {
 	if (!thePrefs.GetVerbose())
@@ -2524,10 +2550,11 @@ const CString &CemuleApp::GetDefaultFontFaceName()
 	return m_strDefaultFontFaceName;
 }
 
-// snow : 创建后退诊断刷子，做什么用呢？
+
 /// <summary>
 /// Creates the backward diagonal brush.
 /// </summary>
+/// snow : 创建后退诊断刷子，做什么用呢？
 void CemuleApp::CreateBackwardDiagonalBrush()
 {
 	static const WORD awBackwardDiagonalBrushPattern[8] = { 0x0f, 0x1e, 0x3c, 0x78, 0xf0, 0xe1, 0xc3, 0x87 };
@@ -2542,10 +2569,11 @@ void CemuleApp::CreateBackwardDiagonalBrush()
 	}
 }
 
-// snow : 处理图片颜色深度，起什么作用呢？
+
 /// <summary>
 /// Updates the desktop color depth.
 /// </summary>
+/// snow : 处理图片颜色深度，起什么作用呢？
 void CemuleApp::UpdateDesktopColorDepth()
 {
 	g_bLowColorDesktop = (GetDesktopColorDepth() <= 8);
@@ -2586,12 +2614,13 @@ void CemuleApp::UpdateDesktopColorDepth()
 	//m_aExtToSysImgIdx.RemoveAll();
 }
 
-//snow : 采用向主线程SendMessage()的方法，阻止系统终止掉本线程
+
 /// <summary>
 /// Consoles the control handler.
 /// </summary>
 /// <param name="dwCtrlType">Type of the dw control.</param>
 /// <returns>BOOL.</returns>
+/// snow : 采用向主线程SendMessage()的方法，阻止系统终止掉本线程
 BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType)
 {
 	// *) This function is invoked by the system from within a *DIFFERENT* thread !!
@@ -2663,10 +2692,11 @@ BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType)
 	return FALSE; // FALSE: Let the system kill the process with the default handler.
 }
 
-// snow : 从注册表提取大图标尺寸，为m_sizBigSystemIcon赋值
+
 /// <summary>
 /// Updates the size of the large icon.
 /// </summary>
+/// snow : 从注册表提取大图标尺寸，为m_sizBigSystemIcon赋值
 void CemuleApp::UpdateLargeIconSize()
 {
 	// initialize with system values in case we don't find the Shell's registry key
@@ -2692,10 +2722,11 @@ void CemuleApp::UpdateLargeIconSize()
 	}
 }
 
-// snow : 重置备用闲时定时器，判断eMule是否已连接，或存在上传或下载，如果是，则调用WinApi函数SetThreadExecutionState，通知操作系统不要休眠或待机
+
 /// <summary>
 /// Resets the stand by idle timer.
 /// </summary>
+/// snow : 重置备用闲时定时器，判断eMule是否已连接，或存在上传或下载，如果是，则调用WinApi函数SetThreadExecutionState，通知操作系统不要休眠或待机
 void CemuleApp::ResetStandByIdleTimer()
 {
 	// check if anything is going on (ongoing upload, download or connected) and reset the idle timer if so
@@ -2711,10 +2742,11 @@ void CemuleApp::ResetStandByIdleTimer()
 	}
 }
 
-//snow : 判断界面主题
+
 /// <summary>
 /// Determines whether [is xp theme active].
 /// </summary>
+/// snow : 判断界面主题
 bool CemuleApp::IsXPThemeActive() const
 {
 	// TRUE: If an XP style (and only an XP style) is active
