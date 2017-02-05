@@ -99,11 +99,12 @@ static char THIS_FILE[] = __FILE__;
 
 
 #define	MAGICVALUE_REQUESTER	34							// modification of the requester-send and server-receive key
-#define	MAGICVALUE_SERVER		203							// modification of the server-send and requester-send key
+#define	MAGICVALUE_SERVER		203							// modification of the server-send and requester-receive key
 #define	MAGICVALUE_SYNC			0x835E6FC4					// value to check if we have a working encrypted stream
 #define DHAGREEMENT_A_BITS		128
 
 #define PRIMESIZE_BYTES	 96
+///snow : 素数P prime number
 static unsigned char dh768_p[]={
         0xF2,0xBF,0x52,0xC5,0x5F,0x58,0x7A,0xDD,0x53,0x71,0xA9,0x36,
         0xE8,0x86,0xEB,0x3C,0x62,0x17,0xA3,0x3E,0xC3,0x4C,0xB4,0x0D,
@@ -120,6 +121,7 @@ static CryptoPP::AutoSeededRandomPool cryptRandomGen;
 IMPLEMENT_DYNAMIC(CEncryptedStreamSocket, CAsyncSocketEx)
 
 CEncryptedStreamSocket::CEncryptedStreamSocket(){
+	///snow:如果客户端支持加密连接，则m_StreamCryptState初始状态为ECS_UNKNOWN，否则为ECS_NONE
 	m_StreamCryptState = thePrefs.IsClientCryptLayerSupported() ? ECS_UNKNOWN : ECS_NONE;
 	m_NegotiatingState = ONS_NONE;
 	m_pRC4ReceiveKey = NULL;
@@ -300,25 +302,48 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 }
 
 void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar* pTargetClientHash, bool bServerConnection){
+
+	///snow start:流加密状态既不是未加密也不是呼入连接（是其它四种情况：
+	///          ECS_PENDING,			// Outgoing connection, will start sending encryption protocol
+	///          ECS_PENDING_SERVER,		// Outgoing serverconnection, will start sending encryption protocol
+	///          ECS_NEGOTIATING,		// Encryption supported, handshake still uncompleted
+	///          ECS_ENCRYPTING			// Encryption enabled
+	///          函数直接返回  ：  snow end    
+
 	if (m_StreamCryptState != ECS_UNKNOWN && m_StreamCryptState != ECS_NONE){
+		
+		///snow : !m_StreamCryptState == ECS_NONE一定为true!此句多余！
+		
 		if (!m_StreamCryptState == ECS_NONE || bEnabled)
+			
+			///snow ：如果bEnabled为true，则抛出断言，表示连接已经处于加密状态，不需要再次enable，程序代码逻辑有误，是个错误调用，
 			ASSERT( false );
 		return;
 	}
+
+	/// snow start : m_StreamCryptState现在可能是
+	///	    ECS_NONE = 0,			// Disabled or not available
+	///     ECS_UNKNOWN,			// Incoming connection, will test the first incoming data for encrypted protocol
+    ///     Key还没创建！  ：snow end
+
 	ASSERT( m_pRC4SendKey == NULL );
 	ASSERT( m_pRC4ReceiveKey == NULL );
 
+	/// snow :不是到服务器的连接，目标客户端的ID哈希值不是NULL,且目的是要启动加密连接
 	if (bEnabled && pTargetClientHash != NULL && !bServerConnection){
-		m_StreamCryptState = ECS_PENDING;
+		m_StreamCryptState = ECS_PENDING;  ///snow:是outgoing connection
 		// create obfuscation keys, see on top for key format
 
 		// use the crypt random generator
 		m_nRandomKeyPart = cryptRandomGen.GenerateWord32();
 
+		///snow:start	 - Client A (Outgoing connection):
+		///		Sendkey:	Md5(<UserHashClientB 16><MagicValue34 1><RandomKeyPartClientA 4>)  21
+		///		Receivekey: Md5(<UserHashClientB 16><MagicValue203 1><RandomKeyPartClientA 4>) 21
 		uchar achKeyData[21];
 		md4cpy(achKeyData, pTargetClientHash);
 		memcpy(achKeyData + 17, &m_nRandomKeyPart, 4);
-
+		///snow:sendkey的MagicValue是 MAGICVALUE_REQUESTER，receivekey的magicvalue是MAGICVALUE_SERVER，所以是Client A
 		achKeyData[16] = MAGICVALUE_REQUESTER;
 		MD5Sum md5(achKeyData, sizeof(achKeyData));
 		m_pRC4SendKey = RC4CreateKey(md5.GetRawHash(), 16, NULL);
@@ -327,22 +352,25 @@ void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar*
 		md5.Calculate(achKeyData, sizeof(achKeyData));
 		m_pRC4ReceiveKey = RC4CreateKey(md5.GetRawHash(), 16, NULL);
 	}
+	/// snow :是到服务器的连接，且目的是要启动加密连接
 	else if (bServerConnection && bEnabled){
 		m_bServerCrypt = true;
 		m_StreamCryptState = ECS_PENDING_SERVER;
 	}
-	else{
-		ASSERT( !bEnabled );
+	else{   ///snow:bEnabled必须为true，否则会抛出断言;剩下的两种情况是：!bServerConnection&&pTargetClientHash == NULL 和  bServerConnection&&pTargetClientHash != NULL，则置m_StreamCryptState = ECS_NONE;
+		ASSERT( !bEnabled ); ///snow:如果bEnabled为false，则抛出断言，表示连接未处于加密状态，无法disable，程序代码逻辑有误，是个错误调用，
 		m_StreamCryptState = ECS_NONE;
 	}
 }
 
 void CEncryptedStreamSocket::OnSend(int){
+	///snow:呼出连接，准备开始握手，开始协商，退出函数
 	// if the socket just connected and this is outgoing, we might want to start the handshake here
 	if (m_StreamCryptState == ECS_PENDING || m_StreamCryptState == ECS_PENDING_SERVER){
 		StartNegotiation(true);
 		return;
 	}
+	///snow:其它状态，必须是ECS_NEGOTIATING或ECS_ENCRYPTING
 	// check if we have negotiating data pending
 	if (m_pfiSendBuffer != NULL){
 		ASSERT( m_StreamCryptState >= ECS_NEGOTIATING );
@@ -350,15 +378,18 @@ void CEncryptedStreamSocket::OnSend(int){
 	}
 }
 
+///snow:此函数在两个地方被调用，一个是Receive()函数，以StartNegotiation（false)方式调用，表示是incoming connection，
+///    一个是OnSend()函数，以StartNegotiation（true）方式调用，表示是outgoing connection
 void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
-
+	///snow:incoming connection，获取4字节的ClientA的RandomPart
 	if (!bOutgoing){
 		m_NegotiatingState = ONS_BASIC_CLIENTA_RANDOMPART;
 		m_StreamCryptState = ECS_NEGOTIATING;
 		m_nReceiveBytesWanted = 4;
 	}
-	else if (m_StreamCryptState == ECS_PENDING){
-
+	else if (m_StreamCryptState == ECS_PENDING){   ///snow:到客户端的Outgoing connection
+		///snow:握手,准备ClientA报文，共29字节
+	    ///  Client A: <SemiRandomNotProtocolMarker 1[Unencrypted]><RandomKeyPart 4[Unencrypted]><MagicValue 4><EncryptionMethodsSupported 1><EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen%max256>
 		CSafeMemFile fileRequest(29);
 		const uint8 bySemiRandomNotProtocolMarker = GetSemiRandomNotProtocolMarker();
 		fileRequest.WriteUInt8(bySemiRandomNotProtocolMarker);
@@ -371,21 +402,27 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
 		fileRequest.WriteUInt8(byPadding);
 		for (int i = 0; i < byPadding; i++)
 			fileRequest.WriteUInt8(cryptRandomGen.GenerateByte());
-
+		///snow:发送握手CleintA报文后，设置协商状态为等待ClientB回送协商报文
 		m_NegotiatingState = ONS_BASIC_CLIENTB_MAGICVALUE;
 		m_StreamCryptState = ECS_NEGOTIATING;
 		m_nReceiveBytesWanted = 4;
 
 		SendNegotiatingData(fileRequest.GetBuffer(), (uint32)fileRequest.GetLength(), 5);
 	}
-	else if (m_StreamCryptState == ECS_PENDING_SERVER){
+	else if (m_StreamCryptState == ECS_PENDING_SERVER){///snow:到服务器的Outgoing connection
+		///snow:准备Client端的握手协商报文
+		///   Client: <SemiRandomNotProtocolMarker 1[Unencrypted]><G^A 96 [Unencrypted]><RandomBytes 0-15 [Unencrypted]>
+        ///    Server: <G^B 96 [Unencrypted]><MagicValue 4><EncryptionMethodsSupported 1><EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen>
+
 		CSafeMemFile fileRequest(113);
 		const uint8 bySemiRandomNotProtocolMarker = GetSemiRandomNotProtocolMarker();
 		fileRequest.WriteUInt8(bySemiRandomNotProtocolMarker);
-
+		///snow:随机生成私有a（m_cryptDHA）
 		m_cryptDHA.Randomize(cryptRandomGen, DHAGREEMENT_A_BITS); // our random a
 		ASSERT( m_cryptDHA.MinEncodedSize() <= DHAGREEMENT_A_BITS / 8 );
+		///snow:将dh768_p数组转换为素数P
 		CryptoPP::Integer cryptDHPrime((byte*)dh768_p, PRIMESIZE_BYTES);  // our fixed prime
+		///snow:设g=2(CryptoPP::Integer(2)),求公有A(cryptDHGexpAmodP)
 		// calculate g^a % p
 		CryptoPP::Integer cryptDHGexpAmodP = CryptoPP::a_exp_b_mod_c(CryptoPP::Integer(2), m_cryptDHA, cryptDHPrime);
 		ASSERT( m_cryptDHA.MinEncodedSize() <= PRIMESIZE_BYTES );
@@ -398,7 +435,7 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
 		fileRequest.WriteUInt8(byPadding);
 		for (int i = 0; i < byPadding; i++)
 			fileRequest.WriteUInt8(cryptRandomGen.GenerateByte());
-
+		///snow:发送握手Cleint报文后，设置协商状态为等待Server回送协商报文
 		m_NegotiatingState = ONS_BASIC_SERVER_DHANSWER;
 		m_StreamCryptState = ECS_NEGOTIATING;
 		m_nReceiveBytesWanted = 96;
@@ -412,28 +449,40 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
 	}
 }
 
+
+///snow:两处调用，均为被Reveive()函数调用
+///  case ECS_UNKNOWN:处
+///				const uint32 nNegRes = Negotiate((uchar*)lpBuf + nRead, m_nObfuscationBytesReceived - nRead);
+///  case ECS_NEGOTIATING:处
+/// 			const uint32 nRead = Negotiate((uchar*)lpBuf, m_nObfuscationBytesReceived);
+
 int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 	uint32 nRead = 0;
 	ASSERT( m_nReceiveBytesWanted > 0 );
 	try{
-		while (m_NegotiatingState != ONS_COMPLETE && m_nReceiveBytesWanted > 0){
+		while (m_NegotiatingState != ONS_COMPLETE && m_nReceiveBytesWanted > 0){  ///snow:协商尚未完成
 			if (m_nReceiveBytesWanted > 512){
 				ASSERT( false );
 				return 0;
 			}
-
+			///snow:分配内存
 			if (m_pfiReceiveBuffer == NULL){
 				BYTE* pReceiveBuffer = (BYTE*)malloc(512); // use a fixed size buffer
 				if (pReceiveBuffer == NULL)
 					AfxThrowMemoryException();
 				m_pfiReceiveBuffer = new CSafeMemFile(pReceiveBuffer, 512);
 			}
+			///snow:nRead初始为0，所以第一次比较是min(nLen,m_nReceiveBytesWanted),
+			///如果nLen>=m_nReceiveBytesWanted,nToRead=m_nReceiveBytesWanted=nRead，m_nReceiveBytesWanted=0;
+			///如果nLen<m_nReceiveBytesWanted,nToRead=nLen=nRead,m_nReceiveBytesWanted-=nToRead>0,return nRead;然后再次调用
+			///const uint32 nNegRes = Negotiate((uchar*)lpBuf + nRead, m_nObfuscationBytesReceived - nRead);
 			const uint32 nToRead =  min(nLen - nRead, m_nReceiveBytesWanted);
 			m_pfiReceiveBuffer->Write(pBuffer + nRead, nToRead);
 			nRead += nToRead;
 			m_nReceiveBytesWanted -= nToRead;
 			if (m_nReceiveBytesWanted > 0)
 				return nRead;
+			///snow:m_nReceiveBytesWanted=0;握手协商报文数据已读取完毕，
 			const uint32 nCurrentBytesLen = (uint32)m_pfiReceiveBuffer->GetPosition();
 
 			if (m_NegotiatingState != ONS_BASIC_CLIENTA_RANDOMPART && m_NegotiatingState != ONS_BASIC_SERVER_DHANSWER){ // don't have the keys yet
@@ -447,9 +496,12 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 				case ONS_NONE: // would be a bug
 					ASSERT( false );
 					return 0;
-				case ONS_BASIC_CLIENTA_RANDOMPART:{
+				case ONS_BASIC_CLIENTA_RANDOMPART:{  ///snow:incoming connection
 					ASSERT( m_pRC4ReceiveKey == NULL );
-
+					///snow:准备ClinetB Key
+					///	 - Client B (Incomming connection):
+				    ///  Sendkey:	Md5(<UserHashClientB 16><MagicValue203 1><RandomKeyPartClientA 4>) 21
+				    /// Receivekey: Md5(<UserHashClientB 16><MagicValue34 1><RandomKeyPartClientA 4>)  21
 					uchar achKeyData[21];
 					md4cpy(achKeyData, thePrefs.GetUserHash());
 					achKeyData[16] = MAGICVALUE_REQUESTER;
@@ -462,17 +514,17 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					m_pRC4SendKey = RC4CreateKey(md5.GetRawHash(), 16, NULL);
 
 					m_NegotiatingState = ONS_BASIC_CLIENTA_MAGICVALUE;
-					m_nReceiveBytesWanted = 4;
+					m_nReceiveBytesWanted = 4;  ///snow:MAGICVALUE_SYNC是4字节
 					break;
 				}
 				case ONS_BASIC_CLIENTA_MAGICVALUE:{
 					uint32 dwValue = m_pfiReceiveBuffer->ReadUInt32();
-					if (dwValue == MAGICVALUE_SYNC){
+					if (dwValue == MAGICVALUE_SYNC){  ///snow:randompart同步成功，协商加密方法
 						// yup, the one or the other way it worked, this is an encrypted stream
 						//DEBUG_ONLY( DebugLog(_T("Received proper magic value, clientIP: %s"), DbgGetIPString()) );
 						// set the receiver key
 						m_NegotiatingState = ONS_BASIC_CLIENTA_METHODTAGSPADLEN;
-						m_nReceiveBytesWanted = 3;
+						m_nReceiveBytesWanted = 3;  ///snow:为什么是3字节？ClientB是2字节，而Method只需1字节
 					}
 					else{
 						DebugLogError(_T("CEncryptedStreamSocket: Received wrong magic value from clientIP %s on a supposly encrytped stream / Wrong Header"), DbgGetIPString());
@@ -493,6 +545,10 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					if (m_nReceiveBytesWanted > 0)
 						break;
 				case ONS_BASIC_CLIENTA_PADDING:{
+
+					///snow:准备HandShake ClientB报文，
+					///		Client B: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen%max 256>
+
 					// ignore the random bytes, send the response, set status complete
 					CSafeMemFile fileResponse(26);
 					fileResponse.WriteUInt32(MAGICVALUE_SYNC);
@@ -544,6 +600,13 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					break;
 				case ONS_BASIC_SERVER_DHANSWER:{
 					ASSERT( !m_cryptDHA.IsZero() );
+					///    - RC4 Keycreation:
+     ///- Client (Outgoing connection):
+     ///           Sendkey:    Md5(<S 96><MagicValue34 1>)  97
+     ///           Receivekey: Md5(<S 96><MagicValue203 1>) 97
+     ///- Server (Incomming connection):
+     ///           Sendkey:    Md5(<S 96><MagicValue203 1>)  97
+     ///           Receivekey: Md5(<S 96><MagicValue34 1>) 97
 					uchar aBuffer[PRIMESIZE_BYTES + 1];
 					m_pfiReceiveBuffer->Read(aBuffer, PRIMESIZE_BYTES);
 					CryptoPP::Integer cryptDHAnswer((byte*)aBuffer, PRIMESIZE_BYTES);
@@ -595,6 +658,8 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					if (m_nReceiveBytesWanted > 0)
 						break;
 				case ONS_BASIC_SERVER_PADDING:{
+
+					///   Client: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen> (Answer delayed till first payload to save a frame)
 					// ignore the random bytes (they are decrypted already), send the response, set status complete
 					CSafeMemFile fileResponse(26);
 					fileResponse.WriteUInt32(MAGICVALUE_SYNC);
