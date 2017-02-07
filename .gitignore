@@ -73,6 +73,7 @@ $RECYCLE.BIN/
 
 #Buildresults
 [Dd]ebug/
+[Dd]ebug_vc9/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
@@ -145,6 +146,7 @@ ipch/
 *.cachefile
 *.VC.db
 *.VC.VC.opendb
+*.idb
 
 #VisualStudioprofiler
 *.psess

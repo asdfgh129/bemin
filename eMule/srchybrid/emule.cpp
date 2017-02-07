@@ -93,7 +93,7 @@ void AFX_CDECL operator delete(void* p, LPCSTR lpszFileName, int nLine);
 /// <summary>
 /// The snow
 /// </summary>
-**********************************************/ by snow end
+by snow end**********************************************/ 
 
 
 #if _MSC_VER>=1400 && defined(_UNICODE)

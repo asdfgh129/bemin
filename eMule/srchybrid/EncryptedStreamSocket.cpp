@@ -153,12 +153,16 @@ void CEncryptedStreamSocket::CryptPrepareSendData(uchar* pBuffer, uint32 nLen){
 		ASSERT( false ); // must be a bug
 		return;
 	}
+	///snow:意思是当m_StreamCryptState == ECS_UNKNOWN时，表示程序接收到呼入连接，还未协商一致，这个时候不可能发送数据
+	///snow:m_StreamCryptState == ECS_UNKNOWN的情况只有在CEncryptedStreamSocket构造函数中可能被赋值
+	///snow:	m_StreamCryptState = thePrefs.IsClientCryptLayerSupported() ? ECS_UNKNOWN : ECS_NONE;
 	if (m_StreamCryptState == ECS_UNKNOWN){
 		//this happens when the encryption option was not set on a outgoing connection
 		//or if we try to send before receiving on a incoming connection - both shouldn't happen
 		m_StreamCryptState = ECS_NONE;
 		DebugLogError(_T("CEncryptedStreamSocket: Overwriting State ECS_UNKNOWN with ECS_NONE because of premature Send() (%s)"), DbgGetIPString());
 	}
+	///snow:要发送数据，状态必须是ECS_ENCRYPTING
 	if (m_StreamCryptState == ECS_ENCRYPTING)
 		RC4Crypt(pBuffer, pBuffer, nLen, m_pRC4SendKey);
 }
@@ -182,6 +186,7 @@ int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
 	else if (m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING)
 		ASSERT( false );
 
+	///snow:这段代码同CryptPrepareSendData()中的代码
 	if (m_StreamCryptState == ECS_UNKNOWN){
 		//this happens when the encryption option was not set on a outgoing connection
 		//or if we try to send before receiving on a incoming connection - both shouldn't happen
@@ -301,6 +306,8 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 	}
 }
 
+///snow: 在CServerSocket::ConnectTo()，CHttpClientReqSocket::CHttpClientReqSocket（），CUpDownClient::Connect()中通过变量（CClientReqSocket）socket调用，
+
 void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar* pTargetClientHash, bool bServerConnection){
 
 	///snow start:流加密状态既不是未加密也不是呼入连接（是其它四种情况：
@@ -308,7 +315,7 @@ void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar*
 	///          ECS_PENDING_SERVER,		// Outgoing serverconnection, will start sending encryption protocol
 	///          ECS_NEGOTIATING,		// Encryption supported, handshake still uncompleted
 	///          ECS_ENCRYPTING			// Encryption enabled
-	///          函数直接返回  ：  snow end    
+	///          表示客户端已处于等待加密连接状态或已建立加密连接状态，无需再次设置，函数直接返回  ：  snow end    
 
 	if (m_StreamCryptState != ECS_UNKNOWN && m_StreamCryptState != ECS_NONE){
 		
@@ -331,15 +338,17 @@ void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar*
 
 	/// snow :不是到服务器的连接，目标客户端的ID哈希值不是NULL,且目的是要启动加密连接
 	if (bEnabled && pTargetClientHash != NULL && !bServerConnection){
-		m_StreamCryptState = ECS_PENDING;  ///snow:是outgoing connection
+		m_StreamCryptState = ECS_PENDING;  ///snow:是outgoing connection，状态为连接等待
+		
+		///snow start：建立混淆密钥	 - Client A (Outgoing connection):
+		///		Sendkey:	Md5(<UserHashClientB 16><MagicValue34 1><RandomKeyPartClientA 4>)  21
+		///		Receivekey: Md5(<UserHashClientB 16><MagicValue203 1><RandomKeyPartClientA 4>) 21
 		// create obfuscation keys, see on top for key format
 
 		// use the crypt random generator
 		m_nRandomKeyPart = cryptRandomGen.GenerateWord32();
 
-		///snow:start	 - Client A (Outgoing connection):
-		///		Sendkey:	Md5(<UserHashClientB 16><MagicValue34 1><RandomKeyPartClientA 4>)  21
-		///		Receivekey: Md5(<UserHashClientB 16><MagicValue203 1><RandomKeyPartClientA 4>) 21
+		
 		uchar achKeyData[21];
 		md4cpy(achKeyData, pTargetClientHash);
 		memcpy(achKeyData + 17, &m_nRandomKeyPart, 4);
@@ -357,14 +366,18 @@ void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar*
 		m_bServerCrypt = true;
 		m_StreamCryptState = ECS_PENDING_SERVER;
 	}
-	else{   ///snow:bEnabled必须为true，否则会抛出断言;剩下的两种情况是：!bServerConnection&&pTargetClientHash == NULL 和  bServerConnection&&pTargetClientHash != NULL，则置m_StreamCryptState = ECS_NONE;
-		ASSERT( !bEnabled ); ///snow:如果bEnabled为false，则抛出断言，表示连接未处于加密状态，无法disable，程序代码逻辑有误，是个错误调用，
+	else{   ///snow:取消加密连接,bEnabled为false
+		ASSERT( !bEnabled ); 
+		///snow start:如果bEnabled为true，则抛出断言，不考虑bEnabled为true时，剩下的两种情况是：
+		///!bServerConnection&&pTargetClientHash == NULL 和  bServerConnection&&pTargetClientHash != NULL，
+		///snow end:如果有这种情况的调用，则属程序代码逻辑有误，是个错误调用
 		m_StreamCryptState = ECS_NONE;
 	}
 }
 
 void CEncryptedStreamSocket::OnSend(int){
 	///snow:呼出连接，准备开始握手，开始协商，退出函数
+	///snow:ECS_PENDING或ECS_PENDING_SERVER状态在SetConnectionEncryption函数中设置
 	// if the socket just connected and this is outgoing, we might want to start the handshake here
 	if (m_StreamCryptState == ECS_PENDING || m_StreamCryptState == ECS_PENDING_SERVER){
 		StartNegotiation(true);
@@ -701,6 +714,8 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 
 }
 
+///snow start:此函数在四个地方被调用：Send(),OnSend(),StartNegotiation(),Negotiate()
+///   在Send()中，
 int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLen, uint32 nStartCryptFromByte, bool bDelaySend){
 	ASSERT( m_StreamCryptState == ECS_NEGOTIATING || m_StreamCryptState == ECS_ENCRYPTING );
 	ASSERT( nStartCryptFromByte <= nBufLen );

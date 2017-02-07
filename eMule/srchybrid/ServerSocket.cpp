@@ -683,7 +683,7 @@ void CServerSocket::ProcessPacketError(UINT size, UINT opcode, LPCTSTR pszError)
 
 void CServerSocket::ConnectTo(CServer* server, bool bNoCrypt)
 {
-	if (cur_server){
+	if (cur_server){  ///snow: 在连接服务器之前，应该先断开当前服务器的连接，cur_server置NULL
 		ASSERT(0);
 		delete cur_server;
 		cur_server = NULL;
@@ -691,6 +691,7 @@ void CServerSocket::ConnectTo(CServer* server, bool bNoCrypt)
 
 	uint16 nPort = 0;
 	cur_server = new CServer(server);
+	///snow:建立加密连接
 	if ( !bNoCrypt && thePrefs.IsServerCryptLayerTCPRequested() && server->GetObfuscationPortTCP() != 0 && server->SupportsObfuscationTCP()){
 		Log(GetResString(IDS_CONNECTINGTOOBFUSCATED), cur_server->GetListName(), cur_server->GetAddress(), cur_server->GetObfuscationPortTCP());
 		nPort = cur_server->GetObfuscationPortTCP();
@@ -713,6 +714,8 @@ void CServerSocket::ConnectTo(CServer* server, bool bNoCrypt)
 	//		resolving the DN right before sending the UDP packet.
 	//
 	SetConnectionState(CS_CONNECTING);
+
+	///snow:最终通过windows socket api函数connect()向服务器发出连接请求
 	if (!Connect(CStringA(server->GetAddress()), nPort)){
 		DWORD dwError = GetLastError();
 		if (dwError != WSAEWOULDBLOCK){

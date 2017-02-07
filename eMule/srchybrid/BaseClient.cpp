@@ -1648,7 +1648,7 @@ void CUpDownClient::Connect()
 		//DebugLog(_T("Enabling CryptLayer on outgoing connection to client %s"), DbgGetClientInfo()); // to be removed later
 		socket->SetConnectionEncryption(true, GetUserHash(), false);
 	}
-	else
+	else  ///snow:取消加密连接
 		socket->SetConnectionEncryption(false, NULL, false);
 
 	//Try to always tell the socket to WaitForOnConnect before you call Connect.
