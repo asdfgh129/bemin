@@ -613,7 +613,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					break;
 				case ONS_BASIC_SERVER_DHANSWER:{
 					ASSERT( !m_cryptDHA.IsZero() );
-					///    - RC4 Keycreation:
+					///snow start :    - RC4 Keycreation:
      ///- Client (Outgoing connection):
      ///           Sendkey:    Md5(<S 96><MagicValue34 1>)  97
      ///           Receivekey: Md5(<S 96><MagicValue203 1>) 97

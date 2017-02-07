@@ -54,7 +54,7 @@ struct LoginAnswer_Struct {
 CServerSocket::CServerSocket(CServerConnect* in_serverconnect, bool bManualSingleConnect)
 {
 	serverconnect = in_serverconnect;
-	connectionstate = CS_NOTCONNECTED;
+	connectionstate = CS_NOTCONNECTED;  ///snow:初始状态为未连接
 	cur_server = NULL;
 	m_bIsDeleting = false;
 	m_dwLastTransmission = 0;
@@ -67,16 +67,18 @@ CServerSocket::~CServerSocket()
 	delete cur_server;
 }
 
+///snow:在CAsyncSocketExHelperWindow::WindowProc()中message == WM_SOCKETEX_GETHOST时调用，解决dynIP-server by DN的主机名解析问题
 BOOL CServerSocket::OnHostNameResolved(const SOCKADDR_IN *pSockAddr)
 {
 	// If we are connecting to a dynIP-server by DN, we will get this callback after the
 	// DNS query finished.
-	//
+	///snow:连接到具有动态IP的服务器
 	if (cur_server->HasDynIP())
 	{
 		// Update the IP of this dynIP-server
 		//
-		cur_server->SetIP(pSockAddr->sin_addr.S_un.S_addr);
+		cur_server->SetIP(pSockAddr->sin_addr.S_un.S_addr);///snow:给cur_server.ip,cur_server.ipfull赋值
+		///snow:在serverlist中找是否存在同一IP和PORT的server，如果找到，则从列表中删除
 		CServer* pServer = theApp.serverlist->GetServerByAddress(cur_server->GetAddress(), cur_server->GetPort());
 		if (pServer) {
 			pServer->SetIP(pSockAddr->sin_addr.S_un.S_addr);
@@ -88,7 +90,7 @@ BOOL CServerSocket::OnHostNameResolved(const SOCKADDR_IN *pSockAddr)
 
 		// As this is a dynIP-server, we need to check the IP against the IP-filter
 		// and eventually disconnect and delete that server.
-		//
+		///snow:检查服务器的IP是否在FilterServer中，如果是，从服务器列表中删除，并重置连接状态
 		if (thePrefs.GetFilterServerByIP() && theApp.ipfilter->IsFiltered(cur_server->GetIP())) {
 			if (thePrefs.GetLogFilteredIPs())
 				AddDebugLogLine(false, _T("IPFilter(TCP/DNSResolve): Filtered server \"%s\" (IP=%s) - IP filter (%s)"), pServer ? pServer->GetAddress() : cur_server->GetAddress(), ipstr(cur_server->GetIP()), theApp.ipfilter->GetLastHit());
@@ -112,19 +114,19 @@ void CServerSocket::OnConnect(int nErrorCode)
 		case 0:
 			SetConnectionState(CS_WAITFORLOGIN);
 			break;
-
-		case WSAEADDRNOTAVAIL:
-		case WSAECONNREFUSED:
+			///snow:地址不可用,拒绝连接,超时,地址使用中四种情况时，设置删除标志，设置连接状态为CS_SERVERDEAD，销毁socket
+		case WSAEADDRNOTAVAIL:///snow:地址不可用
+		case WSAECONNREFUSED:///snow:拒绝连接
 		//case WSAENETUNREACH:	// let this error default to 'fatal error' as it does not increase the server's failed count
-		case WSAETIMEDOUT:
-		case WSAEADDRINUSE:
+		case WSAETIMEDOUT:///snow:超时
+		case WSAEADDRINUSE:///snow:地址使用中
 			if (thePrefs.GetVerbose())
 				DebugLogError(_T("Failed to connect to server %s; %s"), cur_server->GetAddress(), GetFullErrorMessage(nErrorCode));
 			m_bIsDeleting = true;
 			SetConnectionState(CS_SERVERDEAD);
 			serverconnect->DestroySocket(this);
 			return;
-
+			///snow:连接中止，代理连接失败，重置代理连接失败标志为false，设置删除标志，设置连接状态为CS_SERVERDEAD，销毁socket
 		case WSAECONNABORTED:
 			if (m_bProxyConnectFailed)
 			{
@@ -136,7 +138,7 @@ void CServerSocket::OnConnect(int nErrorCode)
 				serverconnect->DestroySocket(this);
 				return;
 			}
-			/* fall through */
+			/* fall through */ ///snow:严重错误，设置删除标志，设置连接状态为CS_FATALERROR，销毁socket
 		default:
 			if (thePrefs.GetVerbose())
 				DebugLogError(_T("Failed to connect to server %s; %s"), cur_server->GetAddress(), GetFullErrorMessage(nErrorCode));
@@ -148,19 +150,23 @@ void CServerSocket::OnConnect(int nErrorCode)
 }
 
 void CServerSocket::OnReceive(int nErrorCode){
+	///snow:连接尚未建立或不在正在连接中，销毁socket
 	if (connectionstate != CS_CONNECTED && !this->serverconnect->IsConnecting()){
 		serverconnect->DestroySocket(this);
 		return;
 	}
+	///snow:调用父类OnReceive（），并检索时钟，
 	CEMSocket::OnReceive(nErrorCode);
-	m_dwLastTransmission = GetTickCount();
+	m_dwLastTransmission = GetTickCount();///nsow:Retrieves the number of milliseconds that have elapsed since the system was started, up to 49.7 days.
+
 }
 
+///snow:在PacketReceived（）中调用
 bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 {
 	try
 	{
-		switch (opcode)
+		switch (opcode) ///snow:在Opcodes.h定义
 		{
 			case OP_SERVERMESSAGE:{
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
@@ -697,7 +703,7 @@ void CServerSocket::ConnectTo(CServer* server, bool bNoCrypt)
 		nPort = cur_server->GetObfuscationPortTCP();
 		SetConnectionEncryption(true, NULL, true);
 	}
-	else{
+	else{ ///snow:建立未加密连接
 		Log(GetResString(IDS_CONNECTINGTO), cur_server->GetListName(), cur_server->GetAddress(), cur_server->GetPort());
 		nPort = cur_server->GetPort();
 		SetConnectionEncryption(false, NULL, true);
