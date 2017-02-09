@@ -169,6 +169,7 @@ void CServerConnect::StopConnectionTry()
 	}
 }
 
+///snow:这个函数名有点误导，实际上处理两种情况：一种是连接建立了，但尚未登录，需要向服务器发送登录信息；一种是已经登录成功了，连接正式建立
 void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 {
 	if (!connecting) {
@@ -178,30 +179,34 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 	}
 	
 	InitLocalIP();
-	if (sender->GetConnectionState() == CS_WAITFORLOGIN)
+	if (sender->GetConnectionState() == CS_WAITFORLOGIN) ///snow:连接建立了，但尚未登录，向服务器发送登录信息
 	{
 		AddLogLine(false, GetResString(IDS_CONNECTEDTOREQ), sender->cur_server->GetListName(), sender->cur_server->GetAddress(), sender->IsServerCryptEnabledConnection() ? sender->cur_server->GetObfuscationPortTCP() : sender->cur_server->GetPort());
-
+		///snow:获取当前服务器
 		CServer* pServer = theApp.serverlist->GetServerByAddress(sender->cur_server->GetAddress(), sender->cur_server->GetPort());
 		if (pServer) {
-			pServer->ResetFailedCount();
+			pServer->ResetFailedCount(); ///snow:重置该服务器的连接失败计数，刷新界面
 			theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(pServer);
 		}
-
+		///snow:向服务器发送登录信息包
 		// Send login packet
 		CSafeMemFile data(256);
-		data.WriteHash16(thePrefs.GetUserHash());
-		data.WriteUInt32(GetClientID());
-		data.WriteUInt16(thePrefs.GetPort());
+		data.WriteHash16(thePrefs.GetUserHash()); ///snow:16字节UserHash:9c 43 1e b7 1e 0e 14 2b f1 bc f5 2d 41 c1 6f b0
+		data.WriteUInt32(GetClientID());          ///snow:4字节ClientID :00 00 00 00
+		data.WriteUInt16(thePrefs.GetPort());     ///snow:2字节Port:3e d8  逆字节序，55358（0xD83E)
 
 		UINT tagcount = 4;
-		data.WriteUInt32(tagcount);
+		data.WriteUInt32(tagcount);               ///snow:写入四个字节，有四个标签 04 00 00 00
 
-		CTag tagName(CT_NAME, thePrefs.GetUserNick());
-		tagName.WriteTagToFile(&data);
+		CTag tagName(CT_NAME, thePrefs.GetUserNick());   ///snow:UserNick:http://emule-project.net
+		tagName.WriteTagToFile(&data);   ///snow:写入的实际数据为02 01 00 01 18 00 68 74 74 70 3a 2f 2f 65 6d 75 6c 65 2d 70 72 6f 6a 65 63 74 2e 6e 65 74
+		///snow:而http://emule-project.net 对应的数据为68 74 74 70 3a 2f 2f 65 6d 75 6c 65 2d 70 72 6f 6a 65 63 74 2e 6e 65 74
+		///snow:多写的数据为02 01 00 01 18 00  m_uType=TAGTYPE_STRING(0x02),m_uName=CT_NAME(0x01),m_pszName = NULL(0x00),m_nBlobSize = 0(0x00);m_pstrVal字符串长度为24（0x18),没搞明白01是什么？还有字节的顺序，字符串的长度怎么写到tag的？
 
-		CTag tagVersion(CT_VERSION, EDONKEYVERSION);
-		tagVersion.WriteTagToFile(&data);
+		CTag tagVersion(CT_VERSION, EDONKEYVERSION);  
+		tagVersion.WriteTagToFile(&data); ///snow:写入的数据为03 01 00 11 3c 00 00 00
+		///snow:m_uType=TAGTYPE_UINT32(0x03),m_uName=CT_VERSION(0x11),m_uVal=EDONKEYVERSION(0x3c 00 00 00四个字节),m_pszName = NULL,m_nBlobSize = 0;
+
 
 		uint32 dwCryptFlags = 0;
 		if (thePrefs.IsClientCryptLayerSupported())

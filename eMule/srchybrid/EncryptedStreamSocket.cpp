@@ -193,6 +193,8 @@ int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
 		m_StreamCryptState = ECS_NONE;
 		DebugLogError(_T("CEncryptedStreamSocket: Overwriting State ECS_UNKNOWN with ECS_NONE because of premature Send() (%s)"), DbgGetIPString());
 	}
+
+	///snow:如果不需要加密连接，则直接调用父类Send()函数
 	return CAsyncSocketEx::Send(lpBuf, nBufLen, nFlags);
 }
 
