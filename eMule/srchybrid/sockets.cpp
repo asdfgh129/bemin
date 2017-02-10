@@ -202,10 +202,11 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 		tagName.WriteTagToFile(&data);   ///snow:写入的实际数据为02 01 00 01 18 00 68 74 74 70 3a 2f 2f 65 6d 75 6c 65 2d 70 72 6f 6a 65 63 74 2e 6e 65 74
 		///snow:而http://emule-project.net 对应的数据为68 74 74 70 3a 2f 2f 65 6d 75 6c 65 2d 70 72 6f 6a 65 63 74 2e 6e 65 74
 		///snow:多写的数据为02 01 00 01 18 00  m_uType=TAGTYPE_STRING(0x02),m_uName=CT_NAME(0x01),m_pszName = NULL(0x00),m_nBlobSize = 0(0x00);m_pstrVal字符串长度为24（0x18),没搞明白01是什么？还有字节的顺序，字符串的长度怎么写到tag的？
+		///snow:上面的问题在WriteTagToFile（）中可以看得清楚，对各字节的理解有误，具体请参考在WriteTagToFile中的注释
 
-		CTag tagVersion(CT_VERSION, EDONKEYVERSION);  
+		CTag tagVersion(CT_VERSION, EDONKEYVERSION);  ///snow:生成数据03 11 cc cc 00 00 00 00 00 00 00 00 3c 00 00 00 00 00 00 00
 		tagVersion.WriteTagToFile(&data); ///snow:写入的数据为03 01 00 11 3c 00 00 00
-		///snow:m_uType=TAGTYPE_UINT32(0x03),m_uName=CT_VERSION(0x11),m_uVal=EDONKEYVERSION(0x3c 00 00 00四个字节),m_pszName = NULL,m_nBlobSize = 0;
+		///snow:m_uType=TAGTYPE_UINT32(0x03),m_pszName = NULL（实际写入 01 00）,m_uName=CT_VERSION(0x11),m_uVal=EDONKEYVERSION(0x3c 00 00 00四个字节),m_nBlobSize 未写入;
 
 
 		uint32 dwCryptFlags = 0;
@@ -217,7 +218,9 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 			dwCryptFlags |= SRVCAP_REQUIRECRYPT;
 
 		CTag tagFlags(CT_SERVER_FLAGS, SRVCAP_ZLIB | SRVCAP_NEWTAGS | SRVCAP_LARGEFILES | SRVCAP_UNICODE | dwCryptFlags);
+		///snow:生成数据 03 20 cc cc 00 00 00 00 00 00 00 00 19 03 00 00 00 00 00 00
 		tagFlags.WriteTagToFile(&data);
+		///snow:实际写入数据03（m_uType=TAGTYPE_UINT32） 01 00（m_pszName = NULL） 20（CT_SERVER_FLAGS） 19 03 00 00（ SRVCAP_ZLIB | SRVCAP_NEWTAGS | SRVCAP_LARGEFILES | SRVCAP_UNICODE | dwCryptFlags）
 
 		// eMule Version (14-Mar-2004: requested by lugdunummaster (need for LowID clients which have no chance 
 		// to send an Hello packet to the server during the callback test))
@@ -226,14 +229,17 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 							(CemuleApp::m_nVersionMjr	<< 17) |
 							(CemuleApp::m_nVersionMin	<< 10) |
 							(CemuleApp::m_nVersionUpd	<<  7) );
+		///snow:生成数据 03 fb cc cc 00 00 00 00 00 00 00 00 00 c8 00 00 00 00 00 00
 		tagMuleVersion.WriteTagToFile(&data);
+		///snow:写入数据：03（m_uType=TAGTYPE_UINT32） 01 00（m_pszName = NULL） fb（CT_EMULE_VERSION） 00 c8 00 00（版本号）
 
-		Packet* packet = new Packet(&data);
-		packet->opcode = OP_LOGINREQUEST;
+		Packet* packet = new Packet(&data);///snow:数据格式见Packet::Packet(CMemFile* datafile, uint8 protocol, uint8 ucOpcode)注释
+		packet->opcode = OP_LOGINREQUEST;  ///snow:opcode位置1（OP_LOGINREQUEST）
+		///snow:packet数据为5c c0 89 01 (Packet对象)be 5e de 04（pBuffer) 50(size，80字节） 00(m_bSplitted) 00(m_bLastSplitted) 00(m_bPacked) 01(ucOpcode) e3(protocol) 00 00 00 00（tempbuffer） cd cd b8 5e de 04(completebuffer) 00 00 00 00
 		if (thePrefs.GetDebugServerTCPLevel() > 0)
 			Debug(_T(">>> Sending OP__LoginRequest\n"));
 		theStats.AddUpDataOverheadServer(packet->size);
-		SendPacket(packet, true, sender);
+		SendPacket(packet, true, sender); ///snow:由sender发送，sender为ServerSocket::OnConnect()传递过来的ServerSocket对象（this)
 	}
 	else if (sender->GetConnectionState() == CS_CONNECTED)
 	{
@@ -272,18 +278,18 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 }
 
 bool CServerConnect::SendPacket(Packet* packet,bool delpacket, CServerSocket* to){
-	if (!to){
-		if (connected){
-			connectedsocket->SendPacket(packet,delpacket,true);
+	if (!to){ ///snow:to为NULL
+		if (connected){ ///snow:已连接，由connectedsocket发送
+			connectedsocket->SendPacket(packet,delpacket,true); ///snow:由CServerConnect对象发出的包均为控制包（controlpack)
 		}
-		else{
+		else{  ///to为NULL，connected为NULL，则不发送，根据delpacket是否为true，删除packet
 			if (delpacket)
 				delete packet;
 			return false;
 		}
 	}
-	else{
-		to->SendPacket(packet,delpacket,true);
+	else{  ///snow:to不为NULL，由to发送
+		to->SendPacket(packet,delpacket,true);///snow:由CServerConnect对象发出的包均为控制包（controlpack)
 	}
 	return true;
 }

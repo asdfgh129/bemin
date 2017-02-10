@@ -204,9 +204,10 @@ void CFileDataIO::WriteString(const CString& rstr, EUtf8Str eEncode)
 	}
 	else
 	{
-		CUnicodeToMultiByte mb(rstr);
-		WRITE_STR_LEN(mb.GetLength());
-		Write((LPCSTR)mb, mb.GetLength());
+		CUnicodeToMultiByte mb(rstr); ///snow:接CTag::WriteTagToFile(CFileDataIO* file, EUtf8Str eStrEncode) const
+		                              ///snow:    中的例子将unicode转换为多字节
+		WRITE_STR_LEN(mb.GetLength());///snow:写入 18 00 (24字节）
+		Write((LPCSTR)mb, mb.GetLength()); ///snow: 写入68 74 74 70 3a 2f 2f 65 6d 75 6c 65 2d 70 72 6f 6a 65 63 74 2e 6e 65 74（http://emule-project.net)
 	}
 #undef WRITE_STR_LEN
 }

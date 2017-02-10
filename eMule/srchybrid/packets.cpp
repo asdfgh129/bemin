@@ -92,7 +92,7 @@ Packet::Packet(uint8 in_opcode, uint32 in_size, uint8 protocol, bool bFromPartFi
 	tempbuffer = 0;
 	if (in_size){
 		completebuffer = new char[in_size+10];
-		pBuffer = completebuffer+6;
+		pBuffer = completebuffer+6;  ///snow:空出6个字节，存放包头
 		memset(completebuffer,0,in_size+10);
 	}
 	else{
@@ -105,6 +105,10 @@ Packet::Packet(uint8 in_opcode, uint32 in_size, uint8 protocol, bool bFromPartFi
 }
 
 Packet::Packet(CMemFile* datafile, uint8 protocol, uint8 ucOpcode){
+	///snow:this:5c c0 89 01 (Packet对象)be 5e de 04（pBuffer) 50(size，80字节） 00(m_bSplitted) 00(m_bLastSplitted) 00(m_bPacked) 00(ucOpcode) e3(protocol) 00 00 00 00（tempbuffer） cd cd b8 5e de 04(completebuffer) 00 00 00 00
+	///0x04DE5EB8  cd cd cd cd cd cd 9c 43 1e b7 1e 0e 14 2b f1 bc f5 2d 41 c1 6f b0 00 00 00 00 3e d8 04 00 00 00 02 01 00  ???????C.?...+???-A?o?....>?.......
+    ///0x04DE5EDB  01 18 00 68 74 74 70 3a 2f 2f 65 6d 75 6c 65 2d 70 72 6f 6a 65 63 74 2e 6e 65 74 03 01 00 11 3c 00 00 00  ...http://emule-project.net....<...
+    ///0x04DE5EFE  03 01 00 20 19 03 00 00 03 01 00 fb 00 c8 00 00
 	m_bSplitted = false;
 	m_bPacked = false;
 	m_bLastSplitted = false;
@@ -159,15 +163,16 @@ char* Packet::GetPacket(){
 }
 
 char* Packet::DetachPacket(){
-	if (completebuffer){
-		if (!m_bSplitted)
+	if (completebuffer){  ///snow:如果completebuffer不为NULL，
+		if (!m_bSplitted)  ///snow:且不是分割包,则添加包头（6个字节，completebuffer比pBuffer多出的前6个字节，在封包时确定的
+			///snow:包头包括opcode,protocol和packetlength
 			memcpy(completebuffer,GetHeader(),6);
 		char* result = completebuffer;
 		completebuffer = 0;
 		pBuffer = 0;
 		return result;
 	}
-	else{
+	else{    ///snow:如果completebuffer没有赋值，为NULL，则临时分配缓冲区，添加包头，拷贝pBuffer
 		delete[] tempbuffer;
 		tempbuffer = NULL; // 'new' may throw an exception
 		tempbuffer = new char[size+10];
@@ -179,7 +184,7 @@ char* Packet::DetachPacket(){
 	}
 }
 
-char* Packet::GetHeader(){
+char* Packet::GetHeader(){   ///snow:6个字节的包头
 	ASSERT ( !m_bSplitted );
 	Header_Struct* header = (Header_Struct*) head;
 	header->command = opcode;
@@ -340,18 +345,19 @@ CTag::CTag(LPCSTR pszName, uint64 uVal, bool bInt64)
 
 CTag::CTag(uint8 uName, uint64 uVal, bool bInt64)
 {
+	///snow:eg.写入CTag tagVersion(CT_VERSION, EDONKEYVERSION);
 	ASSERT( uVal <= 0xFFFFFFFF || bInt64 );
 	if (bInt64){
 		m_uType = TAGTYPE_UINT64;
 	}
 	else{
-		m_uType = TAGTYPE_UINT32;
+		m_uType = TAGTYPE_UINT32;  ///snow : 03
 	}
-	m_uVal = uVal;
-	m_uName = uName;
-	m_pszName = NULL;
-	m_nBlobSize = 0;
-	ASSERT_VALID(this);
+	m_uVal = uVal;   ///snow:写入 3c 00 00 00 00 00 00 00
+	m_uName = uName; ///snow:写入 11
+	m_pszName = NULL;///snow:写入 00 00 00 00
+	m_nBlobSize = 0; ///snow:写入 00 00 00 00
+	ASSERT_VALID(this); ///snow:最终写入的数据为 a8 c0 89 01（CTag,已有数据）03（m_uType，1字节） 11（m_uName，1字节） cc cc 00 00 00 00（m_pszName，4字节） 00 00 00 00（m_nBlobSize，4字节） 3c 00 00 00 00 00 00 00（m_uVal，8字节）
 }
 
 CTag::CTag(LPCSTR pszName, LPCTSTR pszVal)
@@ -375,8 +381,9 @@ CTag::CTag(uint8 uName, LPCTSTR pszVal)
 }
 
 CTag::CTag(LPCSTR pszName, const CString& rstrVal)
-{
-	m_uType = TAGTYPE_STRING;
+{    
+	///snow:
+	m_uType = TAGTYPE_STRING;   
 	m_uName = 0;
 	m_pszName = nstrdup(pszName);
 	m_pstrVal = new CString(rstrVal);
@@ -386,6 +393,12 @@ CTag::CTag(LPCSTR pszName, const CString& rstrVal)
 
 CTag::CTag(uint8 uName, const CString& rstrVal)
 {
+	///snow:uName=CT_NAME,rstrVal="http://emule-project.net"
+	///snow:内存数据：a8 c0 89 01（前四个字节应该是CTag对象相关数据） 02（m_uType） 01（m_uName） cc cc 00 00 00 00（m_pszName） 00 00 00 00（m_nBlobSize） 10 23 91 04（m_pstrVal，字符串指针地址0x04912310，指向m_pData指针0x038011C0,unicode存储）
+	///0x038011C0  68 00 74 00 74 00 70 00 3a 00 2f 00 2f 00 65 00 6d 00 75 00 6c 00 65 00 2d 00 70 00 72 00 6f 00 6a 00 65 
+	///             h  .  t  .  t  .  p  .  :  .  /  .  /  .  e  .  m  .  u  .  l  .  e  .  -  .  p  .  r  .  o  .  j  .  e
+    ///0x038011E3  00 63 00 74 00 2e 00 6e 00 65 00 74 00 00 00  
+	///             .  c  .  t  .  .  .  n  .  e  .  t    \0
 	m_uType = TAGTYPE_STRING;
 	m_uName = uName;
 	m_pszName = NULL;
@@ -719,9 +732,11 @@ bool CTag::WriteTagToFile(CFileDataIO* file, EUtf8Str eStrEncode) const
 
 	// don't write tags of unknown types, we wouldn't be able to read them in again 
 	// and the met file would be corrupted
+	///snow:eg:参考CServerConnect::ConnectionEstablished（）注释中的例子，CTag tagName(CT_NAME, thePrefs.GetUserNick());
+	///snow: 写入的实际数据为02 01 00 01 18 00 68 74 74 70 3a 2f 2f 65 6d 75 6c 65 2d 70 72 6f 6a 65 63 74 2e 6e 65 74
 	if (IsStr() || IsInt() || IsFloat() || IsBlob() || IsInt64())
 	{
-		file->WriteUInt8(m_uType);
+		file->WriteUInt8(m_uType);  ///snow:写入02
 		
 		if (m_pszName)
 		{
@@ -731,13 +746,14 @@ bool CTag::WriteTagToFile(CFileDataIO* file, EUtf8Str eStrEncode) const
 		}
 		else
 		{
-			file->WriteUInt16(1);
-			file->WriteUInt8(m_uName);
+			file->WriteUInt16(1);  ///snow:写入01 00
+			file->WriteUInt8(m_uName); ///snow:写入：01
 		}
 
 		if (IsStr())
 		{
-			file->WriteString(GetStr(), eStrEncode);
+			file->WriteString(GetStr(), eStrEncode); ///snow:写入字符串，注释转到
+			///snow:CFileDataIO::WriteString(const CString& rstr, EUtf8Str eEncode)
 		}
 		else if (IsInt())
 		{

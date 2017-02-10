@@ -480,6 +480,7 @@ void CEMSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, u
 
     sendLocker.Lock();
 
+	///snow:未连接状态，
     if (byConnected == ES_DISCONNECTED) {
         sendLocker.Unlock();
         if(delpacket) {
@@ -487,7 +488,7 @@ void CEMSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, u
         }
 		return;
     } else {
-        if (!delpacket){
+		if (!delpacket){  ///snow:不删除包，复制一份包
             //ASSERT ( !packet->IsSplitted() );
             Packet* copy = new Packet(packet->opcode,packet->size);
 		    memcpy(copy->pBuffer,packet->pBuffer,packet->size);
@@ -499,11 +500,11 @@ void CEMSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, u
         //}
 
         if (controlpacket) {
-	        controlpacket_queue.AddTail(packet);
+	        controlpacket_queue.AddTail(packet);  ///把packet对象添加到控制包队列末尾，packet对象在发送时应重新编码成字节流
 
             // queue up for controlpacket
             theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this, HasSent());
-	    } else {
+		} else {   ///snow:不是控制包，是标准包，添加到标准包队列
             bool first = !((sendbuffer && !m_currentPacket_is_controlpacket) || !standartpacket_queue.IsEmpty());
             StandardPacketQueueEntry queueEntry = { actualPayloadSize, packet };
 		    standartpacket_queue.AddTail(queueEntry);
@@ -627,7 +628,7 @@ void CEMSocket::OnSend(int nErrorCode){
 
 /**
  * Try to put queued up data on the socket.
- *
+ * 控制包优先发送，数据包可以分割成小包，但是分割成的小包必须连续发送，不能插入控制包
  * Control packets have higher priority, and will be sent first, if possible.
  * Standard packets can be split up in several package containers. In that case
  * all the parts of a split package must be sent in a row, without any control packet
@@ -642,13 +643,15 @@ void CEMSocket::OnSend(int nErrorCode){
  *                                       get it out of the way. But it is not allowed to pick a new standard packet
  *                                       from the queue during this call. Several split packets are counted as one
  *                                       standard packet though, so it is ok to finish them all off if necessary.
+ *  在发送时，如果onlyAllowedToSendControlPacket被置为true，则不允许再往socket中添加数据包，
+ *  已在socket中的数据包继续发送完毕，发送完后只发送控制包
  *
  * @return the actual number of bytes that were put on the socket.
  */
 SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSize, bool onlyAllowedToSendControlPacket) {
 	//EMTrace("CEMSocket::Send linked: %i, controlcount %i, standartcount %i, isbusy: %i",m_bLinkedPackets, controlpacket_queue.GetCount(), standartpacket_queue.GetCount(), IsBusy());
     sendLocker.Lock();
-
+	///snow:未连接
     if (byConnected == ES_DISCONNECTED) {
         sendLocker.Unlock();
         SocketSentBytes returnVal = { false, 0, 0 };
@@ -656,7 +659,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
     }
 
     bool anErrorHasOccured = false;
-    uint32 sentStandardPacketBytesThisCall = 0;
+	uint32 sentStandardPacketBytesThisCall = 0;  ///snow:统计用
     uint32 sentControlPacketBytesThisCall = 0;
 
     if(byConnected == ES_CONNECTED && IsEncryptionLayerReady() && !(m_bBusy && onlyAllowedToSendControlPacket)) {
@@ -671,18 +674,24 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
         lastCalledSend = ::GetTickCount();
 
         while(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall < maxNumberOfBytesToSend && anErrorHasOccured == false && // don't send more than allowed. Also, there should have been no error in earlier loop
+			///snow:不发送超过最大允许发送字节数的数据，并且还没有错误发生
               (sendbuffer != NULL || !controlpacket_queue.IsEmpty() || !standartpacket_queue.IsEmpty()) && // there must exist something to send
+			  ///snow:sendbuffer,controlpacket_queue,standartpacket_queue三者中有一个不为空，要发送就必须有数据可送
                (onlyAllowedToSendControlPacket == false || // this means we are allowed to send both types of packets, so proceed
                 sendbuffer != NULL && m_currentPacket_is_controlpacket == true || // We are in the progress of sending a control packet. We are always allowed to send those
+				///snow:允许发送两种数据包或者当前正在发送控制包，表示什么？？？
                 sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall > 0 && (sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall) % minFragSize != 0 || // Once we've started, continue to send until an even minFragsize to minimize packet overhead
+				///snow:如果已经开始发送，则继续发送直到已发送数据%minFragSize==0，？？？minFragSize表示？
                 sendbuffer == NULL && !controlpacket_queue.IsEmpty() || // There's a control packet in queue, and we are not currently sending anything, so we will handle the control packet next
+				///snow:队列中只有控制包，当前不发送，延后处理  为什么？
                 sendbuffer != NULL && m_currentPacket_is_controlpacket == false && bWasLongTimeSinceSend && !controlpacket_queue.IsEmpty() && (sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall) < minFragSize // We have waited to long to clean the current packet (which may be a standard packet that is in the way). Proceed no matter what the value of onlyAllowedToSendControlPacket.
+				///snow:等待处理当前包，可能是正在发送标准数据包，不考虑onlyAllowedToSendControlPacket标志
                )
              )
 		{
 
             // If we are currently not in the progress of sending a packet, we will need to find the next one to send
-            if(sendbuffer == NULL) {
+			if(sendbuffer == NULL) {   ///snow:发送缓冲区为空
                 Packet* curPacket = NULL;
                 if(!controlpacket_queue.IsEmpty()) {
                     // There's a control packet to send
@@ -691,6 +700,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
                 } else if(!standartpacket_queue.IsEmpty()) {
                     // There's a standard packet to send
                     m_currentPacket_is_controlpacket = false;
+					///snow:标准数据包的封包格式跟控制包不同，标准包为控制包额外加上actualPayloadSize等信息
                     StandardPacketQueueEntry queueEntry = standartpacket_queue.RemoveHead();
                     curPacket = queueEntry.packet;
                     m_actualPayloadSize = queueEntry.actualPayloadSize;
@@ -711,18 +721,20 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 
                 // We found a package to send. Get the data to send from the
                 // package container and dispose of the container.
-                sendblen = curPacket->GetRealPacketSize();
-                sendbuffer = curPacket->DetachPacket();
+				sendblen = curPacket->GetRealPacketSize();  ///snow:获取包的长度
+				sendbuffer = curPacket->DetachPacket();     ///snow:获取包的内容,进入缓冲区的就是completebuffer,或者pBuffer+HEAD
                 sent = 0;
                 delete curPacket;
 
 				// encrypting which cannot be done transparent by base class
-				CryptPrepareSendData((uchar*)sendbuffer, sendblen);
-            }
+				CryptPrepareSendData((uchar*)sendbuffer, sendblen);  ///snow:加密准备发送的数据
+			} ///snow:fi(sendbuffer == NULL)
 
             // At this point we've got a packet to send in sendbuffer. Try to send it. Loop until entire packet
             // is sent, or until we reach maximum bytes to send for this call, or until we get an error.
             // NOTE! If send would block (returns WSAEWOULDBLOCK), we will return from this method INSIDE this loop.
+			///snow:已经将待发送的包存入发送缓冲区，循环发送直至：整个包发送完毕，或达到最大发送数，或遇到错误
+			///snow:如果返回WSAEWOULDBLOCK
             while (sent < sendblen &&
                    sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall < maxNumberOfBytesToSend &&
                    (
@@ -733,8 +745,9 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
                    ) &&
                    anErrorHasOccured == false)
 			{
-		        uint32 tosend = sendblen-sent;
-                if(!onlyAllowedToSendControlPacket || m_currentPacket_is_controlpacket) {
+		        uint32 tosend = sendblen-sent;  
+				///snow:确定准备发送的字节数
+				if(!onlyAllowedToSendControlPacket || m_currentPacket_is_controlpacket) { ///snow:当前包是控制包，且允许发送标准包
     		        if (maxNumberOfBytesToSend >= sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall && tosend > maxNumberOfBytesToSend-(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall))
                         tosend = maxNumberOfBytesToSend-(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall);
                 } else if(bWasLongTimeSinceSend && (sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall) < minFragSize) {

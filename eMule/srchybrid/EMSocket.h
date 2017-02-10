@@ -29,8 +29,8 @@ class Packet;
 #define PACKET_HEADER_SIZE	6
 
 struct StandardPacketQueueEntry {
-	uint32 actualPayloadSize;
-	Packet* packet;
+	uint32 actualPayloadSize;  ///snow:比控制包多的信息
+	Packet* packet;      ///snow:控制包就是个Packet
 };
 
 class CEMSocket : public CEncryptedStreamSocket, public ThrottledFileSocket // ZZ:UploadBandWithThrottler (UDP)
