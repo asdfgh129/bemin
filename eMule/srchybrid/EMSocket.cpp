@@ -662,6 +662,8 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 	uint32 sentStandardPacketBytesThisCall = 0;  ///snow:统计用
     uint32 sentControlPacketBytesThisCall = 0;
 
+	///snow:同时满足三个条件：1、如果已建立连接，2、加密层已准备好，
+	///snow:  3、socket处于非阻塞状态或允许发送两种数据包（m_bBusy和onlyAllowedToSendControlPacket不同时为true)
     if(byConnected == ES_CONNECTED && IsEncryptionLayerReady() && !(m_bBusy && onlyAllowedToSendControlPacket)) {
         if(minFragSize < 1) {
             minFragSize = 1;
@@ -673,6 +675,18 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 
         lastCalledSend = ::GetTickCount();
 
+		/**** snow:同时满足以下条件，执行循环：
+        *          1、本次调用发送的控制包字节数和标准包字节数之和小于最大准备发送字节数
+		*          2、发送还没有发生错误
+		*          3、sendbuffer,controlpacket_queue,standartpacket_queue三者中有一个不为空
+		*          4、以下情况满足任意一种：
+		*            4.1、允许发送两种数据包
+		*            4.2、sendbuffer不为空且当前包是控制包，发送控制包的时候（send!=sendlen)
+		*            4.3、本次调用发送的控制包字节数和标准包字节数之和大于0 且 两者之和 % minFragSize != 0 
+		*            4.4、sendbuffer为空且控制包队列不为空
+		*            4.5、sendbuffer不为空 且 当前包不是控制包 且 已经发送很长时间了 且 控制包队列不为空 且 本次调用发送的控制包字节数和标准包字节数之和小于minFragSize
+		*/
+		
         while(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall < maxNumberOfBytesToSend && anErrorHasOccured == false && // don't send more than allowed. Also, there should have been no error in earlier loop
 			///snow:不发送超过最大允许发送字节数的数据，并且还没有错误发生
               (sendbuffer != NULL || !controlpacket_queue.IsEmpty() || !standartpacket_queue.IsEmpty()) && // there must exist something to send
@@ -691,7 +705,8 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 		{
 
             // If we are currently not in the progress of sending a packet, we will need to find the next one to send
-			if(sendbuffer == NULL) {   ///snow:发送缓冲区为空
+			///snow:这段if语句块就是从两个队列里取包，先控制队列，如果没有，则后标准队列
+			if(sendbuffer == NULL) {   ///snow:发送缓冲区为空,控制包队列和标准包队列有一个不为空
                 Packet* curPacket = NULL;
                 if(!controlpacket_queue.IsEmpty()) {
                     // There's a control packet to send
@@ -707,7 +722,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 
                     // remember this for statistics purposes.
                     m_currentPackageIsFromPartFile = curPacket->IsFromPF();
-                } else {
+				} else {  ///snow:按道理不可能执行到这里来，因为sendbuffer为空，控制包队列和标准包队列必定有一个不为空，而这里的else表示两者都为空
                     // Just to be safe. Shouldn't happen?
                     sendLocker.Unlock();
 
@@ -730,6 +745,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 				CryptPrepareSendData((uchar*)sendbuffer, sendblen);  ///snow:加密准备发送的数据
 			} ///snow:fi(sendbuffer == NULL)
 
+			///snow:到这里sendbuffer里已经有一个包待发送了，有且只有一个包
             // At this point we've got a packet to send in sendbuffer. Try to send it. Loop until entire packet
             // is sent, or until we reach maximum bytes to send for this call, or until we get an error.
             // NOTE! If send would block (returns WSAEWOULDBLOCK), we will return from this method INSIDE this loop.
@@ -749,6 +765,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 				///snow:确定准备发送的字节数
 				if(!onlyAllowedToSendControlPacket || m_currentPacket_is_controlpacket) { ///snow:当前包是控制包，且允许发送标准包
     		        if (maxNumberOfBytesToSend >= sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall && tosend > maxNumberOfBytesToSend-(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall))
+						///snow:如果最大准备发送字节数大于等于本次调用已发送字节数，且tosend>剩下可以发送的字节数，tosend=剩下可以发送的字节数
                         tosend = maxNumberOfBytesToSend-(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall);
                 } else if(bWasLongTimeSinceSend && (sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall) < minFragSize) {
     		        if (minFragSize >= sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall && tosend > minFragSize-(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall))
@@ -763,11 +780,11 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
                 //DWORD tempStartSendTick = ::GetTickCount();
 
                 lastSent = ::GetTickCount();
-
+				///snow:调用父类函数发送数据
 		        uint32 result = CEncryptedStreamSocket::Send(sendbuffer+sent,tosend); // deadlake PROXYSUPPORT - changed to AsyncSocketEx
 		        if (result == (uint32)SOCKET_ERROR){
 			        uint32 error = GetLastError();
-			        if (error == WSAEWOULDBLOCK){
+					if (error == WSAEWOULDBLOCK){  ///snow:数据包被阻塞，设置忙状态，统计发送字节数，直接返回，不再继续发送
                         m_bBusy = true;
 
                         //m_wasBlocked = true;
@@ -777,33 +794,35 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
                         return returnVal; // Send() blocked, onsend will be called when ready to send again
 			        } else{
                         // Send() gave an error
-                        anErrorHasOccured = true;
+						anErrorHasOccured = true;  ///snow:跳出本级while循环，后再跳出上级while循环
                         //DEBUG_ONLY( AddDebugLogLine(true,"EMSocket: An error has occured: %i", error) );
                     }
-                } else {
+                } else {   
+					///snow:没有发送错误，已经发送成功
                     // we managed to send some bytes. Perform bookkeeping.
                     m_bBusy = false;
                     m_hasSent = true;
 
-                    sent += result;
+					sent += result;  ///snow:本次调用已经发送的字节数，跟sendlen比较，如果小于sendlen，表示本次的数据包还没发送完毕，需要继续发送
 
                     // Log send bytes in correct class
                     if(m_currentPacket_is_controlpacket == false) {
-                        sentStandardPacketBytesThisCall += result;
+						sentStandardPacketBytesThisCall += result;   ///snow:统计标准包发送字节数
 
                         if(m_currentPackageIsFromPartFile == true) {
-                            m_numberOfSentBytesPartFile += result;
+							m_numberOfSentBytesPartFile += result;   ///snow:PartFile和CompleteFile各指什么？
                         } else {
                             m_numberOfSentBytesCompleteFile += result;
                         }
                     } else {
-                        sentControlPacketBytesThisCall += result;
+                        sentControlPacketBytesThisCall += result; ///snow:统计控制包发送字节数
                         m_numberOfSentBytesControlPacket += result;
                     }
-                }
-	        }
+				} ///snow:发送成功，继续执行while循环
+			}
+			///snow:while (sent < sendblen && .... end
 
-            if (sent == sendblen){
+			if (sent == sendblen){   ///snow:一个数据包已经发送完毕，删除sendbuffer,sendlen置0，如果是标准包，统计m_actualPayloadSizeSent
                 // we are done sending the current package. Delete it and set
                 // sendbuffer to NULL so a new packet can be fetched.
 		        delete[] sendbuffer;
@@ -819,10 +838,15 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
                 }
 
                 sent = 0;
-            }
-        }
-    }
+			}  ///没有else，就是说当sent ！= sendblen时，重新执行大while循环，如果是控制包，则满足4.2条件，重新发送该控制包；如果是标准包，再根据其它条件判断
+			///snow:fi(sent == sendblen)
+		}  ///snow:如果还没达到最大准备发送字节数，则继续从队列里取包，准备发送
+		///snow:while(sentStandardPacketBytesThisCall +  ... end
+	}
+	///snow:fi(byConnected == ES_CONNECTED...
 
+	///snow:同时满足两个条件：1、如果只允许发送控制包，
+	///snow: 2、控制包队列不为空，或者 sendbuffer不为空且当前包是控制包
     if(onlyAllowedToSendControlPacket && (!controlpacket_queue.IsEmpty() || sendbuffer != NULL && m_currentPacket_is_controlpacket)) {
         // enter control packet send queue
         // we might enter control packet queue several times for the same package,
