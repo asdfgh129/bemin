@@ -61,7 +61,7 @@ UploadBandwidthThrottler::~UploadBandwidthThrottler(void) {
 /**
  * Find out how many bytes that has been put on the sockets since the last call to this
  * method. Includes overhead of control packets.
- *
+ * ///snow:获取本次调用发送字节数并重置
  * @return the number of bytes that has been put on the sockets since the last call
  */
 uint64 UploadBandwidthThrottler::GetNumberOfSentBytesSinceLastCallAndReset() {
@@ -78,7 +78,7 @@ uint64 UploadBandwidthThrottler::GetNumberOfSentBytesSinceLastCallAndReset() {
 /**
  * Find out how many bytes that has been put on the sockets since the last call to this
  * method. Excludes overhead of control packets.
- *
+ * ///snow:OverHead指什么？
  * @return the number of bytes that has been put on the sockets since the last call
  */
 uint64 UploadBandwidthThrottler::GetNumberOfSentBytesOverheadSinceLastCallAndReset() {
@@ -96,7 +96,7 @@ uint64 UploadBandwidthThrottler::GetNumberOfSentBytesOverheadSinceLastCallAndRes
  * Find out the highest number of slots that has been fed data in the normal standard loop
  * of the thread since the last call of this method. This means all slots that haven't
  * been in the trickle state during the entire time since the last call.
- *
+ * ///snow:取最高活跃槽数
  * @return the highest number of fully activated slots during any loop since last call
  */
 uint32 UploadBandwidthThrottler::GetHighestNumberOfFullyActivatedSlotsSinceLastCallAndReset() {
@@ -122,7 +122,7 @@ uint32 UploadBandwidthThrottler::GetHighestNumberOfFullyActivatedSlotsSinceLastC
  *
  * It is possible to add a socket several times to the list without removing it inbetween,
  * but that should be avoided.
- *
+ * ///snow:将Sockct加到标准列表
  * @param index insert the socket at this place in the list. An index that is higher than the
  *              current number of sockets in the list will mean that the socket should be inserted
  *              last in the list.
@@ -135,7 +135,7 @@ void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSock
 		sendLocker.Lock();
 
 		RemoveFromStandardListNoLock(socket);
-		if(index > (uint32)m_StandardOrder_list.GetSize()) {
+		if(index > (uint32)m_StandardOrder_list.GetSize()) {  ///snow:添加到标准列表末尾
 			index = m_StandardOrder_list.GetSize();
         }
 		m_StandardOrder_list.InsertAt(index, socket);
@@ -172,7 +172,7 @@ bool UploadBandwidthThrottler::RemoveFromStandardList(ThrottledFileSocket* socke
  * This is an internal method that doesn't take the necessary lock before it removes
  * the socket. This method should only be called when the current thread already owns
  * the sendLocker lock!
- *
+ * ///snow:非线程安全函数，因为是内部函数，只在sendLocker已锁定的情况下被调用
  * @param socket address of the socket that should be removed from the list. If this socket
  *               does not exist in the list, this method will do nothing.
  */
@@ -180,7 +180,7 @@ bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket*
 	// Find the slot
 	int slotCounter = 0;
 	bool foundSocket = false;
-	while(slotCounter < m_StandardOrder_list.GetSize() && foundSocket == false) {
+	while(slotCounter < m_StandardOrder_list.GetSize() && foundSocket == false) {  ///snow:遍历m_StandardOrder_list，是否存在socket，有则删除
 		if(m_StandardOrder_list.GetAt(slotCounter) == socket) {
 			// Remove the slot
 			m_StandardOrder_list.RemoveAt(slotCounter);
@@ -190,8 +190,8 @@ bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket*
         }
 	}
 
-    if(foundSocket && m_highestNumberOfFullyActivatedSlots > (uint32)m_StandardOrder_list.GetSize()) {
-        m_highestNumberOfFullyActivatedSlots = m_StandardOrder_list.GetSize();
+	if(foundSocket && m_highestNumberOfFullyActivatedSlots > (uint32)m_StandardOrder_list.GetSize()) {    ///snow:如果有发现socket(因为被删除，列表改变）且m_highestNumberOfFullyActivatedSlots大于m_StandardOrder_list项数
+        m_highestNumberOfFullyActivatedSlots = m_StandardOrder_list.GetSize();  ///snow:设置m_highestNumberOfFullyActivatedSlots为m_StandardOrder_list项数
     }
 
     return foundSocket;
@@ -205,7 +205,7 @@ bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket*
 * overhead to simply call Send() in the socket for each double. Send() will
 * already have done its work when the second Send() is called, and will just
 * return with little cpu overhead.
-*
+* ///snow:将准备发送的控制包加入临时排队列表
 * @param socket address to the socket that requests to have controlpacket send
 *               to be called on it
 */
@@ -238,6 +238,11 @@ void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledControlSocket* socke
 		sendLocker.Lock();
     }
 
+	///*snow:总共有四个队列：m_ControlQueue_list
+	///                      m_ControlQueueFirst_list
+	///                      m_TempControlQueue_list
+	///                      m_TempControlQueueFirst_list 
+	///依次从四个队列里删除拟删除的socket
 	if(doRun) {
         // Remove this socket from control packet queue
         {
@@ -296,13 +301,13 @@ void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledControlSocket* socke
 		sendLocker.Unlock();
     }
 }
-
+///snow:同RemoveFromAllQueues(ThrottledControlSocket* socket)函数一样，比ControlSocket多调用一个RemoveFromStandardListNoLock(socket);
 void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket* socket) {
 	// Get critical section
 	sendLocker.Lock();
 
 	if(doRun) {
-		RemoveFromAllQueues(socket, false);
+		RemoveFromAllQueues(socket, false);  ///snow : bool lock参数没什么用，其实可以去掉，无论是true，还是false，还是得包含在sendLocker.Lock();，sendLocker.UnLock();中
 
 		// And remove it from upload slots
 		RemoveFromStandardListNoLock(socket);
@@ -325,7 +330,7 @@ void UploadBandwidthThrottler::EndThread() {
 
 	sendLocker.Unlock();
 
-	Pause(false);
+	Pause(false);  ///snow:SetEvent
 
 	// wait for the thread to signal that it has stopped looping.
 	threadEndedEvent->Lock();
@@ -339,6 +344,7 @@ void UploadBandwidthThrottler::Pause(bool paused) {
     }
 }
 
+///snow:solt的作用是什么？
 uint32 UploadBandwidthThrottler::GetSlotLimit(uint32 currentUpSpeed) {
     uint32 upPerClient = UPLOAD_CLIENT_DATARATE;
 
@@ -347,7 +353,7 @@ uint32 UploadBandwidthThrottler::GetSlotLimit(uint32 currentUpSpeed) {
 		upPerClient += currentUpSpeed/43;
 
 	if( upPerClient > 7680 )
-		upPerClient = 7680;
+		upPerClient = 7680;  ///snow:上限：7680
 
 	//now the final check
 
@@ -355,7 +361,7 @@ uint32 UploadBandwidthThrottler::GetSlotLimit(uint32 currentUpSpeed) {
 	if (currentUpSpeed > 12*1024)
 		nMaxSlots = (uint16)(((float)currentUpSpeed) / upPerClient);
 	else if (currentUpSpeed > 7*1024)
-		nMaxSlots = MIN_UP_CLIENTS_ALLOWED + 2;
+		nMaxSlots = MIN_UP_CLIENTS_ALLOWED + 2;   ///nMaxSolts = 4
 	else if (currentUpSpeed > 3*1024)
 		nMaxSlots = MIN_UP_CLIENTS_ALLOWED + 1;
 	else
@@ -435,12 +441,16 @@ UINT UploadBandwidthThrottler::RunInternal() {
         uint32 nCanSend = 0;
 
         sendLocker.Lock();
+		///snow:  i小于m_StandardOrder_list项数 且 满足下面任一条件：
+		///          1、i<3
+		///          2、i<GetSlotLimit()
+		///
         for (int i = 0; i < m_StandardOrder_list.GetSize() && (i < 3 || (UINT)i < GetSlotLimit(theApp.uploadqueue->GetDatarate())); i++){
             if (m_StandardOrder_list[i] != NULL && m_StandardOrder_list[i]->HasQueues()) {
-                nCanSend++;
+				nCanSend++;   ///snow:统计可以发送包数
 
                 if(m_StandardOrder_list[i]->IsBusy())
-					cBusy++;
+					cBusy++;   ///snow:统计阻塞包数
             }
 		}
         sendLocker.Unlock();
@@ -473,15 +483,15 @@ UINT UploadBandwidthThrottler::RunInternal() {
             if(nUploadStartTime == 0) {
 		        if (m_StandardOrder_list.GetSize() >= 3)
 			        nUploadStartTime = timeGetTime();
-            } else if(timeGetTime()- nUploadStartTime > SEC2MS(60)) {
+			} else if(timeGetTime()- nUploadStartTime > SEC2MS(60)) {   ///snow:开始上传超过1秒钟
 			    if (theApp.uploadqueue){
-				    if (nEstiminatedLimit == 0){ // no autolimit was set yet
+				    if (nEstiminatedLimit == 0){ // no autolimit was set yet  ///snow:nEstiminatedLimit尚未赋值，初值为0 （Estiminated估计为笔误）
 					    if (nSlotsBusyLevel >= 250){ // sockets indicated that the BW limit has been reached
-						    nEstiminatedLimit = theApp.uploadqueue->GetDatarate();
-						    allowedDataRate = min(nEstiminatedLimit, allowedDataRate);
+							nEstiminatedLimit = theApp.uploadqueue->GetDatarate();  ///snow:获取当前上传速率，跟允许的上传速率比较，取小值
+							allowedDataRate = min(nEstiminatedLimit, allowedDataRate);  ///snow:如果当前上传速率没达到或超过允许的上传速率，依然调整nSlotsBusyLevel值为-200
 						    nSlotsBusyLevel = -200;
                             if(thePrefs.GetVerbose() && estimateChangedLog) theApp.QueueDebugLogLine(false,_T("Throttler: Set inital estimated limit to %0.5f changesCount: %i loopsCount: %i"), (float)nEstiminatedLimit/1024.00f, changesCount, loopsCount);
-                            changesCount = 0;
+							changesCount = 0;  ///snow:作用沿不明
                             loopsCount = 0;
 					    }
 				    }
@@ -490,8 +500,8 @@ UINT UploadBandwidthThrottler::RunInternal() {
                             if(changesCount > 500 || changesCount > 300 && loopsCount > 1000 || loopsCount > 2000) {
                                 numberOfConsecutiveDownChanges = 0;
                             }
-                            numberOfConsecutiveDownChanges++;
-                            uint32 changeDelta = CalculateChangeDelta(numberOfConsecutiveDownChanges);
+							numberOfConsecutiveDownChanges++;   ///snow:numberOfConsecutiveDownChanges取值范围 0---7，参考CalculateChangeDelta（）
+							uint32 changeDelta = CalculateChangeDelta(numberOfConsecutiveDownChanges);  ///snow:取值范围 50-1024+512
 
                             // Don't lower speed below 1 KBytes/s
                             if(nEstiminatedLimit < changeDelta + 1024) {
@@ -543,7 +553,8 @@ UINT UploadBandwidthThrottler::RunInternal() {
             }
 		}
 
-        if(cBusy == nCanSend && m_StandardOrder_list.GetSize() > 0) {
+		///snow:全部阻塞了，不能再允许发送数据了，调整nSlotsBusyLevel为125
+		if(cBusy == nCanSend && m_StandardOrder_list.GetSize() > 0) {   
             allowedDataRate = 0;
             if(nSlotsBusyLevel < 125 && bUploadUnlimited) {
                 nSlotsBusyLevel = 125;
@@ -558,6 +569,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
             doubleSendSize = minFragSize; // don't send two packages at a time at very low speeds to give them a smoother load
 		}
 
+		///设置休眠时间，停止上传
 #define TIME_BETWEEN_UPLOAD_LOOPS 1
         uint32 sleepTime;
         if(allowedDataRate == _UI32_MAX || realBytesToSpend >= 1000 || allowedDataRate == 0 && nEstiminatedLimit == 0) {
@@ -572,7 +584,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
         }
 
         if(timeSinceLastLoop < sleepTime) {
-            Sleep(sleepTime-timeSinceLastLoop);
+			Sleep(sleepTime-timeSinceLastLoop);   ///snow:休眠一小会
         }
 
 		const DWORD thisLoopTick = timeGetTime();
@@ -582,7 +594,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
         sint64 bytesToSpend = 0;
 
         if(allowedDataRate != _UI32_MAX) {
-            // prevent overflow
+            // prevent overflow   ///snow:预防溢出，何解？
             if(timeSinceLastLoop == 0) {
                 // no time has passed, so don't add any bytes. Shouldn't happen.
                 bytesToSpend = 0; //realBytesToSpend/1000;
@@ -608,9 +620,17 @@ UINT UploadBandwidthThrottler::RunInternal() {
 
 		lastLoopTick = thisLoopTick;
 
-        if(bytesToSpend >= 1 || allowedDataRate == 0) {
-		    uint64 spentBytes = 0;
-		    uint64 spentOverhead = 0;
+		/************************************************** snow:start **************************************
+		/* 如果拟发送字节数>=1，或者允许上传速度==0，将所有temp队列中的包添加到正常队列末尾，
+		/*     当满足下面两个条件时：
+		/*        1、bytesToSpend > 0 && spentBytes < (uint64)bytesToSpend 或 allowedDataRate == 0 && spentBytes < 500
+		/*           表示已发送字节数小于拟发送字节数 或  允许上传不限速且才已发送数小于500    
+		/*        2、m_ControlQueueFirst_list或m_ControlQueue_list不为空
+		/*     发送控制包，并统计发送的字节数
+		*************************************************** snow:end **************************************/
+		if(bytesToSpend >= 1 || allowedDataRate == 0) {   ///snow:代表什么意思？
+			uint64 spentBytes = 0;     ///snow:标准包字节数+控制包字节数
+			uint64 spentOverhead = 0;  ///snow:只控制包字节数
     
 		    sendLocker.Lock();
     
@@ -628,7 +648,9 @@ UINT UploadBandwidthThrottler::RunInternal() {
     
 		    tempQueueLocker.Unlock();
     
-		    // Send any queued up control packets first
+			///snow:处理控制包列表
+		    // Send any queued up control packets first 
+			///snow:优先发送First队列，First队列发送完才发送正常队列
 		    while((bytesToSpend > 0 && spentBytes < (uint64)bytesToSpend || allowedDataRate == 0 && spentBytes < 500) && (!m_ControlQueueFirst_list.IsEmpty() || !m_ControlQueue_list.IsEmpty())) {
 			    ThrottledControlSocket* socket = NULL;
     
@@ -645,13 +667,13 @@ UINT UploadBandwidthThrottler::RunInternal() {
 				    spentOverhead += socketSentBytes.sentBytesControlPackets;
 			    }
 		    }
-    
+			///snow:处理标准包列表
 		    // Check if any sockets haven't gotten data for a long time. Then trickle them a package.
 		    for(uint32 slotCounter = 0; slotCounter < (uint32)m_StandardOrder_list.GetSize(); slotCounter++) {
 			    ThrottledFileSocket* socket = m_StandardOrder_list.GetAt(slotCounter);
     
 			    if(socket != NULL) {
-				    if(thisLoopTick-socket->GetLastCalledSend() > SEC2MS(1)) {
+					if(thisLoopTick-socket->GetLastCalledSend() > SEC2MS(1)) {   ///snow:距离上次调用超过1秒钟
 					    // trickle
 					    uint32 neededBytes = socket->GetNeededBytes();
     
@@ -676,6 +698,8 @@ UINT UploadBandwidthThrottler::RunInternal() {
             if(maxSlot > 0 && allowedDataRate/maxSlot < UPLOAD_CLIENT_DATARATE) {
                 maxSlot = allowedDataRate/UPLOAD_CLIENT_DATARATE;
             }
+
+			///snow:大于300K时启用大缓冲区
 			// if we are uploading fast, increase the sockets sendbuffers in order to be able to archive faster
 			// speeds
 			bool bUseBigBuffers = bAlwaysEnableBigSocketBuffers;
