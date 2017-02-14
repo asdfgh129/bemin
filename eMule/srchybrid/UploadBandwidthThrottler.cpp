@@ -122,7 +122,7 @@ uint32 UploadBandwidthThrottler::GetHighestNumberOfFullyActivatedSlotsSinceLastC
  *
  * It is possible to add a socket several times to the list without removing it inbetween,
  * but that should be avoided.
- * ///snow:将Sockct加到标准列表
+ * ///snow:将Socket加到标准列表
  * @param index insert the socket at this place in the list. An index that is higher than the
  *              current number of sockets in the list will mean that the socket should be inserted
  *              last in the list.
@@ -135,7 +135,7 @@ void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSock
 		sendLocker.Lock();
 
 		RemoveFromStandardListNoLock(socket);
-		if(index > (uint32)m_StandardOrder_list.GetSize()) {  ///snow:添加到标准列表末尾
+		if(index > (uint32)m_StandardOrder_list.GetSize()) {  ///snow:添加到标准列表末尾，m_StandardOrder_list中存储的是各个连接中的Socket，不是Packet，一个socket就是一个slot
 			index = m_StandardOrder_list.GetSize();
         }
 		m_StandardOrder_list.InsertAt(index, socket);
@@ -428,23 +428,24 @@ UINT UploadBandwidthThrottler::RunInternal() {
     bool lotsOfLog = false;
 	bool bAlwaysEnableBigSocketBuffers = false;
 
-	while(doRun) {
+	while(doRun) {  ///snow:循环一直执行，直到EndThread,置doRun=false
         pauseEvent->Lock();
 
 		DWORD timeSinceLastLoop = timeGetTime() - lastLoopTick;
 
 		// Get current speed from UploadSpeedSense
-		allowedDataRate = theApp.lastCommonRouteFinder->GetUpload();
+		allowedDataRate = theApp.lastCommonRouteFinder->GetUpload();  ///snow:如果上传限速有定义，返回上传限速；如果没定义，则返回当前上传速率+10K
 		
         // check busy level for all the slots (WSAEWOULDBLOCK status)
         uint32 cBusy = 0;
         uint32 nCanSend = 0;
 
         sendLocker.Lock();
-		///snow:  i小于m_StandardOrder_list项数 且 满足下面任一条件：
-		///          1、i<3
-		///          2、i<GetSlotLimit()
-		///
+		/********************************************* snow:start ************************  
+		/*   i小于m_StandardOrder_list项数 且 满足下面任一条件：
+		/*          1、i<3
+		/*          2、i<GetSlotLimit()
+		*********************************************snow:end ****************************/
         for (int i = 0; i < m_StandardOrder_list.GetSize() && (i < 3 || (UINT)i < GetSlotLimit(theApp.uploadqueue->GetDatarate())); i++){
             if (m_StandardOrder_list[i] != NULL && m_StandardOrder_list[i]->HasQueues()) {
 				nCanSend++;   ///snow:统计可以发送包数
@@ -461,7 +462,8 @@ UINT UploadBandwidthThrottler::RunInternal() {
 
         // When no upload limit has been set in options, try to guess a good upload limit.
 		bool bUploadUnlimited = (thePrefs.GetMaxUpload() == UNLIMITED);
-        if (bUploadUnlimited) {
+		///snow:没有限速的情况下
+		if (bUploadUnlimited) {
             loopsCount++;
 
             //if(lotsOfLog) theApp.QueueDebugLogLine(false,_T("Throttler: busy: %i/%i nSlotsBusyLevel: %i Guessed limit: %0.5f changesCount: %i loopsCount: %i"), cBusy, nCanSend, nSlotsBusyLevel, (float)nEstiminatedLimit/1024.00f, changesCount, loopsCount);

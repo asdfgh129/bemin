@@ -215,19 +215,19 @@ void LastCommonRouteFinder::SetPrefs(bool pEnabled, uint32 pCurUpload, uint32 pM
 
 	prefsLocker.Lock();
 
-	if(pMinUpload <= 1024) {
+	if(pMinUpload <= 1024) {   ///snow:1K
 		minUpload = 1024;
 	} else {
 		minUpload = pMinUpload;
     }
 
-	if(pMaxUpload != 0) {
+	if(pMaxUpload != 0) {   
 		maxUpload = pMaxUpload;
 		if(maxUpload < minUpload) {
             minUpload = maxUpload;
 		}
-	} else {
-		maxUpload = pCurUpload+10*1024; //_UI32_MAX;
+	} else {    ///snow:没有定义上传限速
+		maxUpload = pCurUpload+10*1024; //_UI32_MAX;   ///snow:当前上传速率+10K
 	}
 
 	if(pEnabled && m_enabled == false) {
