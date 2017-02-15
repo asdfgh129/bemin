@@ -40,7 +40,7 @@ static char THIS_FILE[] = __FILE__;
 UploadBandwidthThrottler::UploadBandwidthThrottler(void) {
 	m_SentBytesSinceLastCall = 0;
 	m_SentBytesSinceLastCallOverhead = 0;
-    m_highestNumberOfFullyActivatedSlots = 0;
+	m_highestNumberOfFullyActivatedSlots = 0;   ///snow:做什么用？没看出有什么用
 
 	threadEndedEvent = new CEvent(0, 1);
 	pauseEvent = new CEvent(TRUE, TRUE);
@@ -96,7 +96,7 @@ uint64 UploadBandwidthThrottler::GetNumberOfSentBytesOverheadSinceLastCallAndRes
  * Find out the highest number of slots that has been fed data in the normal standard loop
  * of the thread since the last call of this method. This means all slots that haven't
  * been in the trickle state during the entire time since the last call.
- * ///snow:取最高活跃槽数
+ * ///snow:取最高活跃槽数，意味着所有的Solt都没有处在滴灌状态
  * @return the highest number of fully activated slots during any loop since last call
  */
 uint32 UploadBandwidthThrottler::GetHighestNumberOfFullyActivatedSlotsSinceLastCallAndReset() {
@@ -191,6 +191,8 @@ bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket*
 	}
 
 	if(foundSocket && m_highestNumberOfFullyActivatedSlots > (uint32)m_StandardOrder_list.GetSize()) {    ///snow:如果有发现socket(因为被删除，列表改变）且m_highestNumberOfFullyActivatedSlots大于m_StandardOrder_list项数
+		///snow:m_highestNumberOfFullyActivatedSlots>m_StandardOrder_list.GetSize()的情况发生在连续两次带宽没用完的情况下：
+		///snow:m_highestNumberOfFullyActivatedSlots = m_StandardOrder_list.GetSize()+1;
         m_highestNumberOfFullyActivatedSlots = m_StandardOrder_list.GetSize();  ///snow:设置m_highestNumberOfFullyActivatedSlots为m_StandardOrder_list项数
     }
 
@@ -372,7 +374,7 @@ uint32 UploadBandwidthThrottler::GetSlotLimit(uint32 currentUpSpeed) {
 }
 
 
-///snow:consecutiveChange  连续变化，指什么呢？指nSlotsBusyLevel变化的频率
+///snow:consecutiveChange  连续变化，指什么呢？指nSlotsBusyLevel变化的频率，用来控制速度的调整幅度
 uint32 UploadBandwidthThrottler::CalculateChangeDelta(uint32 numberOfConsecutiveChanges) const {
     switch(numberOfConsecutiveChanges) {
         case 0: return 50;
@@ -435,6 +437,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
         pauseEvent->Lock();
 
 		DWORD timeSinceLastLoop = timeGetTime() - lastLoopTick;   ///snow:循环开始计时，统计本次循环运行时间，循环在不停运行，运行一轮就统计一次时间
+		///snow:lastLoopTick为上轮循环发送数据前的时刻
 
 		// Get current speed from UploadSpeedSense
 
@@ -513,7 +516,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
 				    if (nEstiminatedLimit == 0){ // no autolimit was set yet  ///snow:nEstiminatedLimit尚未赋值，初值为0 （Estiminated估计为Estimated的笔误）
 					    if (nSlotsBusyLevel >= 250){ // sockets indicated that the BW limit has been reached   ///snow:已经很忙了
 							nEstiminatedLimit = theApp.uploadqueue->GetDatarate();  ///snow:获取当前上传速率，跟允许的上传速率比较，取小值
-							allowedDataRate = min(nEstiminatedLimit, allowedDataRate);  ///snow:如果当前上传速率没达到或超过允许的上传速率，依然调整nSlotsBusyLevel值为-200
+							allowedDataRate = min(nEstiminatedLimit, allowedDataRate);  ///snow:如果当前上传速率没达到或超过允许的上传速率，调低allowedDataRate，调整nSlotsBusyLevel值为-200
 						    nSlotsBusyLevel = -200;
                             if(thePrefs.GetVerbose() && estimateChangedLog) theApp.QueueDebugLogLine(false,_T("Throttler: Set inital estimated limit to %0.5f changesCount: %i loopsCount: %i"), (float)nEstiminatedLimit/1024.00f, changesCount, loopsCount);
 							changesCount = 0;  ///snow:作用尚不明  nSlotsBusyLevel被重置为-200，changesCount，loopsCount均重置为0
@@ -572,7 +575,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
                             loopsCount = 0;
 					    }
 
-					    allowedDataRate = min(nEstiminatedLimit, allowedDataRate);
+						allowedDataRate = min(nEstiminatedLimit, allowedDataRate);  ///snow:在预估的上传速度或允许的上传速度两者之间取小值
 				    } 
 			    }
             }
@@ -605,7 +608,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
 			///snow:假设nEstiminatedLimit为2048(2K),则sleepTime=max(536*1000/2048,1)=262ms，假设nEstiminatedLimit为6144(6K),则sleepTime=max(2600*1000/6144,1)=424ms，
         } else {
             // sleep for just as long as we need to get back to having one byte to send
-			///snow:因为上传快了，realBytesToSpend为负数，假设限速300K/S，上次循环多上传了100K，
+			///snow:因为上传快了，realBytesToSpend为负数，假设限速300K/S，上次循环多上传了2K，
             sleepTime = max((uint32)ceil((double)(-realBytesToSpend + 1000)/allowedDataRate), TIME_BETWEEN_UPLOAD_LOOPS);
 			
         }
@@ -640,12 +643,12 @@ UINT UploadBandwidthThrottler::RunInternal() {
 			        theApp.QueueDebugLogLine(false,_T("UploadBandwidthThrottler: Time since last loop too long. time: %ims wanted: %ims Max: %ims"), timeSinceLastLoop, sleepTime, sleepTime + 2000);
         
                     timeSinceLastLoop = sleepTime + 2000;
-                    lastLoopTick = thisLoopTick - timeSinceLastLoop;
+					lastLoopTick = thisLoopTick - timeSinceLastLoop;  ///snow:多余的，必被后面的lastLoopTick = thisLoopTick; 覆盖
                 }
 
-				realBytesToSpend += allowedDataRate*timeSinceLastLoop;   ///snow:理论上应发送的字节数
+				realBytesToSpend += allowedDataRate*timeSinceLastLoop;   ///snow:理论上应发送的字节数，包括了上次循环没用完的999字节（如果上次循环带宽没用完，realBytesToSpend值被设为999）
 
-				bytesToSpend = realBytesToSpend/1000;  ///snow:按K计算
+				bytesToSpend = realBytesToSpend/1000;  ///snow:按K计算，根据当前设定的带宽，可以发送的字节数
             } 
 			else 
 			{
@@ -655,10 +658,10 @@ UINT UploadBandwidthThrottler::RunInternal() {
         } 
 		else {
             realBytesToSpend = 0; //_I64_MAX;
-            bytesToSpend = _I32_MAX;
+			bytesToSpend = _I32_MAX;   ///snow:能发送多少数据就发送多少
         }
 
-		lastLoopTick = thisLoopTick;
+		lastLoopTick = thisLoopTick;  ///snow:在发送数据前记下当前时刻，做为下一循环时的起始点。这样做的目的是本次循环统计的时间实际为上次循环发送数据的时间
 
 		/************************************************** snow:start **************************************
 		/* 如果拟发送字节数>=1，或者允许上传速度==0，将所有temp队列中的包添加到正常队列末尾，
@@ -668,7 +671,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
 		/*        2、m_ControlQueueFirst_list或m_ControlQueue_list不为空
 		/*     发送控制包，并统计发送的字节数
 		*************************************************** snow:end **************************************/
-		if(bytesToSpend >= 1 || allowedDataRate == 0) {   ///snow:代表什么意思？代表不允许增加上传或存在待上传的
+		if(bytesToSpend >= 1 || allowedDataRate == 0) {   ///snow:代表什么意思？代表不允许增加上传或存在待上传的数据，待上传的可以理解，allowedDataRate == 0是为什么呢？
 			uint64 spentBytes = 0;     ///snow:标准包字节数+控制包字节数
 			uint64 spentOverhead = 0;  ///snow:只统计控制包字节数
     
@@ -702,6 +705,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
                 }
     
 			    if(socket != NULL) {
+					///snow:发送bytesToSpend - spentBytes个字节，当allowedDataRate=0时，1个字节1个字节发送。为什么要1个字节发送？
                     SocketSentBytes socketSentBytes = socket->SendControlData(allowedDataRate > 0?(UINT)(bytesToSpend - spentBytes):1, minFragSize);
 				    uint32 lastSpentBytes = socketSentBytes.sentBytesControlPackets + socketSentBytes.sentBytesStandardPackets;
 				    spentBytes += lastSpentBytes;
@@ -714,9 +718,9 @@ UINT UploadBandwidthThrottler::RunInternal() {
 			    ThrottledFileSocket* socket = m_StandardOrder_list.GetAt(slotCounter);
     
 			    if(socket != NULL) {
-					if(thisLoopTick-socket->GetLastCalledSend() > SEC2MS(1)) {   ///snow:距离上次调用超过1秒钟
+					if(thisLoopTick-socket->GetLastCalledSend() > SEC2MS(1)) {   ///snow:距离上次调用超过1秒钟，超过一秒没发送数据的才发送
 					    // trickle
-					    uint32 neededBytes = socket->GetNeededBytes();
+						uint32 neededBytes = socket->GetNeededBytes(); ///snow:发送neededBytes个字节
     
 					    if(neededBytes > 0) {
 						    SocketSentBytes socketSentBytes = socket->SendFileAndControlData(neededBytes, minFragSize);
@@ -734,11 +738,13 @@ UINT UploadBandwidthThrottler::RunInternal() {
                 }
 		    }
 
+			///snow:前面处理的是控制包队列和m_StandardOrder_list中长时间没传输数据的SOCKET，下面才正式开始处理m_StandardOrder_list中的Socket
+						
 		    // Equal bandwidth for all slots
             uint32 maxSlot = (uint32)m_StandardOrder_list.GetSize();
-            if(maxSlot > 0 && allowedDataRate/maxSlot < UPLOAD_CLIENT_DATARATE) {
+			if(maxSlot > 0 && allowedDataRate/maxSlot < UPLOAD_CLIENT_DATARATE) {   ///snow:如果每solt的速率达不到3K，减少solt数
                 maxSlot = allowedDataRate/UPLOAD_CLIENT_DATARATE;
-            }
+			}   ///snow:这段代码决定了maxSlot不可能大于m_StandardOrder_list.GetSize()
 
 			///snow:上传速率大于300K，或者每Solt速率大于100K时启用大缓冲区
 			// if we are uploading fast, increase the sockets sendbuffers in order to be able to archive faster
@@ -755,7 +761,7 @@ UINT UploadBandwidthThrottler::RunInternal() {
                 if(rememberedSlotCounter >= (uint32)m_StandardOrder_list.GetSize() ||
                    rememberedSlotCounter >= maxSlot) {
                     rememberedSlotCounter = 0;
-                }
+				}  ///snow:rememberedSlotCounter在for循环开始时为0，maxSolt一定小于m_StandardOrder_list.GetSize()，所以for循环执行不会超过maxSolt次，rememberedSlotCounter的值不可能超过maxSolt,当rememberedSlotCounter==maxSolt时，循环执行完了，所以上面这段代码有啥意义？看不懂
 
                 ThrottledFileSocket* socket = m_StandardOrder_list.GetAt(rememberedSlotCounter);
 				if(socket != NULL) {
@@ -772,6 +778,8 @@ UINT UploadBandwidthThrottler::RunInternal() {
 
                 rememberedSlotCounter++;
             }
+
+			///snow:当spentBytes < (uint64)bytesToSpend时，带宽还没用完，继续发送数据，上面的代码发送的字节数是min(doubleSendSize, bytesToSpend-spentBytes)，下面的代码发送的字节数是（bytesToSpend-spentBytes），这里的spentBytes不同于上面代码的spentBytes，因为上面的代码又发送了些数据，所以spentBytes变小了，如果带宽用完了，下面的代码就不会执行了
 
 		    // Any bandwidth that hasn't been used yet are used first to last.
 			for(uint32 slotCounter = 0; slotCounter < (uint32)m_StandardOrder_list.GetSize() && bytesToSpend > 0 && spentBytes < (uint64)bytesToSpend; slotCounter++) {
@@ -794,6 +802,8 @@ UINT UploadBandwidthThrottler::RunInternal() {
 			}
 		    realBytesToSpend -= spentBytes*1000;  ///本轮循环应该发送的字节数-实际发送的字节数=尚未发送的字节数（多发送的字节数）
 
+			///snow:上面四段发送数据的代码不是并发执行的，而是从上往下顺序执行的，只有在上段发送字节数还不够时，下段代码才会被执行。每段代码都会遍历队列中的Socket
+
             // If we couldn't spend all allocated bandwidth this loop, some of it is allowed to be saved
             // and used the next loop
 			///snow:realBytesToSpend值越小，表示上传越快，多传送的数据越多
@@ -801,16 +811,16 @@ UINT UploadBandwidthThrottler::RunInternal() {
 			    sint64 newRealBytesToSpend = -(((sint64)m_StandardOrder_list.GetSize()+1)*minFragSize)*1000;
 				///snow:realBytesToSpend=newRealBytesToSpend为负值
 			    realBytesToSpend = newRealBytesToSpend;
-                lastTickReachedBandwidth = thisLoopTick;
+				lastTickReachedBandwidth = thisLoopTick;  ///snow:上次带宽用完的时刻,带宽没用完的话，可以留下两个周期使用
             } else {
-                uint64 bandwidthSavedTolerance = 0;
+				uint64 bandwidthSavedTolerance = 0;   ///snow:保留，未使用
 				if(realBytesToSpend > 0 && (uint64)realBytesToSpend > 999+bandwidthSavedTolerance) {  ///snow:本轮循环上传速率不够，尚余有数据没传送完
 			        sint64 newRealBytesToSpend = 999+bandwidthSavedTolerance;
 			        //theApp.QueueDebugLogLine(false,_T("UploadBandwidthThrottler::RunInternal(): Too high saved bytesToSpend. Limiting value. Old value: %I64i New value: %I64i"), realBytesToSpend, newRealBytesToSpend);
-			        realBytesToSpend = newRealBytesToSpend;
+					realBytesToSpend = newRealBytesToSpend;   ///snow:realBytesToSpend=999，未超过1000
 
-                    if(thisLoopTick-lastTickReachedBandwidth > max(1000, timeSinceLastLoop*2)) {
-                        m_highestNumberOfFullyActivatedSlots = m_StandardOrder_list.GetSize()+1;
+					if(thisLoopTick-lastTickReachedBandwidth > max(1000, timeSinceLastLoop*2)) {  ///snow:如果上次带宽用完的时刻已超过1秒或已超过两个循环的时间
+						m_highestNumberOfFullyActivatedSlots = m_StandardOrder_list.GetSize()+1;   ///snow:增加solt数
                         lastTickReachedBandwidth = thisLoopTick;
                         //theApp.QueueDebugLogLine(false, _T("UploadBandwidthThrottler: Throttler requests new slot due to bw not reached. m_highestNumberOfFullyActivatedSlots: %i m_StandardOrder_list.GetSize(): %i tick: %i"), m_highestNumberOfFullyActivatedSlots, m_StandardOrder_list.GetSize(), thisLoopTick);
                     }
