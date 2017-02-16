@@ -74,7 +74,8 @@ bool LastCommonRouteFinder::AddHostToCheck(uint32 ip) {
 	if(needMoreHosts && IsGoodIP(ip, true)) {
 		addHostLocker.Lock();
 
-		if(needMoreHosts) {
+		if(needMoreHosts) {   ///snow:这不是多余吗？在多线程中，needMoreHosts有可能被改变，在前面的语句中还是true，到这里已经是false了，
+			///snow:但是，LastCommonRouteFinder线程只会有一个呀？会有多个吗？
             gotEnoughHosts = AddHostToCheckNoLock(ip);
 		}
 
@@ -90,7 +91,7 @@ bool LastCommonRouteFinder::AddHostToCheckNoLock(uint32 ip) {
 	    hostsToTraceRoute.SetAt(ip, 0);
 
         if(hostsToTraceRoute.GetCount() >= 10) {
-			needMoreHosts = false;
+			needMoreHosts = false;   ///snow:改变了needMoreHosts的值
 
 			// Signal that there's hosts to fetch.
 			newTraceRouteHostEvent->SetEvent();
