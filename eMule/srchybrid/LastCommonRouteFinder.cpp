@@ -32,7 +32,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-
+///snow:Last Common Router指的是什么？
 LastCommonRouteFinder::LastCommonRouteFinder() {
 	minUpload = 1;
 	maxUpload = _UI32_MAX;
@@ -76,6 +76,7 @@ bool LastCommonRouteFinder::AddHostToCheck(uint32 ip) {
 
 		if(needMoreHosts) {   ///snow:这不是多余吗？在多线程中，needMoreHosts有可能被改变，在前面的语句中还是true，到这里已经是false了，
 			///snow:但是，LastCommonRouteFinder线程只会有一个呀？会有多个吗？
+			///snow:应该没有，因为所有的调用都是通过theApp.lastCommonRouteFinder，只有一个对象
             gotEnoughHosts = AddHostToCheckNoLock(ip);
 		}
 
@@ -387,7 +388,7 @@ UINT LastCommonRouteFinder::RunInternal() {
 
 					POSITION pos = hostsToTraceRoute.GetStartPosition();
 					int counter = 0;
-					while(pos != NULL) {
+					while(pos != NULL) {   ///遍历hostsToTraceRoute，向Log输出Host的IP
 						counter++;
 						uint32 hostToTraceRoute, dummy;
                         hostsToTraceRoute.GetNextAssoc(pos, hostToTraceRoute, dummy);
@@ -411,6 +412,7 @@ UINT LastCommonRouteFinder::RunInternal() {
 					bool failed = false;
 
 					uint32 curHost = 0;
+					///snow:TTL是 Time To Live的缩写，该字段指定IP包被路由器丢弃之前允许通过的最大网段数量。TTL是IPv4包头的一个8 bit字段。
 					for(uint32 ttl = 1; doRun && enabled && (curHost != 0 && ttl <= 64 || curHost == 0 && ttl < 5) && foundLastCommonHost == false && failed == false; ttl++) {
 						theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Pinging for TTL %i..."), ttl);
 
@@ -440,6 +442,7 @@ UINT LastCommonRouteFinder::RunInternal() {
 							uint32 curAddress, dummy;
                             hostsToTraceRoute.GetNextAssoc(pos, curAddress, dummy);
 
+							///snow:分别用PingUDP和PingICMP测试是否可以ping通
 							pingStatus.success = false;
 							for(int counter = 0; doRun && enabled && counter < 2 && (pingStatus.success == false || pingStatus.success == true && pingStatus.status != IP_SUCCESS && pingStatus.status != IP_TTL_EXPIRED_TRANSIT); counter++) {
 								pingStatus = pinger.Ping(curAddress, ttl, true, useUdp);
