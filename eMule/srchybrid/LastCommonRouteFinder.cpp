@@ -470,6 +470,7 @@ UINT LastCommonRouteFinder::RunInternal() {
 								}
 							}
 
+							///snow:Ping成功了，且TTL网络段数用尽了
 							if(pingStatus.success == true && pingStatus.status == IP_TTL_EXPIRED_TRANSIT) {
 								if(curHost == 0)
 									curHost = pingStatus.destinationAddress;
@@ -482,11 +483,15 @@ UINT LastCommonRouteFinder::RunInternal() {
 								// Remove it.
 								IN_ADDR stDestAddr;
 								stDestAddr.s_addr = curAddress;
+
+								///snow:在TTL耗尽前就Ping成功了，表示host离我们很近，不是我们想要的host，删除该Host
 								if(pingStatus.success == true && pingStatus.status == IP_SUCCESS) {
 									theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Host was too close! Removing this host. (TTL: %i IP: %s status: %i). Removing this host and restarting host collection."), ttl, ipstr(stDestAddr), pingStatus.status);
 
 									hostsToTraceRoute.RemoveKey(curAddress);
-								} else if(pingStatus.success == true && pingStatus.status == IP_DEST_HOST_UNREACHABLE) {
+								} 
+								///snow:目标Host不可达，怎么会Ping通呢？pingStatus.success == true并不表示ping通了，应该是表示没有发生SOCKET_ERROR
+								else if(pingStatus.success == true && pingStatus.status == IP_DEST_HOST_UNREACHABLE) {
 									theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Host unreacheable! (TTL: %i IP: %s status: %i). Removing this host. Status info follows."), ttl, ipstr(stDestAddr), pingStatus.status);
 									pinger.PIcmpErr(pingStatus.status);
 
