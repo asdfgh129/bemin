@@ -241,7 +241,7 @@ Pinger::~Pinger() {
 }
 
 PingStatus Pinger::Ping(uint32 lAddr, uint32 ttl, bool doLog, bool useUdp) {
-    if(useUdp && udpStarted) {
+	if(useUdp && udpStarted) {  ///snow:两个条件，useUdp,udpStarted。udpStarted没有启用，所以不可能执行PingUDP。
         return PingUDP(lAddr, ttl, doLog);
     } else {
         return PingICMP(lAddr, ttl, doLog);
@@ -454,7 +454,9 @@ PingStatus Pinger::PingICMP(uint32 lAddr, uint32 ttl, bool doLog) {
                                     TIMEOUT
                             );
 	float usResTime=m_time.Tick();
-    if (dwReplyCount != 0) {
+	///snow:Ping成功了
+	if (dwReplyCount != 0)
+	{
         long pingTime = *(u_long *) &(achRepData[8]);
 
         IN_ADDR stDestAddr;
@@ -476,7 +478,10 @@ PingStatus Pinger::PingICMP(uint32 lAddr, uint32 ttl, bool doLog) {
                                                         (u_long)(achRepData[8]),
                                                         returnValue.ttl);
         }
-    } else {
+    } 
+	///snow:Ping失败了
+	else   
+	{
         DWORD lastError = GetLastError();
         returnValue.success = false;
         returnValue.error = lastError;
