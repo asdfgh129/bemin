@@ -91,10 +91,12 @@ bool LastCommonRouteFinder::AddHostToCheckNoLock(uint32 ip) {
 	    //hostsToTraceRoute.AddTail(ip);
 	    hostsToTraceRoute.SetAt(ip, 0);
 
+		///snow:当hostsToTraceRoute中的个数到达10个时，激发newTraceRouteHostEvent事件
         if(hostsToTraceRoute.GetCount() >= 10) {
 			needMoreHosts = false;   ///snow:改变了needMoreHosts的值
 
 			// Signal that there's hosts to fetch.
+			///snow:激发新的Host加入TraceRoute事件
 			newTraceRouteHostEvent->SetEvent();
         }
     }
@@ -102,6 +104,7 @@ bool LastCommonRouteFinder::AddHostToCheckNoLock(uint32 ip) {
     return !needMoreHosts;
 }
 
+///snow:在CServerList::GiveServersForTraceRoute()中调用，从服务器列表中添加
 bool LastCommonRouteFinder::AddHostsToCheck(CTypedPtrList<CPtrList, CServer*> &list) {
     bool gotEnoughHosts = true;
 
@@ -112,6 +115,8 @@ bool LastCommonRouteFinder::AddHostsToCheck(CTypedPtrList<CPtrList, CServer*> &l
 			POSITION pos = list.GetHeadPosition();
 
             if(pos) {
+				
+				///snow:随机从列表中的第n个开始，忽略掉前n-1个，如果开始的个数是最后一个，则重置pos到HeadPosition
 				uint32 startPos = rand()/(RAND_MAX/(min(list.GetCount(), 100)));
 
 				for(uint32 skipCounter = 0; skipCounter < startPos && pos != NULL; skipCounter++) {
@@ -125,7 +130,7 @@ bool LastCommonRouteFinder::AddHostsToCheck(CTypedPtrList<CPtrList, CServer*> &l
 			    uint32 tryCount = 0;
 			    while(needMoreHosts && tryCount < (uint32)list.GetCount()) {
 				    tryCount++;
-				    CServer* server = list.GetNext(pos);
+					CServer* server = list.GetNext(pos);   ///snow:服务器
                     if(!pos) {
                         pos = list.GetHeadPosition();
                     }
@@ -145,6 +150,7 @@ bool LastCommonRouteFinder::AddHostsToCheck(CTypedPtrList<CPtrList, CServer*> &l
     return gotEnoughHosts;
 }
 
+///snow:在CClientList::GiveClientsForTraceRoute() 中调用，从连接的客户端列表中添加
 bool LastCommonRouteFinder::AddHostsToCheck(CUpDownClientPtrList &list) {
     bool gotEnoughHosts = true;
 
@@ -168,7 +174,7 @@ bool LastCommonRouteFinder::AddHostsToCheck(CUpDownClientPtrList &list) {
 			    uint32 tryCount = 0;
 			    while(needMoreHosts && tryCount < (uint32)list.GetCount()) {
 				    tryCount++;
-                    CUpDownClient* client = list.GetNext(pos);
+					CUpDownClient* client = list.GetNext(pos);   ///snow:客户端
                     if(!pos) {
                         pos = list.GetHeadPosition();
                     }
@@ -191,7 +197,7 @@ bool LastCommonRouteFinder::AddHostsToCheck(CUpDownClientPtrList &list) {
 CurrentPingStruct LastCommonRouteFinder::GetCurrentPing() {
 	CurrentPingStruct returnVal;
 
-	if(m_enabled) {
+	if(m_enabled) {   ///snow:启用UploadSpeedSense，下面所取的值在"选项"-->Extended-->UploadSpeedSense中定义
 		pingLocker.Lock();
 		returnVal.state = m_state;
 		returnVal.latency = m_pingAverage;
@@ -282,6 +288,10 @@ void LastCommonRouteFinder::InitiateFastReactionPeriod() {
     prefsLocker.Unlock();
 }
 
+
+///snow:此函数在UploadBandwidthThrottler::RunInternal()
+///snow:      和CUploadQueue::AcceptNewClient(uint32 curUploadSlots)、
+///snow:        CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)中调用
 uint32 LastCommonRouteFinder::GetUpload() {
 	uint32 returnValue;
 
@@ -370,6 +380,12 @@ UINT LastCommonRouteFinder::RunInternal() {
 			bool atLeastOnePingSucceded = false;
 			while(doRun && enabled && foundLastCommonHost == false) {
 				uint32 traceRouteTries = 0;
+				/************************************snow:start*************************************************
+				/* 满足以下条件：
+				/*     1、doRun && enabled && foundLastCommonHost == false
+				/*     2、traceRouteTries < 5 || hasSucceededAtLeastOnce && traceRouteTries < _UI32_MAX
+				/*     3、hostsToTraceRoute.GetCount() < 10 || hasSucceededAtLeastOnce
+				*************************************snow:end***************************************************/
 				while(doRun && enabled && foundLastCommonHost == false && (traceRouteTries < 5 || hasSucceededAtLeastOnce && traceRouteTries < _UI32_MAX) && (hostsToTraceRoute.GetCount() < 10 || hasSucceededAtLeastOnce)) {
 					traceRouteTries++;
 
@@ -413,6 +429,7 @@ UINT LastCommonRouteFinder::RunInternal() {
 
 					uint32 curHost = 0;
 					///snow:TTL是 Time To Live的缩写，该字段指定IP包被路由器丢弃之前允许通过的最大网段数量。TTL是IPv4包头的一个8 bit字段。
+					///snow:从ttl=1开始ping Host
 					for(uint32 ttl = 1; doRun && enabled && (curHost != 0 && ttl <= 64 || curHost == 0 && ttl < 5) && foundLastCommonHost == false && failed == false; ttl++) {
 						theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Pinging for TTL %i..."), ttl);
 
@@ -428,6 +445,21 @@ UINT LastCommonRouteFinder::RunInternal() {
                         uint32 hostsToTraceRouteCounter = 0;
                         bool failedThisTtl = false;
 						POSITION pos = hostsToTraceRoute.GetStartPosition();
+
+						/***************************************snow:start*******************************************
+						/* While循环需满足四个条件
+						/*     1、doRun、enabled 为true；doRun表示线程正在运行，enabled表示DynUpEnable，启用动态上传速度控制
+						/*     2、failed、failedThisTtl为false；大循环或本TTL运行期间尚未返回错误
+						/*     3、pos != NULL；hostsToTraceRoute还未到末尾
+						/*     4、lastDestinationAddress == 0 || lastDestinationAddress == curHost；当pingStatus.success == true && pingStatus.status == IP_TTL_EXPIRED_TRANSIT时
+						/*        4.1、while循环第一轮(错了，不是循环第一轮，是发现第一个满足条件的Host)：curHost==0，所以curHost = pingStatus.destinationAddress;-->curHost==lastDestinationAddress-->循环继续
+						/*        4.2、第二轮及以后时，curHost = pingStatus.destinationAddress（上一轮的值）lastDestinationAddress = pingStatus.destinationAddress（本轮的值）;
+						/*             curHost!=lastDestinationAddress，循环不再继续
+						/*  While循环不再继续的条件：
+						/*     1、发现了两个HOST可用；
+						/*     2、超时，且本轮TTL已经ping了两个以上Host，且均不成功
+						/*     3、列表中的Host数小于9个，
+						*****************************************snow:end**********************************************/
                         while(doRun && enabled && failed == false && failedThisTtl == false && pos != NULL &&
                               ( lastDestinationAddress == 0 || lastDestinationAddress == curHost)) // || pingStatus.success == false && pingStatus.error == IP_REQ_TIMED_OUT ))
 						{
@@ -453,7 +485,7 @@ UINT LastCommonRouteFinder::RunInternal() {
                                     pingStatus.status != IP_SUCCESS &&
                                     pingStatus.status != IP_TTL_EXPIRED_TRANSIT
                                    ) &&
-                                   counter < 3-1)
+								   counter < 3-1)   ///snow:ping失败了，休眠1秒，，换种方法 UDP<-->ICMP
                                 {
 									IN_ADDR stDestAddr;
 									stDestAddr.s_addr = curAddress;
@@ -470,14 +502,17 @@ UINT LastCommonRouteFinder::RunInternal() {
 								}
 							}
 
-							///snow:Ping成功了，且TTL网络段数用尽了
+							///snow:根据上面的Ping测试结果，分别进行处理：
+							///snow:  1、Ping成功了，且TTL网络段数用尽了，给curHost赋值，发现了lastDestinationAddress
 							if(pingStatus.success == true && pingStatus.status == IP_TTL_EXPIRED_TRANSIT) {
-								if(curHost == 0)
+								if(curHost == 0)   ///snow:while循环第一轮(不是第一轮，是第一次满足条件），curHost==0，表示发现的第一个可用Host,所以curHost = pingStatus.destinationAddress;-->curHost==lastDestinationAddress-->循环继续
 									curHost = pingStatus.destinationAddress;
 								atLeastOnePingSucceded = true;
 								lastSuccedingPingAddress = curAddress;
                                 lastDestinationAddress = pingStatus.destinationAddress;
-							} else {
+							} 
+							///snow: 2、Ping失败了,包括几种情况:
+							else {
 								// failed to ping this host for some reason.
 								// Or we reached the actual host we are pinging. We don't want that, since it is too close.
 								// Remove it.
@@ -490,18 +525,18 @@ UINT LastCommonRouteFinder::RunInternal() {
 
 									hostsToTraceRoute.RemoveKey(curAddress);
 								} 
-								///snow:目标Host不可达，怎么会Ping通呢？pingStatus.success == true并不表示ping通了，应该是表示没有发生SOCKET_ERROR
+								///snow:目标Host不可达(没有相应的路由），怎么会Ping通呢？pingStatus.success == true并不表示ping通了，应该是表示没有发生SOCKET_ERROR
 								else if(pingStatus.success == true && pingStatus.status == IP_DEST_HOST_UNREACHABLE) {
 									theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Host unreacheable! (TTL: %i IP: %s status: %i). Removing this host. Status info follows."), ttl, ipstr(stDestAddr), pingStatus.status);
 									pinger.PIcmpErr(pingStatus.status);
 
 									hostsToTraceRoute.RemoveKey(curAddress);
-                                } else if(pingStatus.success == true) {
+								} else if(pingStatus.success == true) {   ///snow:没有返回SOCKET_ERROR，但也没有ping通
 									theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Unknown ping status! (TTL: %i IP: %s status: %i). Reason follows. Changing ping method to see if it helps."), ttl, ipstr(stDestAddr), pingStatus.status);
 									pinger.PIcmpErr(pingStatus.status);
 									useUdp = !useUdp;
-								} else {
-									if(pingStatus.error == IP_REQ_TIMED_OUT) {
+								} else {   ///snow:pingStatus.success == false
+									if(pingStatus.error == IP_REQ_TIMED_OUT) {   ///snow：超时，如果ping 了两个以上且没有发现成功Ping通的Host,failedThisTtl = true;退出循环
 										theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Timeout when pinging a host! (TTL: %i IP: %s Error: %i). Keeping host. Error info follows."), ttl, ipstr(stDestAddr), pingStatus.error);
 										pinger.PIcmpErr(pingStatus.error);
 
@@ -509,31 +544,33 @@ UINT LastCommonRouteFinder::RunInternal() {
                                             // several pings have timed out on this ttl. Probably we can't ping on this ttl at all
                                             failedThisTtl = true;
                                         }
-                                    } else {
+									} else {  ///snow:改变Ping方法（UDP、ICMP互换）
 									    theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Unknown pinging error! (TTL: %i IP: %s status: %i). Reason follows. Changing ping method to see if it helps."), ttl, ipstr(stDestAddr), pingStatus.error);
 										pinger.PIcmpErr(pingStatus.error);
     									useUdp = !useUdp;
 									}
 								}
 
-                                if(hostsToTraceRoute.GetSize() <= 8) {
+								if(hostsToTraceRoute.GetSize() <= 8) {  ///snow:本TTL值时超过两个的Host不符合要求(IP_SUCCESS,IP_DEST_HOST_UNREACHABLE时会移除HOST）， failed = true;重新搜集Host
 									theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: To few hosts to traceroute left. Restarting host colletion."));
-                                    failed = true;
+                                    failed = true;   ///跳出for循环
                                 }
 							}
-						}
+						}///snow :end of while
 
-						if(failed == false) {
-							if(curHost != 0 && lastDestinationAddress != 0) {
-								if(lastDestinationAddress == curHost) {
+	
+						if(failed == false) {   ///snow:没有遇到失败
+							if(curHost != 0 && lastDestinationAddress != 0)  ///snow:本轮TTL值时有发现可用Host
+							{   
+								if(lastDestinationAddress == curHost) {    ///snow:只发现一个
 									IN_ADDR stDestAddr;
 									stDestAddr.s_addr = curHost;
 									theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Host at TTL %i: %s"), ttl, ipstr(stDestAddr));
 
 									lastCommonHost = curHost;
 									lastCommonTTL = ttl;
-								} else /*if(lastSuccedingPingAddress != 0)*/ {
-									foundLastCommonHost = true;
+								} else /*if(lastSuccedingPingAddress != 0)*/ {  ///snow:两个或以上
+									foundLastCommonHost = true;   ///snow:跳出大for循环
 									hostToPing = lastSuccedingPingAddress;
 
 									CString hostToPingString = ipstr(hostToPing);
@@ -548,7 +585,9 @@ UINT LastCommonRouteFinder::RunInternal() {
 										theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Found differing host at TTL %i, but last ttl couldn't be pinged so we don't know last common host. Taking a chance and using first differing ip as last commonhost. Host to ping: %s. Faked LastCommonHost: %s"), ttl, hostToPingString, lastCommonHostString);
 									}
 								}
-							} else {
+							} 
+							else  ///snow:没发现可用Host
+							{
 								if(ttl < 4) {
 									theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Could perform no ping at all at TTL %i. Trying next ttl."), ttl);
 								} else {
@@ -556,10 +595,11 @@ UINT LastCommonRouteFinder::RunInternal() {
                                 }
 								lastCommonHost = 0;
 							}
-						}
-					}
+						}   ///snow: end of if(failed=false)
+					} ///snow:end of for  执行下一TTL值
 
-					if(foundLastCommonHost == false && traceRouteTries >= 3) {
+					
+					if(foundLastCommonHost == false && traceRouteTries >= 3) {   ///snow:执行了3次while循环 while(doRun && enabled && foundLastCommonHost == false && (traceRouteTries < 5 || hasSucceededAtLeastOnce && traceRouteTries < _UI32_MAX) && (hostsToTraceRoute.GetCount() < 10 || hasSucceededAtLeastOnce))
 						theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Tracerouting failed several times. Waiting a few minutes before trying again."));
 
                         SetUpload(maxUpload);
@@ -578,9 +618,10 @@ UINT LastCommonRouteFinder::RunInternal() {
 			        if(m_enabled == false) {
 				        enabled = false;
                     }
-				}
+				}  ///snow:end of while(doRun && enabled && foundLastCommonHost == false && (traceRouteTries < 5 || hasSucceededAtLeastOnce && traceRouteTries < _UI32_MAX) && (hostsToTraceRoute.GetCount() < 10 || hasSucceededAtLeastOnce))
 
-                if(enabled) {
+                
+				if(enabled) {
 				    theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Done tracerouting. Evaluating results."));
 
 				    if(foundLastCommonHost == true) {
@@ -606,8 +647,9 @@ UINT LastCommonRouteFinder::RunInternal() {
 					    thePrefs.SetDynUpEnabled(false);
 				    }
                 }
-			}
+			}  ///snow:end of while(doRun && enabled && foundLastCommonHost == false)
 
+			
 			if(m_enabled == false) {
 				enabled = false;
             }
