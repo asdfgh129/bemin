@@ -683,14 +683,14 @@ UINT LastCommonRouteFinder::RunInternal() {
 
 			// PENDING:
 			prefsLocker.Lock();
-			uint64 lowestInitialPingAllowed = m_LowestInitialPingAllowed;  ///snow:指什么呢？
+			uint64 lowestInitialPingAllowed = m_LowestInitialPingAllowed;  ///snow:指什么呢？初始值20ms
 			prefsLocker.Unlock();
 
 			uint32 initial_ping = _I32_MAX;
 
 			bool foundWorkingPingMethod = false;   ///snow:没有启用！
 			// finding lowest ping
-			///snow:隔0.2秒Ping一次，总共Ping10次，无论成功还是失败，Ping足10次
+			///snow:隔0.2秒Ping一次，总共Ping10次，无论成功还是失败，Ping足10次，确定initial_ping值（最小20）
 			for(int initialPingCounter = 0; doRun && enabled && initialPingCounter < 10; initialPingCounter++) {
 				Sleep(200);
 
@@ -699,7 +699,16 @@ UINT LastCommonRouteFinder::RunInternal() {
 				if (pingStatus.success && pingStatus.status == IP_TTL_EXPIRED_TRANSIT) {  ///snow:ping成功
 					foundWorkingPingMethod = true;
 
-					if(pingStatus.delay > 0 && pingStatus.delay < initial_ping) {
+					/*********************************************snow:start************************************************************
+					/*        first:delay=30<_I32_MAX initial_ping=max(30,20)=30
+					/*        second:delay=25<initial_ping initial_ping=max(25,20)=25
+					/*        third:delay=35>initial_ping initial_ping=25
+					/*        fourth:delay=18<initial_ping initial_ping=max(18,20)=20
+					/*        fifth:delay=22>initial_ping initial_ping=20
+					/*        ......
+					/*        delay如果有一次低于20，则initial_ping=20，否则取10次中的最小值
+					**********************************************snow:end*************************************************************/
+					if(pingStatus.delay > 0 && pingStatus.delay < initial_ping) {   
 						initial_ping = (UINT)max(pingStatus.delay, lowestInitialPingAllowed);
                     }
 				} else {   ///snow:失败
@@ -724,8 +733,9 @@ UINT LastCommonRouteFinder::RunInternal() {
 
 			// if all pings returned 0, initial_ping will not have been changed from default value.
 			// then set initial_ping to lowestInitialPingAllowed
+			///snow:上次Ping10次全失败了，initial_ping没被变更，初始化initial_ping=20
 			if(initial_ping == _I32_MAX)
-                initial_ping = (UINT)lowestInitialPingAllowed;
+                initial_ping = (UINT)lowestInitialPingAllowed;   
 
 			uint32 upload = 0;
 
@@ -739,7 +749,7 @@ UINT LastCommonRouteFinder::RunInternal() {
                 }
 				prefsLocker.Lock();
 				upload = m_CurUpload;
-				///snow:将upload限定在minUpload和maxUpload之间
+				///snow:将upload限定在minUpload和maxUpload之间，minUpload=1,maxUpload在“选项”-->connection-->Upload limit中设定
 				if(upload < minUpload) {
 					upload = minUpload;
                 }
@@ -771,10 +781,10 @@ UINT LastCommonRouteFinder::RunInternal() {
 			DWORD lastUploadReset = 0;
 
 			while(doRun && enabled && restart == false) {
-				DWORD ticksBetweenPings = 1000;  ///snow:设定Ping间隔
+				DWORD ticksBetweenPings = 1000;  ///snow:设定Ping间隔，125<ticksBetweenPings<1000
 				if(upload > 0) {
 					// ping packages being 64 bytes, this should use 1% of bandwidth (one hundredth of bw).
-					ticksBetweenPings = (64*100*1000)/upload;
+					ticksBetweenPings = (64*100*1000)/upload;  ///snow:upload=100*1024 ticksBetweenPings=64
 
 					if(ticksBetweenPings < 125) {
 					    // never ping more than 8 packages a second
@@ -850,6 +860,7 @@ UINT LastCommonRouteFinder::RunInternal() {
 
 				uint32 raw_ping = soll_ping; // this value will cause the upload speed not to change at all.
 
+				///snow:ping测试hostToPing，如果Ping成功，设置raw_ping=pingstatus.delay，如果失败，则测试60次，若还不成功，则重新开始Try
 				bool pingFailure = false;        
 				for(uint64 pingTries = 0; doRun && enabled && (pingTries == 0 || pingFailure) && pingTries < 60; pingTries++) {
                     if(m_enabled == false) {
@@ -859,7 +870,7 @@ UINT LastCommonRouteFinder::RunInternal() {
 					// ping the host to ping
 					PingStatus pingStatus = pinger.Ping(hostToPing, lastCommonTTL, false, useUdp);
 
-					if(pingStatus.success && pingStatus.status == IP_TTL_EXPIRED_TRANSIT) {  ///snow:成功了
+					if(pingStatus.success && pingStatus.status == IP_TTL_EXPIRED_TRANSIT) {  ///snow:成功了,设置raw_ping=pingStatus.delay，退出for循环
 						if(pingStatus.destinationAddress != lastCommonHost) {   ///snow:路由器不再是原先的路由器，网络拓扑结构改变
 							// something has changed about the topology! We got another ip back from this ttl than expected.
 							// Do the tracerouting again to figure out new topology
@@ -872,16 +883,16 @@ UINT LastCommonRouteFinder::RunInternal() {
 
 						raw_ping = (uint32)pingStatus.delay;
 
-						if(pingFailure) {
+						if(pingFailure) {  ///snow:在上次ping失败之后，值被置为true，本次成功了，重置为false.
 							// only several pings in row should fails, the total doesn't count, so reset for each successful ping
 							pingFailure = false;
 
 							//theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Ping #%i successful. Continuing."), pingTries);
 						}
 					} else {   ///snow:ping失败了
-						raw_ping = soll_ping*3+initial_ping*3; // this value will cause the upload speed be lowered.
+						raw_ping = soll_ping*3+initial_ping*3; // this value will cause the upload speed be lowered.  ///snow:这条语句没有用呀？raw_ping只在restart==false下才有用，ping失败了，restart=true，raw_ping根本没有用到
 
-						pingFailure = true;
+						pingFailure = true;   ///snow:失败的情况下，for循环继续，执行60次
 
                         if(m_enabled == false) {
 				            enabled = false;
@@ -896,7 +907,7 @@ UINT LastCommonRouteFinder::RunInternal() {
                     if(m_enabled == false) {
 				        enabled = false;
                     }
-				}
+				}///snow:end of for(pingTries<60||pingFailure)
 
 				if(pingFailure) {
                     if(enabled) {
@@ -905,6 +916,7 @@ UINT LastCommonRouteFinder::RunInternal() {
 					restart = true;
 				}
 
+				///snow:ping通hostToPing
 				if(restart == false) {
 					if(raw_ping > 0 && raw_ping < initial_ping && initial_ping > lowestInitialPingAllowed) {
 						theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: New lowest ping: %i ms. Old: %i ms"), max(raw_ping,lowestInitialPingAllowed), initial_ping);
