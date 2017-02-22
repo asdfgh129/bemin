@@ -347,6 +347,8 @@ UINT AFX_CDECL LastCommonRouteFinder::RunProc(LPVOID pParam) {
 /**
  * @return always returns 0.
  */
+///snow:通过Ping测试ServerList或ClientList中的10个IP，获取最后的公共路由器（ping10个IP都需经过的最后一个路由器），以及到这个路由器的主机IP
+///snow:通过ping主机IP取得延迟时间，计算Upload速度，对比当前上传速度，进行调整
 UINT LastCommonRouteFinder::RunInternal() {
 	Pinger pinger;
 	bool hasSucceededAtLeastOnce = false;
