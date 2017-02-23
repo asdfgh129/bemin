@@ -32,7 +32,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-///snow:Last Common Router指的是什么？
+///snow:Last Common Router指的是什么？最后的共用路由器：从本机到所有远程机的路径上都必须经过的最后一个路由器（路径分叉的起点）
 LastCommonRouteFinder::LastCommonRouteFinder() {
 	minUpload = 1;
 	maxUpload = _UI32_MAX;
@@ -77,6 +77,7 @@ bool LastCommonRouteFinder::AddHostToCheck(uint32 ip) {
 		if(needMoreHosts) {   ///snow:这不是多余吗？在多线程中，needMoreHosts有可能被改变，在前面的语句中还是true，到这里已经是false了，
 			///snow:但是，LastCommonRouteFinder线程只会有一个呀？会有多个吗？
 			///snow:应该没有，因为所有的调用都是通过theApp.lastCommonRouteFinder，只有一个对象
+			///snow:但是，有可能是不同线程调用theApp.lastCommonRouteFinder
             gotEnoughHosts = AddHostToCheckNoLock(ip);
 		}
 
@@ -218,7 +219,7 @@ bool LastCommonRouteFinder::AcceptNewClient() {
 	return acceptNewClient || !m_enabled; // if enabled, then return acceptNewClient, otherwise return true
 }
 
-///snow:设置"选项"中的Extended-->UploadSpeedSense中的值，但不会写入到preferences.ini中
+///snow:设置"选项"中的Extended-->UploadSpeedSense中的值，但不会写入到preferences.ini中，相反的是，由thePrefes读取ini中的值，赋值给本类中的各成员变量
 ///snow:由 CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /*idEvent*/, DWORD /*dwTime*/)调用
 void LastCommonRouteFinder::SetPrefs(bool pEnabled, uint32 pCurUpload, uint32 pMinUpload, uint32 pMaxUpload, bool pUseMillisecondPingTolerance, double pPingTolerance, uint32 pPingToleranceMilliseconds, uint32 pGoingUpDivider, uint32 pGoingDownDivider, uint32 pNumberOfPingsForAverage, uint64 pLowestInitialPingAllowed) {
 	bool sendEvent = false;
@@ -240,6 +241,7 @@ void LastCommonRouteFinder::SetPrefs(bool pEnabled, uint32 pCurUpload, uint32 pM
 		maxUpload = pCurUpload+10*1024; //_UI32_MAX;   ///snow:当前上传速率+10K
 	}
 
+	///snow:设置界面右下角状态栏区域的显示
 	if(pEnabled && m_enabled == false) {
 		sendEvent = true;
 		// this will show the area for ping info in status bar.
