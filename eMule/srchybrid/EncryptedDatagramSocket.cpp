@@ -160,6 +160,7 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE* pbyBufIn, int nBufLen,
 	if (nResult <= CRYPT_HEADER_WITHOUTPADDING /*|| !thePrefs.IsClientCryptLayerSupported()*/)
 		return nResult;
 
+	///snow:是未加密的包，是下面的6种类型
 	switch (pbyBufIn[0]){
 		case OP_EMULEPROT:
 		case OP_KADEMLIAPACKEDPROT:
@@ -170,11 +171,13 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE* pbyBufIn, int nBufLen,
 			return nResult; // no encrypted packet (see description on top)
 	}
 
+	///snow:如果不是上面的6种，尝试解密
 	// might be an encrypted packet, try to decrypt
 	RC4_Key_Struct keyReceiveKey;
 	uint32 dwValue = 0;
 	// check the marker bit which type this packet could be and which key to test first, this is only an indicator since old clients have it set random
 	// see the header for marker bits explanation
+	///snow:三种包类型：kad packet with NodeID as key、ed2k packet、kad packet with ReceiverKey as key
 	byte byCurrentTry = ((pbyBufIn[0] & 0x03) == 3) ? 1 : (pbyBufIn[0] & 0x03);
 	byte byTries;
 	if (Kademlia::CKademlia::GetPrefs() == NULL) {
@@ -194,9 +197,9 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE* pbyBufIn, int nBufLen,
 			bKad = true;
 			bKadRecvKeyUsed = false;
 			if (Kademlia::CKademlia::GetPrefs()) {
-				uchar achKeyData[18];
+				uchar achKeyData[18];   ///snow:18个字节
 				memcpy(achKeyData, Kademlia::CKademlia::GetPrefs()->GetKadID().GetData(), 16);
-				memcpy(achKeyData + 16, pbyBufIn + 1, 2); // random key part sent from remote client
+				memcpy(achKeyData + 16, pbyBufIn + 1, 2); // random key part sent from remote client  ///snow:取第2、第3字节
 				md5.Calculate(achKeyData, sizeof(achKeyData));
 			}
 		}
@@ -204,11 +207,11 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE* pbyBufIn, int nBufLen,
 			// ed2k packet
 			bKad = false;
 			bKadRecvKeyUsed = false;
-			uchar achKeyData[23];
+			uchar achKeyData[23];   ///snow:23个字节
 			md4cpy(achKeyData, thePrefs.GetUserHash());
 			achKeyData[20] = MAGICVALUE_UDP;
 			memcpy(achKeyData + 16, &dwIP, 4);
-			memcpy(achKeyData + 21, pbyBufIn + 1, 2); // random key part sent from remote client
+			memcpy(achKeyData + 21, pbyBufIn + 1, 2); // random key part sent from remote client  ///snow:取第2、第3字节
 			md5.Calculate(achKeyData, sizeof(achKeyData));
 		}
 		else if (byCurrentTry == 2) {
@@ -218,15 +221,15 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE* pbyBufIn, int nBufLen,
 			if (Kademlia::CKademlia::GetPrefs()) {
 				uchar achKeyData[6];
 				PokeUInt32(achKeyData, Kademlia::CPrefs::GetUDPVerifyKey(dwIP));
-				memcpy(achKeyData + 4, pbyBufIn + 1, 2); // random key part sent from remote client
+				memcpy(achKeyData + 4, pbyBufIn + 1, 2); // random key part sent from remote client ///snow:取第2、第3字节
 				md5.Calculate(achKeyData, sizeof(achKeyData));
 			}
 		}
 		else
 			ASSERT( false );
 
-		RC4CreateKey(md5.GetRawHash(), 16, &keyReceiveKey, true);
-		RC4Crypt(pbyBufIn + 3, (uchar*)&dwValue, sizeof(dwValue), &keyReceiveKey);
+		RC4CreateKey(md5.GetRawHash(), 16, &keyReceiveKey, true);///snow:RC4密钥
+		RC4Crypt(pbyBufIn + 3, (uchar*)&dwValue, sizeof(dwValue), &keyReceiveKey);///snow:RC4字节流解密
 		byCurrentTry = (byCurrentTry + 1) % 3;
 	} while (dwValue != MAGICVALUE_UDP_SYNC_CLIENT && byTries > 0); // try to decrypt as ed2k as well as kad packet if needed (max 3 rounds)
 
