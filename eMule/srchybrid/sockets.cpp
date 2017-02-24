@@ -128,6 +128,7 @@ void CServerConnect::ConnectToAnyServer(UINT startAt, bool prioSort, bool isAuto
 	TryAnotherConnectionRequest();
 }
 
+///snow:向服务器发起连接
 void CServerConnect::ConnectToServer(CServer* server, bool multiconnect, bool bNoCrypt)
 {
 	if (!multiconnect) {
@@ -138,11 +139,12 @@ void CServerConnect::ConnectToServer(CServer* server, bool multiconnect, bool bN
 	singleconnecting = !multiconnect;
 	theApp.emuledlg->ShowConnectionState();
 
+	///snow:新建一个到服务器的Socket，如果连接成功，这个socket就成为客户端以后与服务器的连接通道
 	CServerSocket* newsocket = new CServerSocket(this, !multiconnect);
 	m_lstOpenSockets.AddTail((void*&)newsocket);
 	newsocket->Create(0, SOCK_STREAM, FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT, thePrefs.GetBindAddrA());
 	newsocket->ConnectTo(server, bNoCrypt);
-	connectionattemps.SetAt(GetTickCount(), newsocket);
+	connectionattemps.SetAt(GetTickCount(), newsocket);  ///snow:可同时发起两个连接
 }
 
 void CServerConnect::StopConnectionTry()
@@ -257,11 +259,11 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 		connectedsocket = sender;
 		StopConnectionTry();
 		theApp.sharedfiles->ClearED2KPublishInfo();
-		theApp.sharedfiles->SendListToServer();
+		theApp.sharedfiles->SendListToServer();  ///snow:向服务器发送本机的共享文件列表
 		theApp.emuledlg->serverwnd->serverlistctrl.RemoveAllDeadServers();
 
 		// tecxx 1609 2002 - serverlist update
-		if (thePrefs.GetAddServersFromServer())
+		if (thePrefs.GetAddServersFromServer())  ///snow:从登录的服务器上更新服务器列表，发送请求服务器列表的包
 		{
 			Packet* packet = new Packet(OP_GETSERVERLIST,0);
 			if (thePrefs.GetDebugServerTCPLevel() > 0)
