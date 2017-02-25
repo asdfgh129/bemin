@@ -275,7 +275,7 @@ BOOL CEMSocket::AsyncSelect(long lEvent){
 
 void CEMSocket::OnReceive(int nErrorCode){
 	// the 2 meg size was taken from another place
-	static char GlobalReadBuffer[2000000];
+	static char GlobalReadBuffer[2000000];  ///snow:2M的接收缓冲区
 
 	// Check for an error code
 	if(nErrorCode != 0){
@@ -292,6 +292,7 @@ void CEMSocket::OnReceive(int nErrorCode){
 	}
 
     // CPU load improvement
+	///snow:下载速度限制，暂缓接收
     if(downloadLimitEnable == true && downloadLimit == 0){
         EMTrace("CEMSocket::OnReceive blocked by limit");
         pendingOnReceive = true;
@@ -301,40 +302,44 @@ void CEMSocket::OnReceive(int nErrorCode){
     }
 
 	// Remark: an overflow can not occur here
+	///snow:缓冲区大小为200万字节（2M），可以接收的字节数为（缓冲区字节数-待处理的字节数）与downloadLimit的小值
 	uint32 readMax = sizeof(GlobalReadBuffer) - pendingHeaderSize; 
 	if(downloadLimitEnable == true && readMax > downloadLimit) {
 		readMax = downloadLimit;
 	}
 
 	// We attempt to read up to 2 megs at a time (minus whatever is in our internal read buffer)
-	uint32 ret = Receive(GlobalReadBuffer + pendingHeaderSize, readMax);
+	///接收readMax字节，存入GlobalReadBuffer[GlobalReadBuffer + pendingHeaderSize]处，1次最多可接收2M字节
+	uint32 ret = Receive(GlobalReadBuffer + pendingHeaderSize, readMax); ///snow:CEMSocket::Recevive()-->CEncryptStreamSocket::Receive()
 	if(ret == SOCKET_ERROR || byConnected == ES_DISCONNECTED){
 		return;
 	}
 
 	// Bandwidth control
 	if(downloadLimitEnable == true){
-		// Update limit
-		downloadLimit -= GetRealReceivedBytes();
+		// Update limit   ///snow:更新下载限制数
+		downloadLimit -= GetRealReceivedBytes();  ///snow:返回m_nObfuscationBytesReceived，在CEncryptedStreamSocket::Receive(lpBuf,nBufLen,nFlags)中赋值
 	}
 
 	// CPU load improvement
 	// Detect if the socket's buffer is empty (or the size did match...)
+	///snow:判断socket的缓冲区是否为空，为空则表示则全部接收完毕
 	pendingOnReceive = m_bFullReceive;
 
-	if (ret == 0)
+	if (ret == 0)   ///snow:接收的字节数=m_nObfuscationBytesReceived，ret==0表示没收到数据
 		return;
 
+	///snow:将存放在pendingHeader的数据存入GlobalReadBuffer
 	// Copy back the partial header into the global read buffer for processing
 	if(pendingHeaderSize > 0) {
   		memcpy(GlobalReadBuffer, pendingHeader, pendingHeaderSize);
 		ret += pendingHeaderSize;
-		pendingHeaderSize = 0;
+		pendingHeaderSize = 0;   ///snow:重新置0，没有PendingHeader
 	}
 
 	if (IsRawDataMode())
 	{
-		DataReceived((BYTE*)GlobalReadBuffer, ret);
+		DataReceived((BYTE*)GlobalReadBuffer, ret);  ///snow:虚函数，在子类中实现， CHttpClientReqSocket::DataReceived（）有具体实现
 		return;
 	}
 
@@ -435,6 +440,7 @@ void CEMSocket::OnReceive(int nErrorCode){
 	}	
 }
 
+///snow:以CPartFile::Process（）中调用，仅此一处
 void CEMSocket::SetDownloadLimit(uint32 limit){	
 	downloadLimit = limit;
 	downloadLimitEnable = true;	

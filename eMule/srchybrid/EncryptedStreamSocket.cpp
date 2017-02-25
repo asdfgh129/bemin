@@ -205,8 +205,8 @@ bool CEncryptedStreamSocket::IsEncryptionLayerReady(){
 
 
 int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
-	m_nObfuscationBytesReceived = CAsyncSocketEx::Receive(lpBuf, nBufLen, nFlags);
-	m_bFullReceive = m_nObfuscationBytesReceived == (uint32)nBufLen;
+	m_nObfuscationBytesReceived = CAsyncSocketEx::Receive(lpBuf, nBufLen, nFlags);///snow:实际接收的字节数，是未解密的字节数
+	m_bFullReceive = m_nObfuscationBytesReceived == (uint32)nBufLen;   ///snow:是否全部接收
 
 	if(m_nObfuscationBytesReceived == SOCKET_ERROR || m_nObfuscationBytesReceived <= 0){
 		return m_nObfuscationBytesReceived;
@@ -220,7 +220,7 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 			DebugLogError(_T("CEncryptedStreamSocket Received data before sending on outgoing connection"));
 			m_StreamCryptState = ECS_NONE;
 			return m_nObfuscationBytesReceived;
-		case ECS_UNKNOWN:{
+		case ECS_UNKNOWN:{   ///snow:呼入连接incomimg
 			uint32 nRead = 1;
 			bool bNormalHeader = false;
 			switch (((uchar*)lpBuf)[0]){
@@ -230,8 +230,8 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 					bNormalHeader = true;
 					break;
 			}
-			if (!bNormalHeader){
-				StartNegotiation(false);
+			if (!bNormalHeader){  ///snow:不是正常的包头，表示已加密
+				StartNegotiation(false);   ///snow:开始呼入连接的协商
 				const uint32 nNegRes = Negotiate((uchar*)lpBuf + nRead, m_nObfuscationBytesReceived - nRead);
 				if (nNegRes == (-1))
 					return 0;
@@ -244,7 +244,7 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 				}
 				return 0;
 			}
-			else{
+			else{   ///snow:没有加密
 				// doesn't seems to be encrypted
 				m_StreamCryptState = ECS_NONE;
 
@@ -279,11 +279,11 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 				return m_nObfuscationBytesReceived; // buffer was unchanged, we can just pass it through
 			}
 		}
-		case ECS_ENCRYPTING:
+		case ECS_ENCRYPTING:   ///snow:已加密协商完成，直接解密
 			// basic obfuscation enabled and set, so decrypt and pass along
 			RC4Crypt((uchar*)lpBuf, (uchar*)lpBuf, m_nObfuscationBytesReceived, m_pRC4ReceiveKey);
 			return m_nObfuscationBytesReceived;
-		case ECS_NEGOTIATING:{
+		case ECS_NEGOTIATING:{   ///snow:还在协商阶段
 			const uint32 nRead = Negotiate((uchar*)lpBuf, m_nObfuscationBytesReceived);
 			if (nRead == (-1))
 				return 0;
