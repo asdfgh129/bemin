@@ -45,18 +45,21 @@ static char THIS_FILE[] = __FILE__;
 
 void CServerConnect::TryAnotherConnectionRequest()
 {
+	///snow:根据选项中是否启用安全服务器连接，确定同时只能发起一个连接，还是可以两个连接
 	if (connectionattemps.GetCount() < (thePrefs.IsSafeServerConnectEnabled() ? 1 : 2))
 	{
 		CServer* next_server = theApp.serverlist->GetNextServer(m_bTryObfuscated);
-		if (next_server == NULL)
+		if (next_server == NULL)  ///snow:已到列表末尾
 		{
-			if (connectionattemps.GetCount() == 0)
+			if (connectionattemps.GetCount() == 0) ///snow:表示没有服务器正在尝试连接，
 			{
+				///snow:如果当前是启用加密连接，则尝试未加密连接
 				if (m_bTryObfuscated && !thePrefs.IsClientCryptLayerRequired()){
 					// try all servers on the non-obfuscated port next
 					m_bTryObfuscated = false;
 					ConnectToAnyServer(0, true, true, true);
 				}
+				///snow:如果当前是也没启用加密连接，则设定时间间隔，启动定时器在一段时间后重新连接，默认30秒
 				else if (m_idRetryTimer == 0)
 				{
 					// 05-Nov-2003: If we have a very short server list, we could put serious load on those few servers
@@ -75,7 +78,7 @@ void CServerConnect::TryAnotherConnectionRequest()
 		// Barry - Only auto-connect to static server option
 		if (thePrefs.GetAutoConnectToStaticServersOnly())
 		{
-			if (next_server->IsStaticMember())
+			if (next_server->IsStaticMember())    ///snow:只连接静态服务器
                 ConnectToServer(next_server, true, !m_bTryObfuscated);
 		}
 		else
@@ -83,6 +86,7 @@ void CServerConnect::TryAnotherConnectionRequest()
 	}
 }
 
+///snow:调用模式有4种：1、点击连接按钮；2、选项设置程序启动自动连接；3、点击服务器列表的中服务器启动连接选定服务器（可以多选）；4、定时器启动重新连接尝试
 void CServerConnect::ConnectToAnyServer(UINT startAt, bool prioSort, bool isAuto, bool bNoCrypt)
 {
 	StopConnectionTry();
@@ -92,7 +96,7 @@ void CServerConnect::ConnectToAnyServer(UINT startAt, bool prioSort, bool isAuto
 	theApp.emuledlg->ShowConnectionState();
 	m_bTryObfuscated = thePrefs.IsServerCryptLayerTCPRequested() && !bNoCrypt;
 
-	// Barry - Only auto-connect to static server option
+	// Barry - Only auto-connect to static server option   ///snow:自动连接静态服务器，检查服务器列表里是否存在静态服务器
 	if (thePrefs.GetAutoConnectToStaticServersOnly() && isAuto)
 	{
 		bool anystatic = false;
@@ -101,23 +105,25 @@ void CServerConnect::ConnectToAnyServer(UINT startAt, bool prioSort, bool isAuto
 		while ((next_server = theApp.serverlist->GetNextServer(false)) != NULL)
 		{
 			if (next_server->IsStaticMember()) {
-				anystatic = true;
+				anystatic = true;    ///snow:存在静态服务器
 				break;
 			}
 		}
-		if (!anystatic) {
+		if (!anystatic) {   ///snow:不存在
 			connecting = false;
 			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_NOVALIDSERVERSFOUND));
 			return;
 		}
 	}
 
+	///snow:确定是否对服务器列表进行相应排序（用户排序和优先级排序）
 	theApp.serverlist->SetServerPosition(startAt);
 	if (thePrefs.GetUseUserSortedServerList() && startAt == 0 && prioSort)
-		theApp.serverlist->GetUserSortedServers();
-	if (thePrefs.GetUseServerPriorities() && prioSort)
+		theApp.serverlist->GetUserSortedServers();///snow:排序
+	if (thePrefs.GetUseServerPriorities() && prioSort) ///snow:优先级
 		theApp.serverlist->Sort();
 
+	///snow:列表为0，没有服务器
 	if (theApp.serverlist->GetServerCount() == 0) {
 		connecting = false;
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_NOVALIDSERVERSFOUND));
@@ -125,6 +131,7 @@ void CServerConnect::ConnectToAnyServer(UINT startAt, bool prioSort, bool isAuto
 	}
 	theApp.listensocket->Process();
 
+	///snow:主要作用是发起多个连接
 	TryAnotherConnectionRequest();
 }
 
@@ -423,6 +430,7 @@ void CServerConnect::ConnectionFailed(CServerSocket* sender)
 	theApp.emuledlg->ShowConnectionState();
 }
 
+///snow:定时器，30秒后重新尝试连接
 VOID CALLBACK CServerConnect::RetryConnectTimer(HWND /*hWnd*/, UINT /*nMsg*/, UINT /*nId*/, DWORD /*dwTime*/) 
 { 
 	// NOTE: Always handle all type of MFC exceptions in TimerProcs - otherwise we'll get mem leaks
