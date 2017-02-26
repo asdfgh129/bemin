@@ -105,6 +105,7 @@ BOOL CServerSocket::OnHostNameResolved(const SOCKADDR_IN *pSockAddr)
 	return TRUE; // Connect to this server
 }
 
+///snow:向服务器发起连接请求时被调用，根据返回信息分别设置连接状态，再调用相应的处理程序
 void CServerSocket::OnConnect(int nErrorCode)
 {
 	CAsyncSocketEx::OnConnect(nErrorCode);

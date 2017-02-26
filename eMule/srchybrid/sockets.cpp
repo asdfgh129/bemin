@@ -42,7 +42,9 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-
+///snow:根据是否启用安全服务器连接决定是可以同时进行一或两个连接尝试，如果是，就只进行一个连接尝试，否，同时可以进行两个尝试
+///snow:如果启用加密连接时没有服务器可连，则对全部服务器进行未加密连接尝试；如果没有启用，则暂停30秒后重新尝试连接
+///snow:在本类中被ConnectToAnyServer、ConnectionFailed调用，在其它类中被UploadQueue::UploadTimer调用
 void CServerConnect::TryAnotherConnectionRequest()
 {
 	///snow:根据选项中是否启用安全服务器连接，确定同时只能发起一个连接，还是可以两个连接
@@ -131,7 +133,7 @@ void CServerConnect::ConnectToAnyServer(UINT startAt, bool prioSort, bool isAuto
 	}
 	theApp.listensocket->Process();
 
-	///snow:主要作用是发起多个连接
+	///snow:主要作用是发起多个连接，但是第一次连接时是只发起一个连接尝试
 	TryAnotherConnectionRequest();
 }
 
@@ -150,8 +152,8 @@ void CServerConnect::ConnectToServer(CServer* server, bool multiconnect, bool bN
 	CServerSocket* newsocket = new CServerSocket(this, !multiconnect);
 	m_lstOpenSockets.AddTail((void*&)newsocket);
 	newsocket->Create(0, SOCK_STREAM, FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT, thePrefs.GetBindAddrA());
-	newsocket->ConnectTo(server, bNoCrypt);
-	connectionattemps.SetAt(GetTickCount(), newsocket);  ///snow:可同时发起两个连接
+	newsocket->ConnectTo(server, bNoCrypt);  ///snow:转向ServerSocket类的ConnectTo
+	connectionattemps.SetAt(GetTickCount(), newsocket);  ///snow:加入connectionattemps，供TryAnotherConnectionRequest判断是否可同时发起两个连接
 }
 
 void CServerConnect::StopConnectionTry()
@@ -177,6 +179,12 @@ void CServerConnect::StopConnectionTry()
 			DestroySocket(pSck);
 	}
 }
+
+/**********************************************************snow:start***************************************************
+/*  在发出connect to server请求后，FD_CONNECT事件触发，OnConnect()被调用，
+/* 根据OnConnect中返回的nErrorCode，如果成功，设置连接状态为等待登录（CS_WAITFORLOGIN）,调用ConnectionEstablished，
+/*     如果失败，设置连接状态为CS_SERVERDEAD或CS——SERVERFATAL，调用ConnectionFailed
+**********************************************************snow:end******************************************************/
 
 ///snow:这个函数名有点误导，实际上处理两种情况：一种是连接建立了，但尚未登录，需要向服务器发送登录信息；一种是已经登录成功了，连接正式建立
 void CServerConnect::ConnectionEstablished(CServerSocket* sender)
