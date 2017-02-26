@@ -68,6 +68,7 @@ CServerSocket::~CServerSocket()
 }
 
 ///snow:在CAsyncSocketExHelperWindow::WindowProc()中message == WM_SOCKETEX_GETHOST时调用，解决dynIP-server by DN的主机名解析问题
+///snow: CAsyncSocketEx::Connect()过程中发出WM_SOCKETEX_GETHOST请求
 BOOL CServerSocket::OnHostNameResolved(const SOCKADDR_IN *pSockAddr)
 {
 	// If we are connecting to a dynIP-server by DN, we will get this callback after the
@@ -162,12 +163,12 @@ void CServerSocket::OnReceive(int nErrorCode){
 
 }
 
-///snow:在PacketReceived（）中调用
+///snow:在PacketReceived()中调用，最主要的函数，集中处理收到的各种服务器包类型
 bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 {
 	try
 	{
-		switch (opcode) ///snow:在Opcodes.h定义
+		switch (opcode) ///snow:在Opcodes.h定义 opcode包含中packet中
 		{
 			///snow:服务器返回服务器相关信息
 			case OP_SERVERMESSAGE:{
@@ -742,13 +743,14 @@ void CServerSocket::OnError(int nErrorCode)
 		DebugLogError(GetResString(IDS_ERR_SOCKET), cur_server->GetListName(), cur_server->GetAddress(), cur_server->GetPort(), GetFullErrorMessage(nErrorCode));
 }
 
+///snow:接收到数据包了，由OnReceive()调用，这里在调试时应该跟踪一下接收到的数据包
 bool CServerSocket::PacketReceived(Packet* packet)
 {
 #ifndef _DEBUG
 	try {
 #endif
 		theStats.AddDownDataOverheadServer(packet->size);
-		if (packet->prot == OP_PACKEDPROT)
+		if (packet->prot == OP_PACKEDPROT)  ///snow:压缩的数据包，先用UnPackPacket进行解包
 		{
 			uint32 uComprSize = packet->size;
 			if (!packet->UnPackPacket(250000)){
@@ -761,7 +763,7 @@ bool CServerSocket::PacketReceived(Packet* packet)
 				Debug(_T("Received compressed server TCP packet; opcode=0x%02x  size=%u  uncompr size=%u\n"), packet->opcode, uComprSize, packet->size);
 		}
 
-		if (packet->prot == OP_EDONKEYPROT)
+		if (packet->prot == OP_EDONKEYPROT)  ///snow:是Edonkey包
 		{
 			ProcessPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode);
 		}
@@ -784,20 +786,22 @@ bool CServerSocket::PacketReceived(Packet* packet)
 }
 
 void CServerSocket::OnClose(int /*nErrorCode*/)
-{
+{ 
+	///snow:服务器拒绝连接请求，连接断开
 	CEMSocket::OnClose(0);
-	if (connectionstate == CS_WAITFORLOGIN){
+	if (connectionstate == CS_WAITFORLOGIN){  ///snow:客户端正在请求连接登录
 		SetConnectionState(CS_SERVERFULL);
 	}
-	else if (connectionstate == CS_CONNECTED){
+	else if (connectionstate == CS_CONNECTED){  ///snow:客户端已连接，服务器或客户端断开连接
 		SetConnectionState(CS_DISCONNECTED);
 	}
-	else{
+	else{   ///snow:其它情形
 		SetConnectionState(CS_NOTCONNECTED);
 	}
 	serverconnect->DestroySocket(this);
 }
 
+///snow:设置连接状态，然后根据状态，决定是调用ConnectionFailed，还是ConnectionEstablished
 void CServerSocket::SetConnectionState(int newstate){
 	connectionstate = newstate;
 	if (newstate < 1){

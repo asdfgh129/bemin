@@ -928,7 +928,7 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 				}
 			}
 			if( theApp.serverconnect->IsConnecting() && !theApp.serverconnect->IsSingleConnect() )
-				theApp.serverconnect->TryAnotherConnectionRequest();
+				theApp.serverconnect->TryAnotherConnectionRequest();   ///snow:最有可能的第二个服务器连接尝试！为什么在这里调用呢？
 
 			theApp.listensocket->UpdateConnectionsStatus();
 			if (thePrefs.WatchClipboard4ED2KLinks()) {

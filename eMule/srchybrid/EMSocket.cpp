@@ -419,7 +419,7 @@ void CEMSocket::OnReceive(int nErrorCode){
 				    (SOCKET)this, pendingPacket->opcode, pendingPacket->GetRealPacketSize());
 #endif
 
-			// Process packet
+			// Process packet   ///snow:处理接收到的数据，PacketReceived()调用ProcessPacket()对信息包进行处理
 			bool bPacketResult = PacketReceived(pendingPacket);
 			delete pendingPacket;	
 			pendingPacket = NULL;

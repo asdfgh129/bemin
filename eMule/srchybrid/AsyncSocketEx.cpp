@@ -798,6 +798,7 @@ BOOL CAsyncSocketEx::Connect(LPCSTR lpszHostAddress, UINT nHostPort)
 		{
 			m_pAsyncGetHostByNameBuffer = new char[MAXGETHOSTSTRUCT];
 			m_nAsyncGetHostByNamePort = nHostPort;
+			///snow:请求HostName，信息返回时触发OnHostNameResolved()
 			m_hAsyncGetHostByNameHandle = WSAAsyncGetHostByName(GetHelperWindowHandle(), WM_SOCKETEX_GETHOST, lpszHostAddress, m_pAsyncGetHostByNameBuffer, MAXGETHOSTSTRUCT);
 			if (!m_hAsyncGetHostByNameHandle)
 				return FALSE;

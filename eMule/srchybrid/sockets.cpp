@@ -44,7 +44,7 @@ static char THIS_FILE[] = __FILE__;
 
 ///snow:根据是否启用安全服务器连接决定是可以同时进行一或两个连接尝试，如果是，就只进行一个连接尝试，否，同时可以进行两个尝试
 ///snow:如果启用加密连接时没有服务器可连，则对全部服务器进行未加密连接尝试；如果没有启用，则暂停30秒后重新尝试连接
-///snow:在本类中被ConnectToAnyServer、ConnectionFailed调用，在其它类中被UploadQueue::UploadTimer调用
+///snow:在本类中被ConnectToAnyServer、ConnectionFailed调用，在其它类中被UploadQueue::UploadTimer调用，在UploadTimer中启动第二个服务器连接尝试
 void CServerConnect::TryAnotherConnectionRequest()
 {
 	///snow:根据选项中是否启用安全服务器连接，确定同时只能发起一个连接，还是可以两个连接
@@ -187,6 +187,7 @@ void CServerConnect::StopConnectionTry()
 **********************************************************snow:end******************************************************/
 
 ///snow:这个函数名有点误导，实际上处理两种情况：一种是连接建立了，但尚未登录，需要向服务器发送登录信息；一种是已经登录成功了，连接正式建立
+///snow:与ConnectionFailed一样，只在SetConnectionState()中调用
 void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 {
 	if (!connecting) {
@@ -272,7 +273,7 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 		Log(LOG_SUCCESS | LOG_STATUSBAR, strMsg);
 		theApp.emuledlg->ShowConnectionState();
 		connectedsocket = sender;
-		StopConnectionTry();
+		StopConnectionTry();   ///snow:停止其它正在进行的连接尝试
 		theApp.sharedfiles->ClearED2KPublishInfo();
 		theApp.sharedfiles->SendListToServer();  ///snow:向服务器发送本机的共享文件列表
 		theApp.emuledlg->serverwnd->serverlistctrl.RemoveAllDeadServers();
@@ -323,6 +324,8 @@ bool CServerConnect::SendUDPPacket(Packet* packet, CServer* host, bool delpacket
 	return true;
 }
 
+///snow:同ConnectionEstablished一样，只在SetConnectionState()中调用，而ConnectionState错误的来源可能来自三个方面：
+///snow：OnHostNameResolved、OnConnect、OnClose
 void CServerConnect::ConnectionFailed(CServerSocket* sender)
 {
 	if (!connecting && sender != connectedsocket) {
@@ -333,26 +336,26 @@ void CServerConnect::ConnectionFailed(CServerSocket* sender)
 	CServer* pServer = theApp.serverlist->GetServerByAddress(sender->cur_server->GetAddress(), sender->cur_server->GetPort());
 	switch (sender->GetConnectionState())
 	{
-		case CS_FATALERROR:
+		case CS_FATALERROR:  ///snow:未知错误，已知状态之外的缺省设置，在OnConnect()中设置
 			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FATAL));
 			break;
-		case CS_DISCONNECTED:
+		case CS_DISCONNECTED:///snow:服务器断开连接，返回的状态码是CS_DISCONNECTED，OnClose()中设置
 			theApp.sharedfiles->ClearED2KPublishInfo();
 			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_LOSTC), sender->cur_server->GetListName(), sender->cur_server->GetAddress(), sender->cur_server->GetPort());
 			break;
-		case CS_SERVERDEAD:
+		case CS_SERVERDEAD:   ///snow:服务器未响应，在OnConnect()中设置
 			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_DEAD), sender->cur_server->GetListName(), sender->cur_server->GetAddress(), sender->cur_server->GetPort());
 			if (pServer) {
-				pServer->AddFailedCount();
+				pServer->AddFailedCount();  ///snow:服务器连接失败计数+1
 				theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(pServer);
 			}
 			break;
-		case CS_ERROR:
+		case CS_ERROR:    ///snow:OnHostNameResolved()中设置，服务器被过滤了
 			break;
-		case CS_SERVERFULL:
+		case CS_SERVERFULL:    ///snow:服务器断开连接，返回的状态码是CS_SERVERFULL，OnClose()中设置
 			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FULL), sender->cur_server->GetListName(), sender->cur_server->GetAddress(), sender->cur_server->GetPort());
 			break;
-		case CS_NOTCONNECTED:
+		case CS_NOTCONNECTED:  ///snow:服务器断开连接，返回的状态码是CS_NOTCONNECTED，OnClose()中设置
 			break;
 	}
 
@@ -362,6 +365,7 @@ void CServerConnect::ConnectionFailed(CServerSocket* sender)
 
 	switch (sender->GetConnectionState())
 	{
+		///snow:连接时遭遇未知错误，停止连接尝试，暂停30秒后重新连接全部服务器
 		case CS_FATALERROR:{
 			bool autoretry = !singleconnecting;
 			StopConnectionTry();
@@ -374,6 +378,7 @@ void CServerConnect::ConnectionFailed(CServerSocket* sender)
 				// an IP and will therefor throw such an error we would never connect to
 				// any server at all. To circumvent that, start the next auto-connection
 				// attempt with a different server (use the next server in the list).
+				///snow:从下一服务器开始，原因是防止第一个服务器就发生fatalerror，如果还是从当前服务器开始，则连接将一直无法进行
 				m_uStartAutoConnectPos = 0; // default: start at 0
 				if (pServer) {
 					// If possible, use the "next" server.
@@ -390,7 +395,7 @@ void CServerConnect::ConnectionFailed(CServerSocket* sender)
 		case CS_DISCONNECTED:{
 			theApp.sharedfiles->ClearED2KPublishInfo();
 			connected = false;
-			if (connectedsocket) {
+			if (connectedsocket) {   ///snow:如果已存在与服务器连接的SOCKET，关闭该socket
 				connectedsocket->Close();
 				connectedsocket = NULL;
 			}
@@ -398,7 +403,7 @@ void CServerConnect::ConnectionFailed(CServerSocket* sender)
 			theStats.serverConnectTime = 0;
 			theStats.Add2TotalServerDuration();
 			if (thePrefs.Reconnect() && !connecting)
-				ConnectToAnyServer();		
+				ConnectToAnyServer();	 ///snow:重新发起连接，从服务器列表开始位置发起连接	
 			if (thePrefs.GetNotifierOnImportantError())
 				theApp.emuledlg->ShowNotifier(GetResString(IDS_CONNECTIONLOST), TBN_IMPORTANTEVENT);
 			break;
@@ -412,16 +417,18 @@ void CServerConnect::ConnectionFailed(CServerSocket* sender)
 		case CS_SERVERFULL:{
 			if (!connecting)
 				break;
-			if (singleconnecting){
-				if (pServer != NULL && sender->IsServerCryptEnabledConnection() && !thePrefs.IsClientCryptLayerRequired()){
-					// try reconnecting without obfuscation
-					ConnectToServer(pServer, false, true);
+			if (singleconnecting){  ///snow:缺省为false，只在本语句块中被置为true。这就好奇怪了，这样永远不可能被置为true呀？？？
+				///snow:上面的理解错了，ConnectToServer()中的multiconnect缺省为false， 当直接双击服务器列表中的服务器进行连接时，进行的是singleconnecting！
+				if (pServer != NULL && sender->IsServerCryptEnabledConnection() && !thePrefs.IsClientCryptLayerRequired()){   
+					// try reconnecting without obfuscation  ///snow:进行不加密连接，前提是上一次连接失败的是加密连接！
+					ConnectToServer(pServer, false, true);  ///snow:置singleconnecting为true，就是说如果是双击界面中服务器列表的服务器进行连接的，则接下来的连接都是singleconnecting!
 					break;
 				}
 				StopConnectionTry();
 				break;
 			}
 
+			///snow:从connectionattemps列表中移除当前socket
 			DWORD tmpkey;
 			CServerSocket* tmpsock;
 			POSITION pos = connectionattemps.GetStartPosition();
@@ -432,7 +439,9 @@ void CServerConnect::ConnectionFailed(CServerSocket* sender)
 					break;
 				}
 			}
-			TryAnotherConnectionRequest();
+			///snow:从下一服务器开始进行连接尝试
+			TryAnotherConnectionRequest();///snow:没找出什么时候就开始同时进行两个服务器连接尝试了？看来只可能是在CheckforTimeout()中了
+			///snow:不是在CheckforTimeout中，而应该在CUploadQueue::UploadTimer中
 		}
 	}
 	theApp.emuledlg->ShowConnectionState();
@@ -459,6 +468,7 @@ VOID CALLBACK CServerConnect::RetryConnectTimer(HWND /*hWnd*/, UINT /*nMsg*/, UI
 	CATCH_DFLT_EXCEPTIONS(_T("CServerConnect::RetryConnectTimer"))
 }
 
+///snow:在CUploadQueue::UploadTimer()中调用
 void CServerConnect::CheckForTimeout()
 { 
 	DWORD dwServerConnectTimeout = CONSERVTIMEOUT;
@@ -486,7 +496,8 @@ void CServerConnect::CheckForTimeout()
 			if (singleconnecting)
 				StopConnectionTry();
 			else
-				TryAnotherConnectionRequest();
+				TryAnotherConnectionRequest(); ///snow:进行第二个连接尝试？看着也不对呀？CUploadQueue::UploadTimer在调用CheckforTimeout之前，直接调用了TryAnotherConnectionRequest
+			///snow:而CUploadQueue::UploadTimer在CUploadQueue对象构造时调用
 
 		}
 	}
