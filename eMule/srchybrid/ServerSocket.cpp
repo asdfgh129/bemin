@@ -169,6 +169,7 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 	{
 		switch (opcode) ///snow:在Opcodes.h定义
 		{
+			///snow:服务器返回服务器相关信息
 			case OP_SERVERMESSAGE:{
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					Debug(_T("ServerMsg - OP_ServerMessage\n"));
@@ -268,7 +269,8 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 				}
 				break;
 			}
-			case OP_IDCHANGE:{
+			///snow:连接并登录成功，获得服务器分配的ID
+			case OP_IDCHANGE:{   
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					Debug(_T("ServerMsg - OP_IDChange\n"));
 				if (size < sizeof(LoginAnswer_Struct)){

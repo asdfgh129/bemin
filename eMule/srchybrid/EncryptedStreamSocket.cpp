@@ -244,7 +244,7 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 				}
 				return 0;
 			}
-			else{   ///snow:没有加密
+			else{   ///snow:呼入的连接没有加密，重置m_StreamCryptState为ECS_NONE
 				// doesn't seems to be encrypted
 				m_StreamCryptState = ECS_NONE;
 

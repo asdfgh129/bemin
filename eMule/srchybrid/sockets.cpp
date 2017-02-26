@@ -258,7 +258,7 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 		theStats.AddUpDataOverheadServer(packet->size);
 		SendPacket(packet, true, sender); ///snow:由sender发送，sender为ServerSocket::OnConnect()传递过来的ServerSocket对象（this)
 	}
-	else if (sender->GetConnectionState() == CS_CONNECTED)
+	else if (sender->GetConnectionState() == CS_CONNECTED)   ///snow:连接成功，在ServerSocket::ProcessPack()的{case OP_IDCHANGE:}分支中被设置，也就是说当获得ID了，表示连接并登录成功！
 	{
 		theStats.reconnects++;
 		theStats.serverConnectTime = GetTickCount();
@@ -278,7 +278,7 @@ void CServerConnect::ConnectionEstablished(CServerSocket* sender)
 		theApp.emuledlg->serverwnd->serverlistctrl.RemoveAllDeadServers();
 
 		// tecxx 1609 2002 - serverlist update
-		if (thePrefs.GetAddServersFromServer())  ///snow:从登录的服务器上更新服务器列表，发送请求服务器列表的包
+		if (thePrefs.GetAddServersFromServer())  ///snow:如果选项“从服务器更新服务器列表”选中，则从登录的服务器上更新服务器列表，发送请求服务器列表的包
 		{
 			Packet* packet = new Packet(OP_GETSERVERLIST,0);
 			if (thePrefs.GetDebugServerTCPLevel() > 0)
