@@ -1,0 +1,312 @@
+16:58:47 Connecting
+16:58:52 Connecting to TV Underground (176.103.48.36:4184 - using Protocol Obfuscation) ...
+
+CAsyncSocketEx:before Connect
+
+///CServerConnect::ConnectionEstablished()
+///AddLogLine(false, GetResString(IDS_CONNECTEDTOREQ))
+16:58:52 Connected to TV Underground (176.103.48.36:4184), sending login request
+
+///Debug(_T(">>> Sending OP__LoginRequest\n"));
+16:58:52 >>> Sending OP__LoginRequest
+
+16:58:52 CEncryptedStreamSocket: Client 125.95.207.112 sent more data then expected while negotiating, disconnecting (1)
+16:58:52 Client TCP socket: Error: Encryption layer error; IP=125.95.207.112
+
+16:58:52 CServerSocket:OnConnect start
+16:58:52 CServerSocket:OnConnect end
+16:58:52 CEMSocket:OnSend start
+16:58:52 CEncryptedStreamSocket:OnSend start
+16:58:52 CEncryptedStreamSocket:OnSend StartNegotiation(true)
+16:58:52 CEMSocket:OnSend end
+16:58:52 CEMSocket:OnReceive start
+16:58:52 CEMSocket:Receive start
+16:58:52 CEncryptedStreamSocket:Receive start
+16:58:52 CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader
+16:58:52 CEMSocket:OnSend start
+16:58:52 CEncryptedStreamSocket:OnSend start
+16:58:52 CEncryptedStreamSocket:OnSend end
+
+16:58:53 Received proper magic value after DH-Agreement from Serverconnection IP: 176.103.48.36
+16:58:53 CEncryptedStreamSocket: Finished DH Obufscation handshake with Server 176.103.48.36
+
+16:58:53 CEMSocket:Send start
+16:58:53 CEMSocket:Send end
+16:58:53 CEMSocket:Send start
+16:58:53 CEMSocket:Send end
+16:58:53 CServerSocket:OnReceive start
+16:58:53 CEMSocket:OnReceive start
+16:58:53 CEMSocket:Receive start
+16:58:53 CEncryptedStreamSocket:Receive start
+16:58:53 CEncryptedStreamSocket:Receive ECS_NEGOTIATING
+16:58:53 CEMSocket:Send start
+16:58:53 CEMSocket:Send end
+16:58:53 CEMSocket:Send start
+16:58:53 CEncryptedStreamSocket:Send start
+16:58:53 CEMSocket:Send end
+16:58:53 CServerSocket:OnReceive end
+
+16:58:55 CEMSocket:OnReceive start
+16:58:55 CEMSocket:Receive start
+16:58:55 CEncryptedStreamSocket:Receive start
+16:58:55 CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader
+16:58:55 CEMSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend end
+16:58:55 CEMSocket:OnSend end
+16:58:55 CEMSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend end
+16:58:55 CEMSocket:OnSend end
+16:58:55 CEMSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend end
+16:58:55 CEMSocket:OnSend end
+
+16:58:55 OP_Hello                 from 176.103.48.36   'eServer' (eMule v0.47c [eserver],None/None/None)
+16:58:55   Hash=AD7727272E0EA7D2ABE16B2551136F69 (eMule)  UserID=607152048 (176.103.48.36)  Port=4662  Tags=4
+  Name='eServer'
+  Version=60
+  ClientVer=0.47.2.0  Comptbl=0
+  ModID=eserver
+  Server=0.0.0.0:0
+
+16:58:55 >>> OP__HelloAnswer      to   176.103.48.36   'eServer' (eMule v0.47c [eserver],None/None/None)
+16:58:55 CEMSocket:OnReceive start
+16:58:55 CEMSocket:Receive start
+16:58:55 CEncryptedStreamSocket:Receive start
+16:58:55 CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader
+16:58:55 CEMSocket:OnReceive start
+16:58:55 CEMSocket:Receive start
+16:58:55 CEncryptedStreamSocket:Receive start
+16:58:55 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:58:55 CEMSocket:Send start
+16:58:55 CEncryptedStreamSocket:Send start
+16:58:55 CEncryptedStreamSocket:Send end
+16:58:55 CEMSocket:Send end
+16:58:55 CEMSocket:OnReceive end
+16:58:55 CEMSocket:Send start
+16:58:55 CEMSocket:Send end
+
+CAsyncSocketEx:before Connect
+
+16:58:55 >>> OP__Hello            to   114.25.35.98    '(null)' (,None/None/FwCheckConnectingUDP)
+16:58:55 CIndexed Memberfunction call failed because the dataloading still in progress
+16:58:55 Kad file estimate used default avg(108)
+16:58:55 Connecting to eMule Security No1 (91.200.42.46:1176 - using Protocol Obfuscation) ...
+
+CAsyncSocketEx:before Connect
+
+16:58:55 Connected to eMule Security No1 (91.200.42.46:1176), sending login request
+16:58:55 >>> Sending OP__LoginRequest
+16:58:55 CEMSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend end
+16:58:55 CEMSocket:OnSend end
+16:58:55 CServerSocket:OnConnect start
+16:58:55 CServerSocket:OnConnect end
+16:58:55 CEMSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend start
+16:58:55 CEncryptedStreamSocket:OnSend StartNegotiation(true)
+16:58:55 CEMSocket:OnSend end
+
+16:58:56 --- Deleted client            176.103.48.36   'eServer' (eMule v0.47c [eserver],None/None/None); Reason=CClientReqSocket::Disconnect(): Close
+16:58:56 ServerMsg - OP_IDChange
+16:58:56   TCP Flags=0x000017f9  ***UnkBits=0x00001220  Compression=1  NewTags=1  Unicode=1  RelatedSearch=1  IntTypeTags=1  LargeFiles=1  TCP_Obfscation=1
+
+
+16:58:56 Obfuscated connection established on: TV Underground (176.103.48.36:4184)
+
+
+16:58:56 >>> Sending OP__OfferFiles(compressed); uncompr size=334  compr size=322  files=3
+16:58:56 Server, Sendlist: Packet size:322
+16:58:56 >>> Sending OP__GetServerList
+16:58:56 Possible IP Change - Checking for expired Server UDP-Keys: 14 UDP Keys total, 0 UDP Keys expired, 0 immediate UDP Pings forced, 0 delayed UDP Pings forced
+16:58:56 New client ID is 71042416
+16:58:56 ServerMsg - OP_ServerStatus
+16:58:56 ServerMsg - OP_ServerMessage
+16:58:56 server version 17.15 (lugdunum)
+16:58:56 OP_Hello                 from 1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:56   Hash=3ACD118E1B0E7C006642DD7099996FEB (eMule)  UserID=1 (1.0.0.0)  Port=7716  Tags=6
+  Name='http://emule-project.net'
+  Version=60
+  KadPort=25995  UDPPort=25995
+  PeerCache=1  UDPVer=4  DataComp=1  SecIdent=3  SrcExchg=4  ExtReq=2  Commnt=1  Preview=0  NoViewFiles=1  Unicode=1
+  KadVersion=9, LargeFiles=1 ExtMultiPacket=1 CryptLayerSupport=1 CryptLayerRequest=1 CryptLayerRequires=0 SupportsSourceEx2=1 SupportsCaptcha=1 DirectUDPCallback=1
+  ClientVer=0.50.0.0  Comptbl=0
+  Server=0.0.0.0:0
+16:58:56 >>> OP__HelloAnswer      to   1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:56 >>> OP__SecIdentState    to   1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:56 KADEMLIA2_REQ            from 117.181.194.101:3987 
+16:58:56 >>> KADEMLIA2_RES        to   117.181.194.101:3987 ; Count=0
+16:58:56 OP_HelloAnswer           from 114.25.35.98    'http://emule-project.net' (aMule v2.3.1,None/None/FwCheckConnectingUDP)
+16:58:56   Hash=044D5AC46D0E71E67BD3B46589BE6F46 (eMule)  UserID=1914250082 (98.35.25.114)  Port=4662  Tags=7
+  Name='http://emule-project.net'
+  Version=60
+  KadPort=4672  UDPPort=4672
+  ClientVer=2.3.1.0  Comptbl=3
+  PeerCache=0  UDPVer=4  DataComp=1  SecIdent=3  SrcExchg=3  ExtReq=2  Commnt=1  Preview=0  NoViewFiles=1  Unicode=1
+  KadVersion=8, LargeFiles=1 ExtMultiPacket=1 CryptLayerSupport=1 CryptLayerRequest=1 CryptLayerRequires=0 SupportsSourceEx2=1 SupportsCaptcha=0 DirectUDPCallback=0
+  ***UnkTag=Tag0xEF=(Int32)1
+  Server=212.83.184.152:7111
+16:58:56 >>> OP__SecIdentState    to   114.25.35.98    'http://emule-project.net' (aMule v2.3.1,None/None/FwCheckConnectingUDP)
+16:58:56 Set KS_FWCHECK_UDP for client 114.25.35.98 'http://emule-project.net' (aMule v2.3.1,None/None/FWCheckUDP)
+
+16:58:56 Selected client for UDP Firewallcheck: 116.24.14.158
+16:58:56 --- Deleted client            114.25.35.98    'http://emule-project.net' (aMule v2.3.1,None/None/None); Reason=CClientReqSocket::Disconnect(): Error 10053: 你的主机中的软件中止了一个已建立的连接。
+16:58:56 CEMSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send end
+16:58:56 CEMSocket:Send end
+16:58:56 CEMSocket:Send start
+16:58:56 CEMSocket:Send end
+16:58:56 CServerSocket:OnReceive start
+16:58:56 CEMSocket:OnReceive start
+16:58:56 CEMSocket:Receive start
+16:58:56 CEncryptedStreamSocket:Receive start
+16:58:56 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:58:56 CEMSocket:Send start
+16:58:56 CEMSocket:Send end
+16:58:56 CEMSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send end
+16:58:56 CEMSocket:Send end
+16:58:56 CEMSocket:OnReceive end
+16:58:56 CServerSocket:OnReceive end
+16:58:56 CEMSocket:OnReceive start
+16:58:56 CEMSocket:Receive start
+16:58:56 CEncryptedStreamSocket:Receive start
+16:58:56 CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader
+16:58:56 CEMSocket:OnReceive start
+16:58:56 CEMSocket:Receive start
+16:58:56 CEncryptedStreamSocket:Receive start
+16:58:56 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:58:56 CEMSocket:OnReceive end
+16:58:56 CEMSocket:OnReceive start
+16:58:56 CEMSocket:Receive start
+16:58:56 CEncryptedStreamSocket:Receive start
+16:58:56 CEncryptedStreamSocket:Receive ECS_NONE
+16:58:56 CEMSocket:OnReceive end
+16:58:56 CEMSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send end
+16:58:56 CEMSocket:Send end
+16:58:56 CEMSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send end
+16:58:56 CEncryptedStreamSocket:Send start
+16:58:56 CEncryptedStreamSocket:Send end
+16:58:56 CEMSocket:Send end
+16:58:58 KADEMLIA2_SEARCH_SOURCE_REQ from 117.181.194.101:3987 
+16:58:58 CIndexed Memberfunction call failed because the dataloading still in progress
+16:58:58 ServerMsg - OP_ServerList
+16:58:58 ServerMsg - OP_ServerIdent
+16:58:58 Hash=AD7727272E14A7D2ABE16B2551133269 (Unknown)  IP=176.103.48.36:4184  Tags=2  Name=TV Underground  Desc=Operated by TVUnderground.org.ru
+16:58:58 OP_Hello                 from 730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:58   Hash=02C2D3A9DD0EC6B71163CEF5C4146F9C (eMule)  UserID=730480 (112.37.11.0)  Port=26241  Tags=6
+  Name='http://emule-project.net'
+  Version=60
+  KadPort=11896  UDPPort=63279
+  PeerCache=1  UDPVer=4  DataComp=1  SecIdent=3  SrcExchg=4  ExtReq=2  Commnt=1  Preview=0  NoViewFiles=1  Unicode=1
+  KadVersion=9, LargeFiles=1 ExtMultiPacket=1 CryptLayerSupport=1 CryptLayerRequest=1 CryptLayerRequires=0 SupportsSourceEx2=1 SupportsCaptcha=1 DirectUDPCallback=1
+  ClientVer=0.50.0.0  Comptbl=0
+  Server=85.204.50.116:4232
+16:58:58 >>> OP__HelloAnswer      to   730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:58 >>> OP__SecIdentState    to   730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:58 KADEMLIA2_RES            from 82.61.19.244:4672    
+16:58:58 >>> KADEMLIA2_REQ(FILE)  to   124.234.19.220:59624 
+16:58:58 >>> KADEMLIA2_REQ(FILE)  to   112.74.96.87:17010   
+16:58:58 KADEMLIA2_REQ            from 118.124.78.181:19854 
+16:58:58 >>> KADEMLIA2_RES        to   118.124.78.181:19854 ; Count=0
+16:58:58 CEMSocket:Send start
+16:58:58 CEncryptedStreamSocket:Send start
+16:58:58 CEncryptedStreamSocket:Send end
+16:58:58 CEncryptedStreamSocket:Send start
+16:58:58 CEncryptedStreamSocket:Send end
+16:58:58 CEMSocket:Send end
+16:58:58 CEMSocket:Send start
+16:58:58 CEMSocket:Send end
+16:58:58 CServerSocket:OnReceive start
+16:58:58 CEMSocket:OnReceive start
+16:58:58 CEMSocket:Receive start
+16:58:58 CEncryptedStreamSocket:Receive start
+16:58:58 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:58:58 CEMSocket:OnReceive end
+16:58:58 CServerSocket:OnReceive end
+16:58:58 CEMSocket:OnReceive start
+16:58:58 CEMSocket:Receive start
+16:58:58 CEncryptedStreamSocket:Receive start
+16:58:58 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:58:58 CEMSocket:OnReceive end
+16:58:58 CEMSocket:Send start
+16:58:58 CEncryptedStreamSocket:Send start
+16:58:58 CEncryptedStreamSocket:Send end
+16:58:58 CEncryptedStreamSocket:Send start
+16:58:58 CEncryptedStreamSocket:Send end
+16:58:58 CEMSocket:Send end
+16:58:59 KADEMLIA2_RES            from 59.124.64.79:24672   
+16:58:59 >>> KADEMLIA2_REQ(FILE)  to   175.140.203.108:16802
+16:58:59 OP_SecIdentState         from 1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:59 >>> OP__PublicKey        to   1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:59 OP_KAD_FWTCPCHECK_ACK    from 1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:59 OP_PublicKey             from 1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:59 >>> OP__Signature        to   1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:59 OP_SecIdentState         from 730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:59 >>> OP__PublicKey        to   730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:59 KADEMLIA2_RES            from 178.193.26.1:4672    
+16:58:59 >>> KADEMLIA2_REQ(FILE)  to   218.202.198.6:2064   
+16:58:59 CEMSocket:Send start
+16:58:59 CEMSocket:Send end
+16:58:59 CEMSocket:OnReceive start
+16:58:59 CEMSocket:Receive start
+16:58:59 CEncryptedStreamSocket:Receive start
+16:58:59 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:58:59 CEMSocket:Send start
+16:58:59 CEncryptedStreamSocket:Send start
+16:58:59 CEncryptedStreamSocket:Send end
+16:58:59 CEMSocket:Send end
+16:58:59 CEMSocket:OnReceive end
+16:58:59 CEMSocket:OnReceive start
+16:58:59 CEMSocket:Receive start
+16:58:59 CEncryptedStreamSocket:Receive start
+16:58:59 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:58:59 CEMSocket:OnReceive end
+16:58:59 KADEMLIA2_RES            from 112.74.96.87:17010   
+16:58:59 >>> KADEMLIA2_REQ(FILE)  to   180.65.94.134:51381  
+16:58:59 >>> KADEMLIA2_REQ(FILE)  to   79.41.56.44:60418    
+16:58:59 KADEMLIA2_SEARCH_SOURCE_REQ from 118.124.78.181:19854 
+16:58:59 CIndexed Memberfunction call failed because the dataloading still in progress
+16:58:59 KADEMLIA2_RES            from 124.234.19.220:59624 
+16:58:59 CEMSocket:Send start
+16:58:59 CEncryptedStreamSocket:Send start
+16:58:59 CEncryptedStreamSocket:Send end
+16:58:59 CEMSocket:Send end
+16:58:59 CEMSocket:Send start
+16:58:59 CEncryptedStreamSocket:Send start
+16:58:59 CEncryptedStreamSocket:Send end
+16:58:59 CEMSocket:Send end
+16:58:59 OP_Signature             from 1@0.0.0.0 (93.134.6.244) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:58:59 CEMSocket:OnReceive start
+16:58:59 CEMSocket:Receive start
+16:58:59 CEncryptedStreamSocket:Receive start
+16:58:59 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:58:59 CEMSocket:OnReceive end
+16:59:01 KADEMLIA2_REQ            from 118.124.78.181:19854 
+16:59:01 >>> KADEMLIA2_RES        to   118.124.78.181:19854 ; Count=0
+16:59:01 OP_KAD_FWTCPCHECK_ACK    from 730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:59:01 OP_PublicKey             from 730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:59:01 >>> OP__Signature        to   730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:59:01 OP_Signature             from 730480@85.204.50.116 (105.100.40.41) 'http://emule-project.net' (eMule v0.50a,None/None/None)
+16:59:01 KADEMLIA2_REQ            from 183.4.12.231:5120    
+16:59:01 >>> KADEMLIA2_RES        to   183.4.12.231:5120    ; Count=0
+16:59:01 UploadSpeedSense: Failure #2 to ping host! (TTL: 1 IP: 139.219.233.252 error: 10060). Sleeping 1 sec before retry. Error info follows.
+16:59:01 Pinger: Error 10060: 由于连接方在一段时间后没有正确答复或连接的主机没有反应，连接尝试失败。
+16:59:01 CEMSocket:OnReceive start
+16:59:01 CEMSocket:Receive start
+16:59:01 CEncryptedStreamSocket:Receive start
+16:59:01 CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+16:59:01 CEMSocket:Send start
+16:59:01 CEncryptedStreamSocket:Send start
+16:59:01 CEncryptedStreamSocket:Send end
+16:59:01 CEMSocket:OnReceive end
+16:59:01 CEMSocket:Send end
