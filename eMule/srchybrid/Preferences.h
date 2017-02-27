@@ -367,7 +367,7 @@ public:
 	static	bool	m_bpreviewprio;
 	static	bool	m_bSmartServerIdCheck;
 	static	uint8	smartidstate;
-	static	bool	m_bSafeServerConnect;
+	static	bool	m_bSafeServerConnect;   ///snow:只是允许同时进行一个连接或两个连接？
 	static	bool	startMinimized;
 	static	bool	m_bAutoStart;
 	static	bool	m_bRestoreLastMainWndDlg;
@@ -577,9 +577,9 @@ public:
 	static CString	m_strNotifierMailReceiver;
 
 	// encryption / obfuscation / verification
-	static bool		m_bCryptLayerRequested;
-	static bool		m_bCryptLayerSupported;
-	static bool		m_bCryptLayerRequired;
+	static bool		m_bCryptLayerRequested;   ///snow:options-->security-->protocol obfuscation-->Enable protocol obfuscation
+	static bool		m_bCryptLayerSupported;   ///snow:options-->security-->protocol obfuscation-->Disable support for obfuscated connections
+	static bool		m_bCryptLayerRequired;    ///snow:options-->security-->protocol obfuscation-->Allow obfuscated connections only ，只对client起作用，服务器不用
 	static uint8	m_byCryptTCPPaddingLength;
 	static uint32   m_dwKadUDPKey;
 
@@ -1359,7 +1359,7 @@ public:
 	static bool		IsClientCryptLayerRequired()		{return IsClientCryptLayerRequested() && m_bCryptLayerRequired;}
 	static bool		IsClientCryptLayerRequiredStrict()	{return false;} // not even incoming test connections will be answered
 	static bool		IsServerCryptLayerUDPEnabled()		{return IsClientCryptLayerSupported();}
-	static bool		IsServerCryptLayerTCPRequested()	{return IsClientCryptLayerRequested();}
+	static bool		IsServerCryptLayerTCPRequested()	{return IsClientCryptLayerRequested();}   ///snow:Enable protocol obfuscation and not disable support for obfuscated connections
 	static uint32	GetKadUDPKey()						{return m_dwKadUDPKey;}
 	static uint8	GetCryptTCPPaddingLength()			{return m_byCryptTCPPaddingLength;}
 

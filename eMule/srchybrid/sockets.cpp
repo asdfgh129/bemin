@@ -50,13 +50,13 @@ void CServerConnect::TryAnotherConnectionRequest()
 	///snow:根据选项中是否启用安全服务器连接，确定同时只能发起一个连接，还是可以两个连接
 	if (connectionattemps.GetCount() < (thePrefs.IsSafeServerConnectEnabled() ? 1 : 2))
 	{
-		CServer* next_server = theApp.serverlist->GetNextServer(m_bTryObfuscated);
+		CServer* next_server = theApp.serverlist->GetNextServer(m_bTryObfuscated);    ///snow:如果bNoCrypt为true，m_bTryObfuscated一定为false
 		if (next_server == NULL)  ///snow:已到列表末尾
 		{
 			if (connectionattemps.GetCount() == 0) ///snow:表示没有服务器正在尝试连接，
 			{
-				///snow:如果当前是启用加密连接，则尝试未加密连接
-				if (m_bTryObfuscated && !thePrefs.IsClientCryptLayerRequired()){
+				///snow:如果当前是启用加密连接，且选项中未设置只允许加密连接，则尝试未加密连接
+				if (m_bTryObfuscated && !thePrefs.IsClientCryptLayerRequired()){  ///snow:IsClientCryptLayerRequired()返回的是:是否只允许加密连接（Allow obfuscated connections only）
 					// try all servers on the non-obfuscated port next
 					m_bTryObfuscated = false;
 					ConnectToAnyServer(0, true, true, true);
@@ -81,7 +81,9 @@ void CServerConnect::TryAnotherConnectionRequest()
 		if (thePrefs.GetAutoConnectToStaticServersOnly())
 		{
 			if (next_server->IsStaticMember())    ///snow:只连接静态服务器
-                ConnectToServer(next_server, true, !m_bTryObfuscated);
+				ConnectToServer(next_server, true, !m_bTryObfuscated);    
+			///snow:这边的m_bTryObfuscated为什么取反？
+			///snow:因为这个参数依然是bNoCrypt，如果ConnectToAnyServer()中参数bNoCrypt为true，m_bTryObfuscated为false，!m_bTryObfuscated=true，等于还是以bNoCrypt=true调用ConnectToServer()
 		}
 		else
 			ConnectToServer(next_server, true, !m_bTryObfuscated);
@@ -96,7 +98,11 @@ void CServerConnect::ConnectToAnyServer(UINT startAt, bool prioSort, bool isAuto
 	connecting = true;
 	singleconnecting = false;
 	theApp.emuledlg->ShowConnectionState();
-	m_bTryObfuscated = thePrefs.IsServerCryptLayerTCPRequested() && !bNoCrypt;
+
+	///snow:选项中的Enable protocol obfuscation选中，Disable support for obfuscated connections未选中，IsServerCryptLayerTCPRequested()返回true
+	///snow:bNoCrypt默认为false，但在加密连接都失败的情况下，bNoCrypt会被设置为true，未带参数的ConnectToAnyServer()中的bNoCrypt为true
+	///snow:这个参数跟服务器没有关系，只是客户端的设置与跟服务器连接时的成败情况有关
+	m_bTryObfuscated = thePrefs.IsServerCryptLayerTCPRequested() && !bNoCrypt;  
 
 	// Barry - Only auto-connect to static server option   ///snow:自动连接静态服务器，检查服务器列表里是否存在静态服务器
 	if (thePrefs.GetAutoConnectToStaticServersOnly() && isAuto)

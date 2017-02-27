@@ -453,6 +453,7 @@ BOOL CServerListCtrl::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 					theApp.serverlist->MoveServerDown(pServer);
 				}
 			}
+			///snow:进行加密连接
 			theApp.serverconnect->ConnectToAnyServer(theApp.serverlist->GetServerCount() - GetSelectedCount(), false, false);
 		}
 		else

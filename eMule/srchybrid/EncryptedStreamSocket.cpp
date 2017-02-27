@@ -199,6 +199,8 @@ int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
 }
 
 bool CEncryptedStreamSocket::IsEncryptionLayerReady(){
+
+	///snow:如果m_streamCryptState不为三者之一：ECS_NONE 、 ECS_ENCRYPTING 、 ECS_UNKNOWN，返回false
 	return ( (m_StreamCryptState == ECS_NONE || m_StreamCryptState == ECS_ENCRYPTING || m_StreamCryptState == ECS_UNKNOWN )
 		&& (m_pfiSendBuffer == NULL || (m_bServerCrypt && m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING)) );
 }

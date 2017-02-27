@@ -524,7 +524,7 @@ void CEMSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, u
     }
 
     sendLocker.Unlock();
-	if (bForceImmediateSend){
+	if (bForceImmediateSend){  ///snow:需要立即发送，不存入队列，调用Send()立即发送数据
 		ASSERT( controlpacket_queue.GetSize() == 1 );
 		Send(1024, 0, true);
 	}
