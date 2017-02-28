@@ -390,7 +390,7 @@ void CEncryptedStreamSocket::OnSend(int){
 	}
 	///snow:其它状态，必须是ECS_NEGOTIATING或ECS_ENCRYPTING
 	// check if we have negotiating data pending
-	if (m_pfiSendBuffer != NULL){
+	if (m_pfiSendBuffer != NULL){   ///snow:有未发送的数据
 		ASSERT( m_StreamCryptState >= ECS_NEGOTIATING );
 		SendNegotiatingData(NULL, 0);
 	}
@@ -616,7 +616,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					m_StreamCryptState = ECS_ENCRYPTING;
 					//DEBUG_ONLY( DebugLog(_T("CEncryptedStreamSocket: Finished Obufscation handshake with client %s (outgoing)"), DbgGetIPString()) );
 					break;
-				case ONS_BASIC_SERVER_DHANSWER:{
+				case ONS_BASIC_SERVER_DHANSWER:{   ///snow:在StartNegotiation()中m_StreamCryptState == ECS_PENDING_SERVER时设置
 					ASSERT( !m_cryptDHA.IsZero() );
 					///snow start :    - RC4 Keycreation:
      ///- Client (Outgoing connection):
@@ -720,7 +720,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 }
 
 ///snow start:此函数在四个地方被调用：Send(),OnSend(),StartNegotiation(),Negotiate()
-///   在Send()中，
+///   在Send()中，int nRes = SendNegotiatingData(lpBuf, nBufLen, nBufLen);
 int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLen, uint32 nStartCryptFromByte, bool bDelaySend){
 	ASSERT( m_StreamCryptState == ECS_NEGOTIATING || m_StreamCryptState == ECS_ENCRYPTING );
 	ASSERT( nStartCryptFromByte <= nBufLen );
@@ -734,9 +734,11 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 			AfxThrowMemoryException();
 		if (nStartCryptFromByte > 0)
 			memcpy(pBuffer, lpBuf, nStartCryptFromByte);
+
+		///snow:在StartNegotiation()中，ECS_PENDING_SERVER时，nBufLen == nStartCryptFromByte==lpBuf.length；ECS_PENDING时nStartCryptFromByte=5
 		if (nBufLen - nStartCryptFromByte > 0)
 			RC4Crypt((uchar*)lpBuf + nStartCryptFromByte, pBuffer + nStartCryptFromByte, nBufLen - nStartCryptFromByte, m_pRC4SendKey);
-		if (m_pfiSendBuffer != NULL){
+		if (m_pfiSendBuffer != NULL){  ///snow:存在延迟发送的信息包
 			// we already have data pending. Attach it and try to send
 			if (m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING)
 				m_NegotiatingState = ONS_COMPLETE;
@@ -750,7 +752,7 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 			bProcess = true; // we want to try to send it right now
 		}
 	}
-	if (lpBuf == NULL || bProcess){
+	if (lpBuf == NULL || bProcess){   ///snow:在OnSend()中调用，SendNegotiatingData(NULL,0),bProcess在上面的语句被赋值为true，表示有延迟发送的数据，需要立即发送
 		// this call is for processing pending data
 		if (m_pfiSendBuffer == NULL || nStartCryptFromByte != 0){
 			ASSERT( false );
@@ -763,7 +765,10 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 	}
     ASSERT( m_pfiSendBuffer == NULL );
 	uint32 result = 0;
-	if (!bDelaySend)
+	///snow:在Negotiate()中调用：
+	///snow:m_NegotiatingState = ONS_BASIC_SERVER_DELAYEDSENDING;
+	///snow:SendNegotiatingData(fileResponse.GetBuffer(), (uint32)fileResponse.GetLength(), 0, true);
+	if (!bDelaySend)  
 		result = CAsyncSocketEx::Send(pBuffer, nBufLen);
 	if (result == (uint32)SOCKET_ERROR || bDelaySend){
 		m_pfiSendBuffer = new CSafeMemFile(128);

@@ -228,7 +228,7 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 			ASSERT( false );
 			DebugLogError(_T("CEncryptedStreamSocket Received data before sending on outgoing connection"));
 			m_StreamCryptState = ECS_NONE;
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_PENDING"));
+			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_PENDING_SERVER"));
 			return m_nObfuscationBytesReceived;
 		case ECS_UNKNOWN:{
 			uint32 nRead = 1;

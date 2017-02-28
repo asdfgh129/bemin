@@ -31,21 +31,11 @@
 18:13:28 snow:CEncryptedStreamSocket:StartNegotiation m_StreamCryptState == ECS_PENDING_SERVER
 18:13:28 snow:CEncryptedStreamSocket:SendNegotiatingData start
 
-///发送的第一个数据包
+///发送的第一个数据包：Client端的握手协商报文
 18:13:28 snow:CAsyncSocketEx::Send before send,size : 111 , content : 6F1DF429F4C1E545E9996F6B3F40830A35D279ACDE1B88C0B4811B55788E0C120F1BDA1C7B2F2E81563409ECCE64989CD9AADFD9BBC3E0C89F085D3848EABE36262EB0E8833E07B7AA54AA6F932BF66E25E9D99365E81F94012316AC43122698B30DF5CD15DB67CCE2B32EE963E859铪铪铪
 18:13:28 snow:CAsyncSocketEx::Send，after send
-18:13:28 snow:CEncryptedStreamSocket:OnSend StartNegotiation(true)
+18:13:28 snow:CEncryptedStreamSocket:OnSend StartNegotiation(true)   ///在这里出现是因为Log语句写在了执行语句之后！
 18:13:28 CEMSocket:OnSend end
-
-
-18:13:28 snow:CEMSocket:Send start
-18:13:28 snow:CEMSocket:Send end
-18:13:28 snow:CEMSocket:Send start
-18:13:28 snow:CEMSocket:Send end
-18:13:28 snow:CEMSocket:Send start
-18:13:28 snow:CEMSocket:Send end
-18:13:28 snow:CEMSocket:Send start
-18:13:28 snow:CEMSocket:Send end
 
 
 18:13:28 snow:CEMSocket:Send start
@@ -54,7 +44,7 @@
 18:13:28 snow:CEMSocket:Send start
 18:13:28 snow:CEMSocket:Send end
 
-///snow:完成乱序加密协商
+///snow:完成乱序加密协商  下面这两个是Log，不是verboseLog，所以先出现了，其实是在后面才会出现的！！
 18:13:29 Received proper magic value after DH-Agreement from Serverconnection IP: 176.103.48.36
 18:13:29 CEncryptedStreamSocket: Finished DH Obufscation handshake with Server 176.103.48.36
 18:13:29 snow:CEMSocket:Send start
@@ -73,7 +63,7 @@
 18:13:29 CEMSocket:OnReceive start
 18:13:29 CEMSocket:Receive start
 18:13:29 snow:CEncryptedStreamSocket:Receive start
-///snow:加密建立之后收到的第一个数据包
+///snow:加密建立之后收到的第一个数据包，服务器发来的DH握手报文
 18:13:29 snow:CEncryptedStreamSocket:Receive before DeCrypt size:112 content:59C2DDB81DC6D986B57D2AB42F240416D513CCF2526065D3D995CADE55FC38264B46019202103460BA2806B1FCA28DFF4058A45B0F013BED2171EDD1500B7417AA9633C5FC008022346645DFD332B7C2E68FCF2CF8C3BAC63A42259238DFF824852CB00A2B27B6334823E3CAFF8B5742铪铪
 
 18:13:29 snow:CEncryptedStreamSocket:Receive ECS_NEGOTIATING
