@@ -668,7 +668,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 	uint32 sentStandardPacketBytesThisCall = 0;  ///snow:统计用
     uint32 sentControlPacketBytesThisCall = 0;
 
-	///snow:同时满足三个条件：1、如果已建立连接，2、加密层已准备好，
+	///snow:同时满足三个条件：1、如果已建立连接，2、加密层已准备好，IsEncryptionLayerReady不是表示加密已协商好，是表示不需要不加密或已加密完成，而不是处于协商中
 	///snow:  3、socket处于非阻塞状态或允许发送两种数据包（m_bBusy和onlyAllowedToSendControlPacket不同时为true)
     if(byConnected == ES_CONNECTED && IsEncryptionLayerReady() && !(m_bBusy && onlyAllowedToSendControlPacket)) {
         if(minFragSize < 1) {

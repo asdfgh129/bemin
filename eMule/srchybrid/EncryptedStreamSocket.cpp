@@ -162,7 +162,7 @@ void CEncryptedStreamSocket::CryptPrepareSendData(uchar* pBuffer, uint32 nLen){
 		m_StreamCryptState = ECS_NONE;
 		DebugLogError(_T("CEncryptedStreamSocket: Overwriting State ECS_UNKNOWN with ECS_NONE because of premature Send() (%s)"), DbgGetIPString());
 	}
-	///snow:要发送数据，状态必须是ECS_ENCRYPTING
+	///snow:要发送数据，状态必须是ECS_ENCRYPTING，错了，是状态如果是ECS_ENCRYPTING，则加密数据，否则，啥也不干
 	if (m_StreamCryptState == ECS_ENCRYPTING)
 		RC4Crypt(pBuffer, pBuffer, nLen, m_pRC4SendKey);
 }
@@ -200,7 +200,8 @@ int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
 
 bool CEncryptedStreamSocket::IsEncryptionLayerReady(){
 
-	///snow:如果m_streamCryptState不为三者之一：ECS_NONE 、 ECS_ENCRYPTING 、 ECS_UNKNOWN，返回false
+	///snow:如果m_streamCryptState不为三者之一：ECS_NONE 、 ECS_ENCRYPTING 、 ECS_UNKNOWN，返回false，其它情况为ECS_PENDING,ECS_PENDING_SERVER,ECS_NEGOTIATING，三种情况均表示正在协商中
+	///snow:m_pfiSendBuffer为空或者 服务器支持乱序加密且协商状态为延迟发送
 	return ( (m_StreamCryptState == ECS_NONE || m_StreamCryptState == ECS_ENCRYPTING || m_StreamCryptState == ECS_UNKNOWN )
 		&& (m_pfiSendBuffer == NULL || (m_bServerCrypt && m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING)) );
 }
@@ -208,7 +209,7 @@ bool CEncryptedStreamSocket::IsEncryptionLayerReady(){
 
 int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 	m_nObfuscationBytesReceived = CAsyncSocketEx::Receive(lpBuf, nBufLen, nFlags);///snow:实际接收的字节数，是未解密的字节数
-	m_bFullReceive = m_nObfuscationBytesReceived == (uint32)nBufLen;   ///snow:是否全部接收
+	m_bFullReceive = m_nObfuscationBytesReceived == (uint32)nBufLen;   ///snow:是否全部接收，在CEMSocket::Receive()中给pendingOnReceive赋值
 
 	if(m_nObfuscationBytesReceived == SOCKET_ERROR || m_nObfuscationBytesReceived <= 0){
 		return m_nObfuscationBytesReceived;
