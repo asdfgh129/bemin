@@ -287,16 +287,19 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 			RC4Crypt((uchar*)lpBuf, (uchar*)lpBuf, m_nObfuscationBytesReceived, m_pRC4ReceiveKey);
 			return m_nObfuscationBytesReceived;
 		case ECS_NEGOTIATING:{   ///snow:还在协商阶段
-			const uint32 nRead = Negotiate((uchar*)lpBuf, m_nObfuscationBytesReceived);
-			if (nRead == (-1))
+			const uint32 nRead = Negotiate((uchar*)lpBuf, m_nObfuscationBytesReceived);   ///snow:返回值有三种情况：0，表示m_nReceiveBytesWanted > 512
+			                                                                              ///snow:              nRead，表示已读取的字节数，如果nRead==m_nObfuscationBytesReceived，正常，
+			                                                                              ///snow:                     如果nRead!=m_nObfuscationBytesReceived，表示剩下未读的字节数<m_nReceiveBytesWanted，数据不全
+			                                                                              ///snow:                 -1，表示发生错误，两类：Magic Value错，或Method错
+			if (nRead == (-1))   ///snow:发生错误
 				return 0;
-			else if (nRead != (uint32)m_nObfuscationBytesReceived && m_StreamCryptState != ECS_ENCRYPTING){
+			else if (nRead != (uint32)m_nObfuscationBytesReceived && m_StreamCryptState != ECS_ENCRYPTING){  ///snow:尚未加密，数据不全
 				// this means we have more data then the current negotiation step required (or there is a bug) and this should never happen
 				DebugLogError(_T("CEncryptedStreamSocket: Client %s sent more data then expected while negotiating, disconnecting (2)"), DbgGetIPString());
 				OnError(ERR_ENCRYPTION);
 				return 0;
 			}
-			else if (nRead != (uint32)m_nObfuscationBytesReceived && m_StreamCryptState == ECS_ENCRYPTING){
+			else if (nRead != (uint32)m_nObfuscationBytesReceived && m_StreamCryptState == ECS_ENCRYPTING){   ///snow:已经加密了，数据多了
 				// we finished the handshake and if we this was an outgoing connection it is allowed (but strange and unlikely) that the client sent payload
 				DebugLogWarning(_T("CEncryptedStreamSocket: Client %s has finished the handshake but also sent payload on a outgoing connection"), DbgGetIPString());
 				memmove(lpBuf, (uchar*)lpBuf + nRead, m_nObfuscationBytesReceived - nRead);
@@ -428,9 +431,8 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
 		SendNegotiatingData(fileRequest.GetBuffer(), (uint32)fileRequest.GetLength(), 5);
 	}
 	else if (m_StreamCryptState == ECS_PENDING_SERVER){///snow:到服务器的Outgoing connection
-		///snow:准备Client端的握手协商报文
+		///snow:准备Client端的握手协商报文，报文格式与内容：总共111字节，1个字节的协议标志，96字节的密钥，14字节的随机数
 		///   Client: <SemiRandomNotProtocolMarker 1[Unencrypted]><G^A 96 [Unencrypted]><RandomBytes 0-15 [Unencrypted]>
-        ///    Server: <G^B 96 [Unencrypted]><MagicValue 4><EncryptionMethodsSupported 1><EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen>
 
 		CSafeMemFile fileRequest(113);
 		const uint8 bySemiRandomNotProtocolMarker = GetSemiRandomNotProtocolMarker();
@@ -468,16 +470,21 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
 }
 
 
-///snow:两处调用，均为被Reveive()函数调用
-///  case ECS_UNKNOWN:处
-///				const uint32 nNegRes = Negotiate((uchar*)lpBuf + nRead, m_nObfuscationBytesReceived - nRead);
-///  case ECS_NEGOTIATING:处
-/// 			const uint32 nRead = Negotiate((uchar*)lpBuf, m_nObfuscationBytesReceived);
+/*******************************************snow:start*********************************************************
+/*   两处调用，均为被Reveive()函数调用
+/*  case ECS_UNKNOWN:处
+/*				const uint32 nNegRes = Negotiate((uchar*)lpBuf + nRead, m_nObfuscationBytesReceived - nRead);
+/*  case ECS_NEGOTIATING:处
+/* 			const uint32 nRead = Negotiate((uchar*)lpBuf, m_nObfuscationBytesReceived);
 
+        Client: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen> (Answer delayed till first payload to save a frame)
+*******************************************snow:end************************************************************/
 int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 	uint32 nRead = 0;
 	ASSERT( m_nReceiveBytesWanted > 0 );
 	try{
+
+		///snow：报文一次性发过来，根据需要(m_nReceiveBytesWanted的值，在case处理完后重新赋值），反复提取
 		while (m_NegotiatingState != ONS_COMPLETE && m_nReceiveBytesWanted > 0){  ///snow:协商尚未完成
 			if (m_nReceiveBytesWanted > 512){
 				ASSERT( false );
@@ -494,11 +501,12 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 			///如果nLen>=m_nReceiveBytesWanted,nToRead=m_nReceiveBytesWanted=nRead，m_nReceiveBytesWanted=0;
 			///如果nLen<m_nReceiveBytesWanted,nToRead=nLen=nRead,m_nReceiveBytesWanted-=nToRead>0,return nRead;然后再次调用
 			///const uint32 nNegRes = Negotiate((uchar*)lpBuf + nRead, m_nObfuscationBytesReceived - nRead);
+			///报文一次性发过来，根据需要分多次读取
 			const uint32 nToRead =  min(nLen - nRead, m_nReceiveBytesWanted);
 			m_pfiReceiveBuffer->Write(pBuffer + nRead, nToRead);
 			nRead += nToRead;
 			m_nReceiveBytesWanted -= nToRead;
-			if (m_nReceiveBytesWanted > 0)
+			if (m_nReceiveBytesWanted > 0)   ///snow:数据不全，没有读取到完整的数据
 				return nRead;
 			///snow:m_nReceiveBytesWanted=0;握手协商报文数据已读取完毕，
 			const uint32 nCurrentBytesLen = (uint32)m_pfiReceiveBuffer->GetPosition();
@@ -616,15 +624,22 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					m_StreamCryptState = ECS_ENCRYPTING;
 					//DEBUG_ONLY( DebugLog(_T("CEncryptedStreamSocket: Finished Obufscation handshake with client %s (outgoing)"), DbgGetIPString()) );
 					break;
+				
+				//  此处开始处理与服务器DH协商握手时服务器发来的报文，总共112字节，包括96字节的密钥，4字节的MagicValue，3个字节的加密方法，9字节的随机填充数
+                //  Server: <G^B 96 [Unencrypted]><MagicValue 4><EncryptionMethodsSupported 1><EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen>
+                //  在读取时分四次读取，第一次处理DHANSWER,读取96字节，第二次处理MAGIVVALUE，读取4个字节，第三次处理METHODTAGSPADLEN，读取3个字节，第四次处理PADDING，读取9个字节 */
+				
 				case ONS_BASIC_SERVER_DHANSWER:{   ///snow:在StartNegotiation()中m_StreamCryptState == ECS_PENDING_SERVER时设置
 					ASSERT( !m_cryptDHA.IsZero() );
+					
 					///snow start :    - RC4 Keycreation:
-     ///- Client (Outgoing connection):
-     ///           Sendkey:    Md5(<S 96><MagicValue34 1>)  97
-     ///           Receivekey: Md5(<S 96><MagicValue203 1>) 97
-     ///- Server (Incomming connection):
-     ///           Sendkey:    Md5(<S 96><MagicValue203 1>)  97
-     ///           Receivekey: Md5(<S 96><MagicValue34 1>) 97
+                    ///- Client (Outgoing connection)
+                    ///           Sendkey:    Md5(<S 96><MagicValue34 1>)  97
+                    ///           Receivekey: Md5(<S 96><MagicValue203 1>) 97
+                    ///- Server (Incomming connection):
+                    ///           Sendkey:    Md5(<S 96><MagicValue203 1>)  97
+                    ///           Receivekey: Md5(<S 96><MagicValue34 1>) 97
+
 					uchar aBuffer[PRIMESIZE_BYTES + 1];
 					m_pfiReceiveBuffer->Read(aBuffer, PRIMESIZE_BYTES);
 					CryptoPP::Integer cryptDHAnswer((byte*)aBuffer, PRIMESIZE_BYTES);
@@ -644,13 +659,14 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					md5.Calculate(aBuffer, sizeof(aBuffer));
 					m_pRC4ReceiveKey = RC4CreateKey(md5.GetRawHash(), 16, NULL);
 
+					///snow:设置读取进度（m_NegotiatingState）及准备读取的字节数(m_nReceiveBytesWanted)，重新开始新一轮while
 					m_NegotiatingState = ONS_BASIC_SERVER_MAGICVALUE;
-					m_nReceiveBytesWanted = 4;
+					m_nReceiveBytesWanted = 4;  
 					break;
 				}
-				case ONS_BASIC_SERVER_MAGICVALUE:{
+				case ONS_BASIC_SERVER_MAGICVALUE:{   ///snow:读取的值是C46F5E83，反序
 					uint32 dwValue = m_pfiReceiveBuffer->ReadUInt32();
-					if (dwValue == MAGICVALUE_SYNC){
+					if (dwValue == MAGICVALUE_SYNC){  ///snow:835E6FC4
 						// yup, the one or the other way it worked, this is an encrypted stream
 						DebugLog(_T("Received proper magic value after DH-Agreement from Serverconnection IP: %s"), DbgGetIPString());
 						// set the receiver key
@@ -664,31 +680,31 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					}
 					break;
 			    }
-				case ONS_BASIC_SERVER_METHODTAGSPADLEN:
+				case ONS_BASIC_SERVER_METHODTAGSPADLEN:   ///snow:读取的数据是00 00 09，前两个字节表示是支持ENM_OBFUSCATION，使用ENM_OBFUSCATION，第三个字节是随机数字节数，下一次需要读取的字节数
 					m_dbgbyEncryptionSupported = m_pfiReceiveBuffer->ReadUInt8();
 					m_dbgbyEncryptionRequested = m_pfiReceiveBuffer->ReadUInt8();
 					if (m_dbgbyEncryptionRequested != ENM_OBFUSCATION)
 						AddDebugLogLine(DLP_LOW, false, _T("CEncryptedStreamSocket: Server %s preffered unsupported encryption method (%i)"), DbgGetIPString(), m_dbgbyEncryptionRequested);
-					m_nReceiveBytesWanted = m_pfiReceiveBuffer->ReadUInt8();
+					m_nReceiveBytesWanted = m_pfiReceiveBuffer->ReadUInt8();  ///snow:随机数字节数
 					m_NegotiatingState = ONS_BASIC_SERVER_PADDING;
-					if (m_nReceiveBytesWanted > 16)
+					if (m_nReceiveBytesWanted > 16)   ///snow:不可能大于16，大于16表示出错了
 						AddDebugLogLine(DLP_LOW, false, _T("CEncryptedStreamSocket: Server %s sent more than 16 (%i) padding bytes"), DbgGetIPString(), m_nReceiveBytesWanted);
 					if (m_nReceiveBytesWanted > 0)
 						break;
 				case ONS_BASIC_SERVER_PADDING:{
-
-					///   Client: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen> (Answer delayed till first payload to save a frame)
+					///snow:服务器发来的报文读取并处理完毕，发回确认报文，完成DH乱序加密协商握手过程 
+					///snow:   Client: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen> (Answer delayed till first payload to save a frame)
 					// ignore the random bytes (they are decrypted already), send the response, set status complete
 					CSafeMemFile fileResponse(26);
 					fileResponse.WriteUInt32(MAGICVALUE_SYNC);
 					const uint8 bySelectedEncryptionMethod = ENM_OBFUSCATION; // we do not support any further encryption in this version, so no need to look which the other client preferred
 					fileResponse.WriteUInt8(bySelectedEncryptionMethod);
-					uint8 byPadding = (uint8)(cryptRandomGen.GenerateByte() % 16);
+					uint8 byPadding = (uint8)(cryptRandomGen.GenerateByte() % 16);///snow:填充的随机数字节数
 					fileResponse.WriteUInt8(byPadding);
 					for (int i = 0; i < byPadding; i++)
 						fileResponse.WriteUInt8((uint8)rand());
 
-					m_NegotiatingState = ONS_BASIC_SERVER_DELAYEDSENDING;
+					m_NegotiatingState = ONS_BASIC_SERVER_DELAYEDSENDING;   ///snow:延迟发送，这边发送的内容是835E6FC40000
 					SendNegotiatingData(fileResponse.GetBuffer(), (uint32)fileResponse.GetLength(), 0, true); // don't actually send it right now, store it in our sendbuffer
 					m_StreamCryptState = ECS_ENCRYPTING;
 					DEBUG_ONLY( DebugLog(_T("CEncryptedStreamSocket: Finished DH Obufscation handshake with Server %s"), DbgGetIPString()) );
@@ -735,7 +751,8 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 		if (nStartCryptFromByte > 0)
 			memcpy(pBuffer, lpBuf, nStartCryptFromByte);
 
-		///snow:在StartNegotiation()中，ECS_PENDING_SERVER时，nBufLen == nStartCryptFromByte==lpBuf.length；ECS_PENDING时nStartCryptFromByte=5
+		///snow:在StartNegotiation()中，ECS_PENDING_SERVER时，nBufLen == nStartCryptFromByte==lpBuf.length；ECS_PENDING时nStartCryptFromByte=5，表示从第6次开始进行加密处理
+		///snow:在Negotiate()中，nStartCryptFromByte=0，所以进行加密处理
 		if (nBufLen - nStartCryptFromByte > 0)
 			RC4Crypt((uchar*)lpBuf + nStartCryptFromByte, pBuffer + nStartCryptFromByte, nBufLen - nStartCryptFromByte, m_pRC4SendKey);
 		if (m_pfiSendBuffer != NULL){  ///snow:存在延迟发送的信息包
@@ -765,11 +782,13 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 	}
     ASSERT( m_pfiSendBuffer == NULL );
 	uint32 result = 0;
-	///snow:在Negotiate()中调用：
-	///snow:m_NegotiatingState = ONS_BASIC_SERVER_DELAYEDSENDING;
-	///snow:SendNegotiatingData(fileResponse.GetBuffer(), (uint32)fileResponse.GetLength(), 0, true);
 	if (!bDelaySend)  
 		result = CAsyncSocketEx::Send(pBuffer, nBufLen);
+
+		///snow:在Negotiate()中调用：
+	///snow:m_NegotiatingState = ONS_BASIC_SERVER_DELAYEDSENDING;
+	///snow:SendNegotiatingData(fileResponse.GetBuffer(), (uint32)fileResponse.GetLength(), 0, true);
+
 	if (result == (uint32)SOCKET_ERROR || bDelaySend){
 		m_pfiSendBuffer = new CSafeMemFile(128);
 		m_pfiSendBuffer->Write(pBuffer, nBufLen);

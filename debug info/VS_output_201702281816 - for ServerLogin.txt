@@ -63,7 +63,7 @@
 18:13:29 CEMSocket:OnReceive start
 18:13:29 CEMSocket:Receive start
 18:13:29 snow:CEncryptedStreamSocket:Receive start
-///snow:加密建立之后收到的第一个数据包，服务器发来的DH握手报文
+///snow:加密建立之后收到的第一个数据包，服务器发来的DH握手报文，总共112字节，第一次读取96字节，第二次读取4字节，第三次读取3字节，第四次读取9字节
 18:13:29 snow:CEncryptedStreamSocket:Receive before DeCrypt size:112 content:59C2DDB81DC6D986B57D2AB42F240416D513CCF2526065D3D995CADE55FC38264B46019202103460BA2806B1FCA28DFF4058A45B0F013BED2171EDD1500B7417AA9633C5FC008022346645DFD332B7C2E68FCF2CF8C3BAC63A42259238DFF824852CB00A2B27B6334823E3CAFF8B5742铪铪
 
 18:13:29 snow:CEncryptedStreamSocket:Receive ECS_NEGOTIATING
@@ -73,6 +73,7 @@
 18:13:29 snow:CEMSocket:Send start
 18:13:29 snow:CEMSocket:Send end
 18:13:29 snow:CEncryptedStreamSocket:Negotiate before decrypt size:4 content:852CB00A铪铪
+///snow:MAGICVALUE_SYNC 835E6FC4
 18:13:29 snow:CEncryptedStreamSocket:Negotiate after decrypt size:4 content:C46F5E83铪铪
 18:13:29 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_MAGICVALUE
 18:13:29 snow:CEMSocket:Send start
@@ -80,11 +81,15 @@
 18:13:29 snow:CEMSocket:Send start
 18:13:29 snow:CEMSocket:Send end
 18:13:29 snow:CEncryptedStreamSocket:Negotiate before decrypt size:3 content:2B27B6铪铪铪
+///snow:ENM_OBFUSCATION 0  前两个字节是00 00，表示支持DH乱序加密（目前只支持这种方法），第三个字节是09，表示下次准备读取的字节数是9
+
 18:13:29 snow:CEncryptedStreamSocket:Negotiate after decrypt size:3 content:000009铪铪铪
 18:13:29 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_METHODTAGSPADLEN
 18:13:29 snow:CEncryptedStreamSocket:Negotiate before decrypt size:9 content:334823E3CAFF8B5742铪
 18:13:29 snow:CEncryptedStreamSocket:Negotiate after decrypt size:9 content:2908A07BAD447EBB24铪
 18:13:29 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_PADDING
+
+///没有单独发送，整合到发送的第二个包了，见第二个包的前6字节
 18:13:29 snow:CEncryptedStreamSocket:SendNegotiatingData start
 18:13:29 snow:CEncryptedStreamSocket:SendNegotiatingData before crypt size:6 content:CDCDCDCDCDCD
 18:13:29 snow:CEncryptedStreamSocket:SendNegotiatingData after crypt size:6 content:88F1796B6BF8
