@@ -174,16 +174,17 @@ int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
 		ASSERT( false ); // must be a bug
 		return 0;
 	}
+	///snow:发送在Negotiate()阶段延迟发送的数据包
 	else if (m_bServerCrypt && m_StreamCryptState == ECS_ENCRYPTING && m_pfiSendBuffer != NULL){
 		ASSERT( m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING );
 		// handshakedata was delayed to put it into one frame with the first paypload to the server
 		// do so now with the payload attached
-		int nRes = SendNegotiatingData(lpBuf, nBufLen, nBufLen);
+		int nRes = SendNegotiatingData(lpBuf, nBufLen, nBufLen);///snow:这里的调用发生在Negotiate()调用SendNegotiatingData之后，是第二次调用SendNegotiatingData，这次将真正的发送出数据
 		ASSERT( nRes != SOCKET_ERROR );
 		(void)nRes;
 		return nBufLen;	// report a full send, even if we didn't for some reason - the data is know in our buffer and will be handled later
 	}
-	else if (m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING)
+	else if (m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING)  ///snow:标记是ONS_BASIC_SERVER_DELAYEDSENDING，但没有m_pfiSendBuffer，出错了！
 		ASSERT( false );
 
 	///snow:这段代码同CryptPrepareSendData()中的代码
@@ -490,7 +491,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 				ASSERT( false );
 				return 0;
 			}
-			///snow:分配内存
+			///snow:分配内存，pBuffer存放的是接收到的整个报文，m_pfiReceiveBuffer存入的是报文中的片断
 			if (m_pfiReceiveBuffer == NULL){
 				BYTE* pReceiveBuffer = (BYTE*)malloc(512); // use a fixed size buffer
 				if (pReceiveBuffer == NULL)
@@ -505,7 +506,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 			const uint32 nToRead =  min(nLen - nRead, m_nReceiveBytesWanted);
 			m_pfiReceiveBuffer->Write(pBuffer + nRead, nToRead);
 			nRead += nToRead;
-			m_nReceiveBytesWanted -= nToRead;
+			m_nReceiveBytesWanted -= nToRead;  ///snow:m_nReceiveBytesWanted==0
 			if (m_nReceiveBytesWanted > 0)   ///snow:数据不全，没有读取到完整的数据
 				return nRead;
 			///snow:m_nReceiveBytesWanted=0;握手协商报文数据已读取完毕，
@@ -709,12 +710,15 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					m_StreamCryptState = ECS_ENCRYPTING;
 					DEBUG_ONLY( DebugLog(_T("CEncryptedStreamSocket: Finished DH Obufscation handshake with Server %s"), DbgGetIPString()) );
 					break;
+					///snow:在本语句块中，并未对m_nReceiveBytesWanted赋值，所以m_nReceiveBytesWanted！=0，还等于上次的填充随机数的字节数，while循环还将继续
+					///snow:上面的理解错了，m_nReceiveBytesWanted在switch开始前清0了，所以循环结束了。新的问题是：SendNegotiatingData延迟发送的数据什么时候发出去呢？
+					///snow:答案是在Send()被调用的时候发送，Send()会首先判断是否有delaysend的数据
 				}
 				default:
 					ASSERT( false );
-			}
-			m_pfiReceiveBuffer->SeekToBegin();
-		}
+			}///snow:end of switch
+			m_pfiReceiveBuffer->SeekToBegin();   ///snow:重置m_pfiReceiveBuffer指针，为了在下一轮while循环中写入数据
+		}///snow:end of while
 		if (m_pfiReceiveBuffer != NULL)
 			free(m_pfiReceiveBuffer->Detach());
 		delete m_pfiReceiveBuffer;
@@ -736,7 +740,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 }
 
 ///snow start:此函数在四个地方被调用：Send(),OnSend(),StartNegotiation(),Negotiate()
-///   在Send()中，int nRes = SendNegotiatingData(lpBuf, nBufLen, nBufLen);
+///   在Send()中，int nRes = SendNegotiatingData(lpBuf, nBufLen, nBufLen);作用是将Negotiate()时没发送的数据包真正的发出去
 int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLen, uint32 nStartCryptFromByte, bool bDelaySend){
 	ASSERT( m_StreamCryptState == ECS_NEGOTIATING || m_StreamCryptState == ECS_ENCRYPTING );
 	ASSERT( nStartCryptFromByte <= nBufLen );
@@ -749,20 +753,22 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 		if (pBuffer == NULL)
 			AfxThrowMemoryException();
 		if (nStartCryptFromByte > 0)
-			memcpy(pBuffer, lpBuf, nStartCryptFromByte);
+			memcpy(pBuffer, lpBuf, nStartCryptFromByte);///snow:将lpBuf中不需要加密的数据拷贝到pBuffer
 
 		///snow:在StartNegotiation()中，ECS_PENDING_SERVER时，nBufLen == nStartCryptFromByte==lpBuf.length；ECS_PENDING时nStartCryptFromByte=5，表示从第6次开始进行加密处理
 		///snow:在Negotiate()中，nStartCryptFromByte=0，所以进行加密处理
 		if (nBufLen - nStartCryptFromByte > 0)
 			RC4Crypt((uchar*)lpBuf + nStartCryptFromByte, pBuffer + nStartCryptFromByte, nBufLen - nStartCryptFromByte, m_pRC4SendKey);
-		if (m_pfiSendBuffer != NULL){  ///snow:存在延迟发送的信息包
+
+		///snow:下面的语句在Send()中调用SendNegotiatingData()时发生
+		if (m_pfiSendBuffer != NULL){  ///snow:存在延迟发送的信息包，在后面的语句块中赋值  if (result == (uint32)SOCKET_ERROR || bDelaySend)时
 			// we already have data pending. Attach it and try to send
 			if (m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING)
 				m_NegotiatingState = ONS_COMPLETE;
 			else
 				ASSERT( false );
-			m_pfiSendBuffer->SeekToEnd();
-			m_pfiSendBuffer->Write(pBuffer, nBufLen);
+			m_pfiSendBuffer->SeekToEnd();///snow:移动指针到末尾，方便添加数据
+			m_pfiSendBuffer->Write(pBuffer, nBufLen);///snow:将Send()时要发送的数据pBuffer附加到m_pfiSendBuffer后面，两个数据一起发送！！！
 			free(pBuffer);
 			pBuffer = NULL;
 			nStartCryptFromByte = 0;
@@ -778,7 +784,7 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 		nBufLen = (uint32)m_pfiSendBuffer->GetLength();
 		pBuffer = m_pfiSendBuffer->Detach();
 		delete m_pfiSendBuffer;
-		m_pfiSendBuffer = NULL;
+		m_pfiSendBuffer = NULL;   ///snow:清空m_pfiSendBuffer
 	}
     ASSERT( m_pfiSendBuffer == NULL );
 	uint32 result = 0;
@@ -789,14 +795,14 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 	///snow:m_NegotiatingState = ONS_BASIC_SERVER_DELAYEDSENDING;
 	///snow:SendNegotiatingData(fileResponse.GetBuffer(), (uint32)fileResponse.GetLength(), 0, true);
 
-	if (result == (uint32)SOCKET_ERROR || bDelaySend){
+	if (result == (uint32)SOCKET_ERROR || bDelaySend){   ///snow:延迟发送，写入m_pfiSendBuffer
 		m_pfiSendBuffer = new CSafeMemFile(128);
 		m_pfiSendBuffer->Write(pBuffer, nBufLen);
 		free(pBuffer);
 		return result;
     }
 	else {
-		if (result < nBufLen){
+		if (result < nBufLen){   ///snow:没发送完，还剩有数据，写入m_pfiSendBuffer
 			m_pfiSendBuffer = new CSafeMemFile(128);
 			m_pfiSendBuffer->Write(pBuffer + result, nBufLen - result);
 		}

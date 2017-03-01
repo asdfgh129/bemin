@@ -750,7 +750,7 @@ bool CServerSocket::PacketReceived(Packet* packet)
 	try {
 #endif
 		theStats.AddDownDataOverheadServer(packet->size);
-		if (packet->prot == OP_PACKEDPROT)  ///snow:压缩的数据包，先用UnPackPacket进行解包
+		if (packet->prot == OP_PACKEDPROT)  ///snow:压缩的数据包(0xD4)，先用UnPackPacket进行解包
 		{
 			uint32 uComprSize = packet->size;
 			if (!packet->UnPackPacket(250000)){
@@ -763,7 +763,7 @@ bool CServerSocket::PacketReceived(Packet* packet)
 				Debug(_T("Received compressed server TCP packet; opcode=0x%02x  size=%u  uncompr size=%u\n"), packet->opcode, uComprSize, packet->size);
 		}
 
-		if (packet->prot == OP_EDONKEYPROT)  ///snow:是Edonkey包
+		if (packet->prot == OP_EDONKEYPROT)  ///snow:是Edonkey包（0xE3),这里不处理OP_EMULEPROT(0xC5)的包
 		{
 			ProcessPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode);
 		}

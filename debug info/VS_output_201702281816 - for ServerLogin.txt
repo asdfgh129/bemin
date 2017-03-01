@@ -97,7 +97,7 @@
 
 
 
-
+///snow:有数据需要发送了，Send()被调用，因为上一环节有延迟发送的数据，Send()再次调用SendNegotiatingData，将本次要发送的数据附加到上次延迟发送的数据后一起发送
 18:13:29 snow:CEMSocket:Send start
 18:13:29 snow:CEMSocket:Send end
 18:13:29 snow:CEMSocket:Send start

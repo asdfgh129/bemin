@@ -273,12 +273,13 @@ BOOL CEMSocket::AsyncSelect(long lEvent){
 	return true;
 }
 
+///snow:父类中均没有实现OnReceive()
 void CEMSocket::OnReceive(int nErrorCode){
 	// the 2 meg size was taken from another place
 	static char GlobalReadBuffer[2000000];  ///snow:2M的接收缓冲区
 
 	// Check for an error code
-	if(nErrorCode != 0){
+	if(nErrorCode != 0){  ///snow:接收数据错误了
 		OnError(nErrorCode);
 		return;
 	}
@@ -287,7 +288,7 @@ void CEMSocket::OnReceive(int nErrorCode){
 	if(byConnected == ES_DISCONNECTED){
 		return;
 	}
-	else {	
+	else {	  ///snow:都能接收数据了，状态肯定是已连接，如果状态不是未连接，则都重置为已连接
 		byConnected = ES_CONNECTED; // ES_DISCONNECTED, ES_NOTCONNECTED, ES_CONNECTED
 	}
 
@@ -302,14 +303,15 @@ void CEMSocket::OnReceive(int nErrorCode){
     }
 
 	// Remark: an overflow can not occur here
-	///snow:缓冲区大小为200万字节（2M），可以接收的字节数为（缓冲区字节数-待处理的字节数）与downloadLimit的小值
+	///snow:缓冲区大小为200万字节（2M），可以接收的字节数为（缓冲区字节数-待处理的头字节数）与downloadLimit的小值
+	///snow:pendingHeaderSize表示上一次接收数据时剩余的字节数，为什么会有剩余？估计跟包的分割有关
 	uint32 readMax = sizeof(GlobalReadBuffer) - pendingHeaderSize; 
 	if(downloadLimitEnable == true && readMax > downloadLimit) {
 		readMax = downloadLimit;
 	}
 
 	// We attempt to read up to 2 megs at a time (minus whatever is in our internal read buffer)
-	///接收readMax字节，存入GlobalReadBuffer[GlobalReadBuffer + pendingHeaderSize]处，1次最多可接收2M字节
+	///接收readMax字节，存入GlobalReadBuffer[GlobalReadBuffer + pendingHeaderSize]处，1次最多可接收2M字节，前面的pendingHeaderSize字节留给pendingHeader
 	uint32 ret = Receive(GlobalReadBuffer + pendingHeaderSize, readMax); ///snow:CEMSocket::Recevive()-->CEncryptStreamSocket::Receive()
 	if(ret == SOCKET_ERROR || byConnected == ES_DISCONNECTED){
 		return;
@@ -324,29 +326,32 @@ void CEMSocket::OnReceive(int nErrorCode){
 	// CPU load improvement
 	// Detect if the socket's buffer is empty (or the size did match...)
 	///snow:判断socket的缓冲区是否为空，为空则表示则全部接收完毕
-	pendingOnReceive = m_bFullReceive;
+	pendingOnReceive = m_bFullReceive; ///m_bFullReceive为父类成员变量，在CEncryptedStreamSocket::Receive()中被赋值
+	///pendingOnReceive在设置downloadLimit时被调用，跟下载速度设置有关，但是没看懂在这里跟m_bFullReceive有什么关系？
+	///pendingOnReceive为true时调用OnReceive(0），为什么？
 
 	if (ret == 0)   ///snow:接收的字节数=m_nObfuscationBytesReceived，ret==0表示没收到数据
 		return;
 
 	///snow:将存放在pendingHeader的数据存入GlobalReadBuffer
 	// Copy back the partial header into the global read buffer for processing
-	if(pendingHeaderSize > 0) {
-  		memcpy(GlobalReadBuffer, pendingHeader, pendingHeaderSize);
-		ret += pendingHeaderSize;
+	if(pendingHeaderSize > 0) {   ///snow:在函数尾被赋值 pendingHeaderSize = rend - rptr;
+		memcpy(GlobalReadBuffer, pendingHeader, pendingHeaderSize); ///snow:因为在前面的Receive()中在GlobalReadBuffer头部预留了pendingHeaderSize字节
+		ret += pendingHeaderSize;   ///snow:pendingHeader被放入GlobalReadBuffer，所以没有pendingHeader数据了，而接收的字节数需要加上上次待处理的字节数
 		pendingHeaderSize = 0;   ///snow:重新置0，没有PendingHeader
 	}
 
-	if (IsRawDataMode())
+	if (IsRawDataMode())  ///snow:这段代码只在子类CHttpClientReqSocket中有用
 	{
 		DataReceived((BYTE*)GlobalReadBuffer, ret);  ///snow:虚函数，在子类中实现， CHttpClientReqSocket::DataReceived（）有具体实现
 		return;
 	}
 
 	char *rptr = GlobalReadBuffer; // floating index initialized with begin of buffer
-	const char *rend = GlobalReadBuffer + ret; // end of buffer
+	const char *rend = GlobalReadBuffer + ret; // end of buffer   ///snow:指向GlobalReadBuffer实际数据的尾部
 
 	// Loop, processing packets until we run out of them
+	///snow:表示GlobalReadBuffer缓冲区中的数据没被处理的数据不小于6个字节（包头的长度）或 存在未处理完的packet且GlobalReadBuffer还有数据（不一定大于6字节）
 	while ((rend - rptr >= PACKET_HEADER_SIZE) || ((pendingPacket != NULL) && (rend - rptr > 0)))
 	{
 		// Two possibilities here: 
@@ -369,13 +374,18 @@ void CEMSocket::OnReceive(int nErrorCode){
 		//
 		// The purpose of this algorithm is to limit the amount of data exchanged between buffers
 
-		if(pendingPacket == NULL){
-			pendingPacket = new Packet(rptr); // Create new packet container. 
-			rptr += 6;                        // Only the header is initialized so far
+		///snow:上面这段话的意思大致是说：eMule允许发送10240字节的块，但网络传输只能是1300字节，所以块在发送的时候会被分割，分成8次发送，而接收的时候需要再把它们拼接起来
+
+		///snow:没有上次OnReceive还没处理完的packet
+		if(pendingPacket == NULL){  ///snow:什么情况下pendingPacket != NULL?  答案 是 pendingPacket->size != pendingPacketSize的时候，在本次OnReceive中还有数据没接收到
+			pendingPacket = new Packet(rptr); // Create new packet container. ///snow:用接收到的数据构建一个Packet
+			rptr += 6;                        // Only the header is initialized so far  ///snow:指针前移6个字节，前6个字节是包头（size(4字节）,opcode（1字节）,prot（1字节）)，后面的是包的具体内容
 
 			// Bugfix We still need to check for a valid protocol
 			// Remark: the default eMule v0.26b had removed this test......
-			switch (pendingPacket->prot){
+			///snow:数据到这里的时候，如果是加密的，也已经解密了（在CEncryptedStreamSocket::Receive()中进行了解密）case ECS_ENCRYPTING: RC4Crypt
+			///snow:所以包头如果不是下面的三种属性，就是收到了错误包了
+			switch (pendingPacket->prot){   ///snow:构建Packet的时候，用rptr前6个字节中的数据给packet的成员变量赋值
 				case OP_EDONKEYPROT:
 				case OP_PACKEDPROT:
 				case OP_EMULEPROT:
@@ -389,6 +399,7 @@ void CEMSocket::OnReceive(int nErrorCode){
 			}
 
 			// Security: Check for buffer overflow (2MB)
+			///snow:包大于2M了，溢出了
 			if(pendingPacket->size > sizeof(GlobalReadBuffer)) {
 				delete pendingPacket;
 				pendingPacket = NULL;
@@ -397,23 +408,34 @@ void CEMSocket::OnReceive(int nErrorCode){
 			}
 
 			// Init data buffer
+			///snow:在前面用Packet(rptr)构建pendingPacket的时候，只有包头（size,opcode,prot)被赋值了，包体还是空的，就是数据还没有复制到pendingPacket中
 			pendingPacket->pBuffer = new char[pendingPacket->size + 1];
 			pendingPacketSize = 0;
-		}
+		}  ///snow:end of if(pendingPacket == NULL)
 
 		// Bytes ready to be copied into packet's internal buffer
+		/************************************************snow:start****************************************************************
+		/*   为什么要编写下面这段代码呢？
+		/*   这是因为从rptr中构建的packet的size不一定等于rptr的长度，如果一个packet的size大于1300，那么它就要被拆分，
+		/*   那么接收到的数据长度就要小于packet的size了
+		/*   而如果一个packet很小，就有可能是几个packet合起来一起发送，那么接收到的数据里可能包含好几个packet，数据的长度就会大于packet的size
+		/*   还有一个可能是接收到的数据中既包含上次pendingPacket的剩余部分，又包含新packet的数据（全部或部分）
+		/*   pendingPacketSize表示已经从rptr中读取的字节数，pendingPacket->size - pendingPacketSize表示构建一个完整的packet还需要的字节数
+		/*   rend-rptr表示缓冲区中还未被处理的字节数
+		*************************************************snow:end*****************************************************************/
 		ASSERT(rptr <= rend);
 		uint32 toCopy = ((pendingPacket->size - pendingPacketSize) < (uint32)(rend - rptr)) ? 
 			             (pendingPacket->size - pendingPacketSize) : (uint32)(rend - rptr);
 
 		// Copy Bytes from Global buffer to packet's internal buffer
+		///snow:rtpr在前面被前移了6个字节，所以这时的rptr指向的是真正的包体数据了，将包体数据拷贝到pendingPacket的pBuffer中
 		memcpy(&pendingPacket->pBuffer[pendingPacketSize], rptr, toCopy);
-		pendingPacketSize += toCopy;
-		rptr += toCopy;
+		pendingPacketSize += toCopy;  ///snow:pBuffer中的指针前移
+		rptr += toCopy;               ///snow:rptr的指针前移,到尾了吗？不一定，看包的大小
 		
 		// Check if packet is complet
 		ASSERT(pendingPacket->size >= pendingPacketSize);
-		if(pendingPacket->size == pendingPacketSize){
+		if(pendingPacket->size == pendingPacketSize){   ///snow:pendingPacket是个完整的包了，可以进行数据处理了
 #ifdef EMSOCKET_DEBUG
 			EMTrace("CEMSocket::PacketReceived on %d, opcode=%X, realSize=%d", 
 				    (SOCKET)this, pendingPacket->opcode, pendingPacket->GetRealPacketSize());
@@ -427,20 +449,22 @@ void CEMSocket::OnReceive(int nErrorCode){
 
 			if (!bPacketResult)
 				return;
-		}
-	}
+		}///snow:end of if(pendingPacket->size == pendingPacketSize)
+		///snow:如果pendingPacket->size != pendingPacketSize，那么包还不完整，需要下一次接收到数据时处理
+		///snow:如果rend-prtr>=PACKET_HEADER_SIZE，循环继续，处理下一个packet。到这里已不可能发生(pendingPacket != NULL) && (rend - rptr > 0)的情况了，因为这种情况在本轮循环时肯定被处理了
+	}///snow:end of while
 
 	// Finally, if there is any data left over, save it for next time
 	ASSERT(rptr <= rend);
 	ASSERT(rend - rptr < PACKET_HEADER_SIZE);
-	if(rptr != rend) {
+	if(rptr != rend) {   ///snow:还剩不到6个字节的数据，是包头的一部分，暂时存放在pendingHeader中，在下一次接收到数据时处理
 		// Keep the partial head
 		pendingHeaderSize = rend - rptr;
 		memcpy(pendingHeader, rptr, pendingHeaderSize);
 	}	
 }
 
-///snow:以CPartFile::Process（）中调用，仅此一处
+///snow:在CPartFile::Process（）中调用，仅此一处
 void CEMSocket::SetDownloadLimit(uint32 limit){	
 	downloadLimit = limit;
 	downloadLimitEnable = true;	
