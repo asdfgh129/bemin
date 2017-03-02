@@ -66,7 +66,7 @@ Packet::Packet(char* header){
 	pBuffer = 0;
 	completebuffer = 0;
 	Header_Struct* head = (Header_Struct*) header;
-	size = head->packetlength-1;
+	size = head->packetlength-1; ///snow:这边把读取到的size减1了
 	opcode = head->command;
 	prot = head->eDonkeyID;
 }

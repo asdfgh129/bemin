@@ -376,6 +376,8 @@ void CEMSocket::OnReceive(int nErrorCode){
 
 		///snow:上面这段话的意思大致是说：eMule允许发送10240字节的块，但网络传输只能是1300字节，所以块在发送的时候会被分割，分成8次发送，而接收的时候需要再把它们拼接起来
 
+		///snow:在这里，将接收到的数据封装成一个一个的Packet，实现从socket到packet的转化
+
 		///snow:没有上次OnReceive还没处理完的packet
 		if(pendingPacket == NULL){  ///snow:什么情况下pendingPacket != NULL?  答案 是 pendingPacket->size != pendingPacketSize的时候，在本次OnReceive中还有数据没接收到
 			pendingPacket = new Packet(rptr); // Create new packet container. ///snow:用接收到的数据构建一个Packet
@@ -441,7 +443,7 @@ void CEMSocket::OnReceive(int nErrorCode){
 				    (SOCKET)this, pendingPacket->opcode, pendingPacket->GetRealPacketSize());
 #endif
 
-			// Process packet   ///snow:处理接收到的数据，PacketReceived()调用ProcessPacket()对信息包进行处理
+			// Process packet   ///snow:处理接收到的数据，接收到一个完整的Packet，就调用PacketReceived()交由ProcessPacket()对信息包进行处理
 			bool bPacketResult = PacketReceived(pendingPacket);
 			delete pendingPacket;	
 			pendingPacket = NULL;

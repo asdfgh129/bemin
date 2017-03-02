@@ -163,7 +163,7 @@ void CServerSocket::OnReceive(int nErrorCode){
 
 }
 
-///snow:在PacketReceived()中调用，最主要的函数，集中处理收到的各种服务器包类型
+///snow:在PacketReceived()中调用，最主要的函数，集中处理收到的各种服务器包类型，在OnReceive()中收到数据，分割成一个一个packet，然后逐个packet调用PacketReceived-->ProcessPacket处理
 bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 {
 	try
@@ -274,21 +274,21 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 			case OP_IDCHANGE:{   
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					Debug(_T("ServerMsg - OP_IDChange\n"));
-				if (size < sizeof(LoginAnswer_Struct)){
+				if (size < sizeof(LoginAnswer_Struct)){   ///snow:4字节
 					throw GetResString(IDS_ERR_BADSERVERREPLY);
 				}
-				LoginAnswer_Struct* la = (LoginAnswer_Struct*)packet;
+				LoginAnswer_Struct* la = (LoginAnswer_Struct*)packet; ///snow:packet的前四个字节就是User ID
 
 				// save TCP flags in 'cur_server'
 				CServer* pServer = NULL;
 				ASSERT( cur_server );
 				if (cur_server){
-					if (size >= sizeof(LoginAnswer_Struct)+4){
-						DWORD dwFlags = *((uint32*)(packet + sizeof(LoginAnswer_Struct)));
+					if (size >= sizeof(LoginAnswer_Struct)+4){   ///snow:获取TCP FLAGS
+						DWORD dwFlags = *((uint32*)(packet + sizeof(LoginAnswer_Struct)));  ///snow:ID后两个字节
 						if (thePrefs.GetDebugServerTCPLevel() > 0){
 							CString strInfo;
 							strInfo.AppendFormat(_T("  TCP Flags=0x%08x"), dwFlags);
-							const DWORD dwKnownBits = SRV_TCPFLG_COMPRESSION | SRV_TCPFLG_NEWTAGS | SRV_TCPFLG_UNICODE | SRV_TCPFLG_RELATEDSEARCH | SRV_TCPFLG_TYPETAGINTEGER | SRV_TCPFLG_LARGEFILES | SRV_TCPFLG_TCPOBFUSCATION;
+							const DWORD dwKnownBits = SRV_TCPFLG_COMPRESSION | SRV_TCPFLG_NEWTAGS | SRV_TCPFLG_UNICODE | SRV_TCPFLG_RELATEDSEARCH | SRV_TCPFLG_TYPETAGINTEGER | SRV_TCPFLG_LARGEFILES | SRV_TCPFLG_TCPOBFUSCATION;  ///snow:0101 1101 1001
 							if (dwFlags & ~dwKnownBits)
 								strInfo.AppendFormat(_T("  ***UnkBits=0x%08x"), dwFlags & ~dwKnownBits);
 							if (dwFlags & SRV_TCPFLG_COMPRESSION)
@@ -320,14 +320,14 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 
 				uint32 dwServerReportedIP = 0;
 				uint32 dwObfuscationTCPPort = 0;
-				if (size >= 20){
-					dwServerReportedIP = *((uint32*)(packet + 12));
+				if (size >= 20){   ///snow:size大于20字节
+					dwServerReportedIP = *((uint32*)(packet + 12)); ///snow:13到16字节是dwServerReportedIP
 					if (::IsLowID(dwServerReportedIP)){
 						ASSERT( false );
 						dwServerReportedIP = 0;
 					}
 					ASSERT( dwServerReportedIP == la->clientid || ::IsLowID(la->clientid) );
-					dwObfuscationTCPPort = *((uint32*)(packet + 16));
+					dwObfuscationTCPPort = *((uint32*)(packet + 16));   ///snow:17到20字节是dwObfuscationTCPPort
 					if (cur_server != NULL && dwObfuscationTCPPort != 0)
 						cur_server->SetObfuscationPortTCP((uint16)dwObfuscationTCPPort);
 					if (pServer != NULL && dwObfuscationTCPPort != 0)
@@ -375,7 +375,7 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 				serverconnect->clientid = la->clientid;
 
 				if (connectionstate != CS_CONNECTED) {
-					SetConnectionState(CS_CONNECTED);
+					SetConnectionState(CS_CONNECTED);   ///snow:设置连接状态为CS_CONNECTED，表示正式连接成功！调用ConnectionEstablished()中的CS_CONNECTED部分
 					theApp.OnlineSig();       // Added By Bouc7 
 				}
 				serverconnect->SetClientID(la->clientid);
@@ -413,14 +413,14 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 				}
 				break;
 			}
-			case OP_SERVERSTATUS:{
+			case OP_SERVERSTATUS:{  ///snow:服务器的用户数和文件数
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					Debug(_T("ServerMsg - OP_ServerStatus\n"));
 				// FIXME some statuspackets have a different size -> why? structur?
 				if (size < 8)
 					break;//throw "Invalid status packet";
-				uint32 cur_user = PeekUInt32(packet);
-				uint32 cur_files = PeekUInt32(packet+4);
+				uint32 cur_user = PeekUInt32(packet);  ///snow:前四个字节，连接用户数
+				uint32 cur_files = PeekUInt32(packet+4);  ///后四个字节：文件数
 				CServer* pServer = cur_server ? theApp.serverlist->GetServerByAddress(cur_server->GetAddress(), cur_server->GetPort()) : NULL;
 				if (pServer){
 					pServer->SetUserCount(cur_user);
@@ -518,9 +518,9 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 					Debug(_T("ServerMsg - OP_ServerList\n"));
 				try{
 					CSafeMemFile servers(packet, size);
-					UINT count = servers.ReadUInt8();
+					UINT count = servers.ReadUInt8();   ///snow:返回列表中的服务器数
 					// check if packet is valid
-					if (1 + count*(4+2) > size)
+					if (1 + count*(4+2) > size)      ///snow:每个服务器占6个字节，4字节IP+2字节Port
 						count = 0;
 					int addcount = 0;
 					while(count)
