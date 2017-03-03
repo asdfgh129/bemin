@@ -520,7 +520,7 @@ void CEMSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, u
         }
 		return;
     } else {
-		if (!delpacket){  ///snow:不删除包，复制一份包
+		if (!delpacket){  ///snow:不删除包，复制一份包 在CSearchResultsWnd::DoNewEd2kSearch()中以false调用theApp.serverconnect->SendPacket(packet,false);
             //ASSERT ( !packet->IsSplitted() );
             Packet* copy = new Packet(packet->opcode,packet->size);
 		    memcpy(copy->pBuffer,packet->pBuffer,packet->size);
@@ -535,7 +535,7 @@ void CEMSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, u
 	        controlpacket_queue.AddTail(packet);  ///把packet对象添加到控制包队列末尾，packet对象在发送时应重新编码成字节流
 
             // queue up for controlpacket
-            theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this, HasSent());
+			theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this, HasSent());  ///snow:在Send()函数中发送成功的情况下m_hasSent=true;
 		} else {   ///snow:不是控制包，是标准包，添加到标准包队列
             bool first = !((sendbuffer && !m_currentPacket_is_controlpacket) || !standartpacket_queue.IsEmpty());
             StandardPacketQueueEntry queueEntry = { actualPayloadSize, packet };

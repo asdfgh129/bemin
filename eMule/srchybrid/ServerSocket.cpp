@@ -320,7 +320,7 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 
 				uint32 dwServerReportedIP = 0;
 				uint32 dwObfuscationTCPPort = 0;
-				if (size >= 20){   ///snow:size大于20字节
+				if (size >= 20){   ///snow:size大于20字节  小于20字节的情况呢？
 					dwServerReportedIP = *((uint32*)(packet + 12)); ///snow:13到16字节是dwServerReportedIP
 					if (::IsLowID(dwServerReportedIP)){
 						ASSERT( false );
@@ -452,14 +452,14 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 				CSafeMemFile data(packet, size);
 				
 				uint8 aucHash[16];
-				data.ReadHash16(aucHash);
+				data.ReadHash16(aucHash);   ///snow:16字节的HASH
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					strInfo.AppendFormat(_T("Hash=%s (%s)"), md4str(aucHash), DbgGetHashTypeString(aucHash));
-				uint32 nServerIP = data.ReadUInt32();
-				uint16 nServerPort = data.ReadUInt16();
+				uint32 nServerIP = data.ReadUInt32();   ///snow:4字节的IP
+				uint16 nServerPort = data.ReadUInt16();  ///snow:2字节的Port
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					strInfo.AppendFormat(_T("  IP=%s:%u"), ipstr(nServerIP), nServerPort);
-				UINT nTags = data.ReadUInt32();
+				UINT nTags = data.ReadUInt32();  ///snow:4字节的Tags
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					strInfo.AppendFormat(_T("  Tags=%u"), nTags);
 
@@ -467,14 +467,14 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 				CString strDescription;
 				for (UINT i = 0; i < nTags; i++){
 					CTag tag(&data, pServer ? pServer->GetUnicodeSupport() : false);
-					if (tag.GetNameID() == ST_SERVERNAME){
+					if (tag.GetNameID() == ST_SERVERNAME){    ///snow:服务器名字
 						if (tag.IsStr()){
 							strName = tag.GetStr();
 							if (thePrefs.GetDebugServerTCPLevel() > 0)
 								strInfo.AppendFormat(_T("  Name=%s"), strName);
 						}
 					}
-					else if (tag.GetNameID() == ST_DESCRIPTION){
+					else if (tag.GetNameID() == ST_DESCRIPTION){   ///snow:服务器描述
 						if (tag.IsStr()){
 							strDescription = tag.GetStr();
 							if (thePrefs.GetDebugServerTCPLevel() > 0)
@@ -518,7 +518,7 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 					Debug(_T("ServerMsg - OP_ServerList\n"));
 				try{
 					CSafeMemFile servers(packet, size);
-					UINT count = servers.ReadUInt8();   ///snow:返回列表中的服务器数
+					UINT count = servers.ReadUInt8();   ///snow:返回列表中的服务器数（1个字节，最多255个服务器）
 					// check if packet is valid
 					if (1 + count*(4+2) > size)      ///snow:每个服务器占6个字节，4字节IP+2字节Port
 						count = 0;
