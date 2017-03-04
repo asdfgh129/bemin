@@ -696,6 +696,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
 
 	///snow:同时满足三个条件：1、如果已建立连接，2、加密层已准备好，IsEncryptionLayerReady不是表示加密已协商好，是表示不需要不加密或已加密完成，而不是处于协商中
 	///snow:  3、socket处于非阻塞状态或允许发送两种数据包（m_bBusy和onlyAllowedToSendControlPacket不同时为true)
+	///snow:IsEncryptionLayerReady很关键，这里决定了：如果是加密连接，而协商还未完成，连接还没建立，则包是无法进行发送的！这就是为什么登录信息的包会在协商完成后与协商时延迟发送的包一起发送的原因
     if(byConnected == ES_CONNECTED && IsEncryptionLayerReady() && !(m_bBusy && onlyAllowedToSendControlPacket)) {
         if(minFragSize < 1) {
             minFragSize = 1;
