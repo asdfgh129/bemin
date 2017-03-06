@@ -220,6 +220,7 @@ void Packet::PackPacket(){
 	m_bPacked = true;
 }
 
+///snow:两种信息包可以压缩：OP_EMULEPROT，OP_KADEMLIAHEADER
 bool Packet::UnPackPacket(UINT uMaxDecompressedSize){
 	ASSERT ( prot == OP_PACKEDPROT || prot == OP_KADEMLIAPACKEDPROT); 
 	uint32 nNewSize = size*10+300;

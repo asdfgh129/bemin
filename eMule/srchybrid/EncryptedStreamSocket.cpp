@@ -384,6 +384,7 @@ void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar*
 	}
 }
 
+///snow:两种情况会被触发：connect连接成功之后，WSAEWOULDBLOCK解除之时。本函数只处理connect连接成功之后的情况
 void CEncryptedStreamSocket::OnSend(int){
 	///snow:呼出连接，准备开始握手，开始协商，退出函数
 	///snow:ECS_PENDING或ECS_PENDING_SERVER状态在SetConnectionEncryption函数中设置

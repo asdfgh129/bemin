@@ -253,16 +253,18 @@ bool CClientReqSocket::ProcessPacket(const BYTE* packet, uint32 size, UINT opcod
 	{
 		try
 		{
-			if (!client && opcode != OP_HELLO)
+			if (!client && opcode != OP_HELLO)   ///snow:!client表示连接尚未建立，还没生成CClientReqSocket对象，
 			{
 				theStats.AddDownDataOverheadOther(size);
 				throw GetResString(IDS_ERR_NOHELLO);
 			}
 			else if (client && opcode != OP_HELLO && opcode != OP_HELLOANSWER)
-				client->CheckHandshakeFinished();
+				client->CheckHandshakeFinished();    ///snow:检查握手是否完成
+
+
 			switch(opcode)
 			{
-				case OP_HELLOANSWER:
+			    case OP_HELLOANSWER:    ///snow:呼出连接
 				{
 					theStats.AddDownDataOverheadOther(size);
 					client->ProcessHelloAnswer(packet,size);
@@ -284,7 +286,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE* packet, uint32 size, UINT opcod
 					}
 					break;
 				}
-				case OP_HELLO:
+				case OP_HELLO:    ///snow:呼入连接
 				{
 					theStats.AddDownDataOverheadOther(size);
 
@@ -2211,17 +2213,17 @@ bool CClientReqSocket::PacketReceivedCppEH(Packet* packet)
 	bool bResult;
 	UINT uRawSize = packet->size;
 	switch (packet->prot){
-		case OP_EDONKEYPROT:
+		case OP_EDONKEYPROT:     ///snow:eDonkey协议的包，由ProcessPacket处理
 			bResult = ProcessPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode);
 			break;
 		case OP_PACKEDPROT:
-			if (!packet->UnPackPacket()){
+			if (!packet->UnPackPacket()){    ///snow:解压不成功，记录失败日志，break；否则转入OP_EMULEPROT处理，调用ProcessExtPacket函数，如果是OP_KADEMLIAHEADER，则转入default处理
 				if (thePrefs.GetVerbose())
 					DebugLogError(_T("Failed to decompress client TCP packet; %s; %s"), DbgGetClientTCPPacket(packet->prot, packet->opcode, packet->size), DbgGetClientInfo());
 				bResult = false;
 				break;
 			}
-		case OP_EMULEPROT:
+		case OP_EMULEPROT:     ///snow:eMule协议的包，由ProcessExtPacket处理
 			bResult = ProcessExtPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode, uRawSize);
 			break;
 		default:{
@@ -2482,6 +2484,8 @@ void CListenSocket::StopListening()
 
 static int s_iAcceptConnectionCondRejected;
 
+
+///snow:接受连接条件函数，作为WSAAccept函数的参数传入，供系统回调
 int CALLBACK AcceptConnectionCond(LPWSABUF lpCallerId, LPWSABUF /*lpCallerData*/, LPQOS /*lpSQOS*/, LPQOS /*lpGQOS*/,
 								  LPWSABUF /*lpCalleeId*/, LPWSABUF /*lpCalleeData*/, GROUP FAR* /*g*/, DWORD /*dwCallbackData*/)
 {
@@ -2518,17 +2522,17 @@ void CListenSocket::OnAccept(int nErrorCode)
 {
 	if (!nErrorCode)
 	{
-		m_nPendingConnections++;
+		m_nPendingConnections++;   ///snow:新的呼入连接，连接尚未建立，计数加1
 		if (m_nPendingConnections < 1){
 			ASSERT(0);
 			m_nPendingConnections = 1;
 		}
 
-		if (TooManySockets(true) && !theApp.serverconnect->IsConnecting()){
+		if (TooManySockets(true) && !theApp.serverconnect->IsConnecting()){    ///snow:连接太多了（超过最大连接数），且与服务器尚未建立连接，不再接受新的连接
 			StopListening();
 			return;
 		}
-		else if (!bListening)
+		else if (!bListening)    ///snow:Listen没有启动
 			ReStartListening(); //If the client is still at maxconnections, this will allow it to go above it.. But if you don't, you will get a lowID on all servers.
 	
 		uint32 nFataErrors = 0;
@@ -2539,10 +2543,12 @@ void CListenSocket::OnAccept(int nErrorCode)
 			CClientReqSocket* newclient;
 			SOCKADDR_IN SockAddr = {0};
 			int iSockAddrLen = sizeof SockAddr;
-			if (thePrefs.GetConditionalTCPAccept() && !thePrefs.GetProxySettings().UseProxy)
+			if (thePrefs.GetConditionalTCPAccept() && !thePrefs.GetProxySettings().UseProxy)   ///snow:未使用代理，建立TCP接入使用了条件许可
 			{
 				s_iAcceptConnectionCondRejected = 0;
-				SOCKET sNew = WSAAccept(m_SocketData.hSocket, (SOCKADDR*)&SockAddr, &iSockAddrLen, AcceptConnectionCond, 0);
+				SOCKET sNew = WSAAccept(m_SocketData.hSocket, (SOCKADDR*)&SockAddr, &iSockAddrLen, AcceptConnectionCond, 0);   ///snow:调用WSAAccept，accept多两个参数，lpfnCondition：（可选的）用户提供的条件函数的进程实例地址。该函数根据参数传入的调用者信息作出接受或拒绝的决定，并通过给结果参数赋予特定的值来（可选地）创建和/或加入一个套接口组。
+dwCallbackData：作为条件函数参数返回给应用程序的回调数据。WinSock不分析该参数。
+
 				if (sNew == INVALID_SOCKET){
 				    DWORD nError = GetLastError();
 				    if (nError == WSAEWOULDBLOCK){
@@ -2570,19 +2576,21 @@ void CListenSocket::OnAccept(int nErrorCode)
 					    break;
 				    }
 					continue;
-				}
+				} ///snow:end of INVALID_SOCKET
 				newclient = new CClientReqSocket;
 				VERIFY( newclient->InitAsyncSocketExInstance() );
 				newclient->m_SocketData.hSocket = sNew;
 				newclient->AttachHandle(sNew);
 
 				AddConnection();
-			}
+			}  ///snow:end of if (thePrefs.GetConditionalTCPAccept() && !thePrefs.GetProxySettings().UseProxy) 
 			else
-			{
+			{   ///snow:未设置条件接入，判断是否过滤清单或黑名单
 				newclient = new CClientReqSocket;
-			    if (!Accept(*newclient, (SOCKADDR*)&SockAddr, &iSockAddrLen)){
-				    newclient->Safe_Delete();
+
+				///snow:调用CAsyncSocketEx::Accept，Accept调用accept
+				if (!Accept(*newclient, (SOCKADDR*)&SockAddr, &iSockAddrLen)){   ///snow:连接不成功
+    				newclient->Safe_Delete();
 				    DWORD nError = GetLastError();
 				    if (nError == WSAEWOULDBLOCK){
 					    DebugLogError(LOG_STATUSBAR, _T("%hs: Backlogcounter says %u connections waiting, Accept() says WSAEWOULDBLOCK - setting counter to zero!"), __FUNCTION__, m_nPendingConnections);
@@ -2605,20 +2613,20 @@ void CListenSocket::OnAccept(int nErrorCode)
 					    break;
 				    }
 				    continue;
-			    }
+				} ///snow: end if 
 	    
-			    AddConnection();
+				AddConnection();  ///snow:建立的连接数加1
     
 			    if (SockAddr.sin_addr.S_un.S_addr == 0) // for safety..
 			    {
 				    iSockAddrLen = sizeof SockAddr;
-				    newclient->GetPeerName((SOCKADDR*)&SockAddr, &iSockAddrLen);
+					newclient->GetPeerName((SOCKADDR*)&SockAddr, &iSockAddrLen);   ///snow:获取client名称
 				    DebugLogWarning(_T("SockAddr.sin_addr.S_un.S_addr == 0;  GetPeerName returned %s"), ipstr(SockAddr.sin_addr.S_un.S_addr));
 			    }
     
 			    ASSERT( SockAddr.sin_addr.S_un.S_addr != 0 && SockAddr.sin_addr.S_un.S_addr != INADDR_NONE );
     
-			    if (theApp.ipfilter->IsFiltered(SockAddr.sin_addr.S_un.S_addr)){
+				if (theApp.ipfilter->IsFiltered(SockAddr.sin_addr.S_un.S_addr)){   ///snow:判断IP地址是否在过滤清单中
 				    if (thePrefs.GetLogFilteredIPs())
 					    AddDebugLogLine(false, _T("Rejecting connection attempt (IP=%s) - IP filter (%s)"), ipstr(SockAddr.sin_addr.S_un.S_addr), theApp.ipfilter->GetLastHit());
 				    newclient->Safe_Delete();
@@ -2626,7 +2634,7 @@ void CListenSocket::OnAccept(int nErrorCode)
 				    continue;
 			    }
     
-			    if (theApp.clientlist->IsBannedClient(SockAddr.sin_addr.S_un.S_addr)){
+				if (theApp.clientlist->IsBannedClient(SockAddr.sin_addr.S_un.S_addr)){   ///snow:判断是否是黑名单
 				    if (thePrefs.GetLogBannedClients()){
 					    CUpDownClient* pClient = theApp.clientlist->FindClientByIP(SockAddr.sin_addr.S_un.S_addr);
 					    AddDebugLogLine(false, _T("Rejecting connection attempt of banned client %s %s"), ipstr(SockAddr.sin_addr.S_un.S_addr), pClient->DbgGetClientInfo());
@@ -2634,8 +2642,8 @@ void CListenSocket::OnAccept(int nErrorCode)
 				    newclient->Safe_Delete();
 				    continue;
 			    }
-			}
-			newclient->AsyncSelect(FD_WRITE | FD_READ | FD_CLOSE);
+			}///snow:end of else 未使用条件允许接入
+			newclient->AsyncSelect(FD_WRITE | FD_READ | FD_CLOSE);  ///snow:在建立的Socket上接收FD_WRITE | FD_READ | FD_CLOSE事件
 		}
 
 		ASSERT( m_nPendingConnections >= 0 );
@@ -2717,7 +2725,7 @@ void CListenSocket::KillAllSockets()
 
 void CListenSocket::AddConnection()
 {
-	m_OpenSocketsInterval++;
+	m_OpenSocketsInterval++;   ///snow:统计建立的连接数
 }
 
 bool CListenSocket::TooManySockets(bool bIgnoreInterval)

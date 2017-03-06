@@ -613,7 +613,7 @@ void CEMSocket::OnSend(int nErrorCode){
 
     sendLocker.Lock();
 
-    m_bBusy = false;
+	m_bBusy = false;   ///snow:可以发送了，肯定不是忙的状态
 
     // stopped sending here.
     //StoppedSendSoUpdateStats();
@@ -622,9 +622,9 @@ void CEMSocket::OnSend(int nErrorCode){
         sendLocker.Unlock();
 		return;
     } else
-		byConnected = ES_CONNECTED;
+		byConnected = ES_CONNECTED;  ///snow:如果连接未建立，是不可能触发FD_WRITE事件的
 
-    if(m_currentPacket_is_controlpacket) {
+	if(m_currentPacket_is_controlpacket) {    ///snow:如果没有控制包，就不添加到带宽控制阀去发送。数据包的处理呢？
         // queue up for control packet
         theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this, HasSent());
     }
