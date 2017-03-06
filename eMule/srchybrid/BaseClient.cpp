@@ -395,6 +395,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile* data)
 	uint32 tagcount = data->ReadUInt32();
 	if (bDbgInfo)
 		m_strHelloInfo.AppendFormat(_T("  Tags=%u"), tagcount);
+	///snow:处理Tags
 	for (uint32 i = 0; i < tagcount; i++)
 	{
 		CTag temptag(data, true);
@@ -593,7 +594,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile* data)
 		}
 	}
 	m_nUserPort = nUserPort;
-	m_dwServerIP = data->ReadUInt32();
+	m_dwServerIP = data->ReadUInt32();    ///snow:客户端连接的服务器
 	m_nServerPort = data->ReadUInt16();
 	if (bDbgInfo)
 		m_strHelloInfo.AppendFormat(_T("\n  Server=%s:%u"), ipstr(m_dwServerIP), m_nServerPort);
@@ -603,7 +604,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile* data)
 	// *) eDonkeyHybrid 0.40 - 1.2 sends an additional Int32. (Since 1.3 they don't send it any longer.)
 	// *) MLdonkey sends an additional Int32
 	//
-	if (data->GetLength() - data->GetPosition() == sizeof(uint32)){
+	if (data->GetLength() - data->GetPosition() == sizeof(uint32)){   ///snow:后面还剩4字节
 		uint32 test = data->ReadUInt32();
 		if (test == 'KDLM'){
 			m_bIsML = true;
@@ -636,6 +637,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile* data)
 	socket->GetPeerName((SOCKADDR*)&sockAddr, &nSockAddrLen);
 	SetIP(sockAddr.sin_addr.S_un.S_addr);
 
+	///snow:将客户端连接的服务器添加到服务器列表
 	if (thePrefs.GetAddServersFromClients() && m_dwServerIP && m_nServerPort){
 		CServer* addsrv = new CServer(m_nServerPort, ipstr(m_dwServerIP));
 		addsrv->SetListName(addsrv->GetAddress());
@@ -648,9 +650,11 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile* data)
 	//(b)Some older clients will not send a ID, these client are HighID users that are not connected to a server.
 	//(c)Kad users with a *.*.*.0 IPs will look like a lowID user they are actually a highID user.. They can be detected easily
 	//because they will send a ID that is the same as their IP..
-	if(!HasLowID() || m_nUserIDHybrid == 0 || m_nUserIDHybrid == m_dwUserIP ) 
+	///snow:如果客户端具有高ID，保存到m_nUserIDHybrid
+	if(!HasLowID() || m_nUserIDHybrid == 0 || m_nUserIDHybrid == m_dwUserIP )   ///snow:LowID:m_nUserIDHybrid < 16777216
 		m_nUserIDHybrid = ntohl(m_dwUserIP);
 
+	///snow:获取客户端的信用记录
 	CClientCredits* pFoundCredits = theApp.clientcredits->GetCredit(m_achUserHash);
 	if (credits == NULL){
 		credits = pFoundCredits;
@@ -668,7 +672,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile* data)
 		Ban();
 	}
 
-
+	///snow:获取客户端的朋友列表
 	if (GetFriend() != NULL && GetFriend()->HasUserhash() && md4cmp(GetFriend()->m_abyUserhash, m_achUserHash) != 0)
 	{
 		// this isnt our friend anymore and it will be removed/replaced, tell our friendobject about it
@@ -706,6 +710,8 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile* data)
 	}
 
 	m_byInfopacketsReceived |= IP_EDONKEYPROTPACK;
+
+	///snow:CT_EMULE_UDPPORTS、CT_EMULE_MISCOPTIONS1、 CT_EMULE_MISCOPTIONS2、CT_EMULE_VERSION四个标志改变dwEmuleTags的值，但判断bIsMule只根据Tags中是否存在CT_EMULE_VERSION，其它可选
 	// check if at least CT_EMULEVERSION was received, all other tags are optional
 	bool bIsMule = (dwEmuleTags & 0x04) == 0x04;
 	if (bIsMule){
@@ -989,7 +995,13 @@ void CUpDownClient::SendHelloAnswer(){
 
 void CUpDownClient::SendHelloTypePacket(CSafeMemFile* data)
 {
-	data->WriteHash16(thePrefs.GetUserHash());
+	/******************************************************************snow:start***********************************
+	/*  Hello Message包括4个部分
+	/*  HASH、UserID、Port、6个tags
+	/*  6个Tags:CT_NAME、CT_VERSION、CT_EMULE_UDPPORTS、CT_EMULE_MISCOPTIONS1、CT_EMULE_MISCOPTIONS2、CT_EMULE_VERSION
+	/*  在处理Hello信息的Tags中，还有3个tag，这里没有设定，应该是其它程序设定的：CT_MOD_VERSION、CT_EMULE_BUDDYUDP、CT_EMULE_BUDDYIP
+	******************************snow:end****************************************************************************/
+	data->WriteHash16(thePrefs.GetUserHash());    
 	uint32 clientid;
 	clientid = theApp.GetID();
 
@@ -1130,7 +1142,7 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile* data)
 		}
 #endif
 	}
-	else{
+	else{   ///snow:没连接服务器，IP和Port为0
 		nPort = 0;
 		dwIP = 0;
 	}

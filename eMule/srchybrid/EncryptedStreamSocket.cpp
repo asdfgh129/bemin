@@ -345,7 +345,7 @@ void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar*
 	ASSERT( m_pRC4SendKey == NULL );
 	ASSERT( m_pRC4ReceiveKey == NULL );
 
-	/// snow :不是到服务器的连接，目标客户端的ID哈希值不是NULL,且目的是要启动加密连接
+	/// snow :不是到服务器的连接，目标客户端的ID哈希值不是NULL,且目的是要启动加密连接，在CUpDownClient::Connect()中调用
 	if (bEnabled && pTargetClientHash != NULL && !bServerConnection){
 		m_StreamCryptState = ECS_PENDING;  ///snow:是outgoing connection，状态为连接等待
 		
@@ -592,7 +592,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					fileResponse.WriteUInt8(byPadding);
 					for (int i = 0; i < byPadding; i++)
 						fileResponse.WriteUInt8((uint8)rand());
-					SendNegotiatingData(fileResponse.GetBuffer(), (uint32)fileResponse.GetLength());
+					SendNegotiatingData(fileResponse.GetBuffer(), (uint32)fileResponse.GetLength());   ///snow:不同于服务器连接，这里没有延迟发送
 					m_NegotiatingState = ONS_COMPLETE;
 					m_StreamCryptState = ECS_ENCRYPTING;
 					//DEBUG_ONLY( DebugLog(_T("CEncryptedStreamSocket: Finished Obufscation handshake with client %s (incoming)"), DbgGetIPString()) );

@@ -653,7 +653,7 @@ void CPreferences::Init()
 	}
 	delete sdirfile;
 
-	userhash[5] = 14;
+	userhash[5] = 14;     ///snow:数值的意义，见CUpDownClient::GetHashType()：13，110 SO_OLDEMULE ， 14 111 SO_EMULE ,M L SO_MLDONKEY
 	userhash[14] = 111;   ///snow:14(0x0e),111(0x6f)，最后的userhash是（不包括括号，括号只为标明被改写的字节）：9c 43 1e b7 1e (0e) 14 2b f1 bc f5 2d 41 c1 (6f) b0
 
 	// Explicitly inform the user about errors with incoming/temp folders!

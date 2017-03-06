@@ -211,6 +211,15 @@ void CClientList::DeleteAll(){
 	}
 }
 
+/******************************************snow:start**********************************
+/* 比较Hash、IP是否一致，判断是否同一client
+/* 优先判断是否同一IP，如果不是，则看hash是否相同
+/* 如果上面有一个相同，则比较两个对象是否同一对象，是，则true，不是，进行下一步
+/* sender是否为NULL，是:则true，否:进行下一步
+/* found_client->socket是否为NULL，是：true，否：下一步
+/* list是否已存在一个客户端，状态是已连接，但IP或Port不一致，否，则true，是：下一步
+/* list中的客户端认证状态是IS_IDENTIFIED，是：列入黑名单，否：记录两者的用户名和IP，两种情况都返回false
+******************************************snow:end************************************/
 bool CClientList::AttachToAlreadyKnown(CUpDownClient** client, CClientReqSocket* sender){
 	POSITION pos1, pos2;
 	CUpDownClient* tocheck = (*client);
@@ -235,19 +244,24 @@ bool CClientList::AttachToAlreadyKnown(CUpDownClient** client, CClientReqSocket*
 			//we found the same client instance (client may have sent more than one OP_HELLO). do not delete that client!
 			return true;
 		}
+
+		///snow:tocheck != found_client
 		if (sender){
 			if (found_client->socket){
+				///snow:如果list是已存在一个同Hash或同IP的客户端，状态是已连接，但IP或Port不一致
 				if (found_client->socket->IsConnected() 
 					&& (found_client->GetIP() != tocheck->GetIP() || found_client->GetUserPort() != tocheck->GetUserPort() ) )
 				{
+					///snow:如果列表中的客户端认证状态是IS_IDENTIFIED，那么新接受的客户端就是冒名的！
 					// if found_client is connected and has the IS_IDENTIFIED, it's safe to say that the other one is a bad guy
 					if (found_client->Credits() && found_client->Credits()->GetCurrentIdentState(found_client->GetIP()) == IS_IDENTIFIED){
 						if (thePrefs.GetLogBannedClients())
 							AddDebugLogLine(false, _T("Clients: %s (%s), Banreason: Userhash invalid"), tocheck->GetUserName(), ipstr(tocheck->GetConnectIP()));
-						tocheck->Ban();
+						tocheck->Ban();  ///snow:列入黑名单
 						return false;
 					}
 	
+					///snow:如果list中的客户端也没通过认证，则记录两者的UserName和IP，判断为不是同时一个client
 					//IDS_CLIENTCOL Warning: Found matching client, to a currently connected client: %s (%s) and %s (%s)
 					if (thePrefs.GetLogBannedClients())
 						AddDebugLogLine(true,GetResString(IDS_CLIENTCOL), tocheck->GetUserName(), ipstr(tocheck->GetConnectIP()), found_client->GetUserName(), ipstr(found_client->GetConnectIP()));
@@ -255,10 +269,13 @@ bool CClientList::AttachToAlreadyKnown(CUpDownClient** client, CClientReqSocket*
 				}
 				found_client->socket->client = 0;
 				found_client->socket->Safe_Delete();
-			}
+			} ///snow:end if(socket)
+			///snow:如果found_client->socket为NULL，则对socket赋值，判断为同一client
 			found_client->socket = sender;
 			tocheck->socket = 0;
-		}
+		}   ///snow:end if(sender)
+		///snow:如果sender为NULL，则判断为同一client
+		
 		*client = 0;
 		delete tocheck;
 		*client = found_client;

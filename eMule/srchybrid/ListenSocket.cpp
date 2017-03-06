@@ -300,7 +300,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE* packet, uint32 size, UINT opcod
 					bool bIsMuleHello = false;
 					try
 					{
-						bIsMuleHello = client->ProcessHelloPacket(packet,size);
+						bIsMuleHello = client->ProcessHelloPacket(packet,size); ///snow:报文中是否有CT_EMULE_VERSION的tag
 					}
 					catch(...)
 					{
@@ -325,10 +325,12 @@ bool CClientReqSocket::ProcessPacket(const BYTE* packet, uint32 size, UINT opcod
 					if (theApp.clientlist->AttachToAlreadyKnown(&client,this))
 					{
 						// update the old client informations
+						///snow:从新处理Hello报文，更新旧的client信息
 						bIsMuleHello = client->ProcessHelloPacket(packet,size);
 					}
 					else 
 					{
+						///将client添加表clientlist中 
 						theApp.clientlist->AddClient(client);
 						client->SetCommentDirty();
 					}
@@ -336,13 +338,13 @@ bool CClientReqSocket::ProcessPacket(const BYTE* packet, uint32 size, UINT opcod
 					theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(client);
 
 					// send a response packet with standart informations
-					if (client->GetHashType() == SO_EMULE && !bIsMuleHello)
+					if (client->GetHashType() == SO_EMULE && !bIsMuleHello)   ///snow:HASH中的第6位和第15位是14和111
 						client->SendMuleInfoPacket(false);
 
-					client->SendHelloAnswer();
+					client->SendHelloAnswer();  ///snow:回发HelloAnswer报文
 
 					if (client)
-						client->ConnectionEstablished();
+						client->ConnectionEstablished();   ///snow:连接接通，进一步处理后续事宜，如加密协商等
 
 					ASSERT( client );
 					if(client)
