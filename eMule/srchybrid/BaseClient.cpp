@@ -1403,6 +1403,13 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 	//		This client is firewalled, but has a Kad buddy. We sent the buddy a callback request to forward to the client
 	//		and hope for the best
 
+	/******************************************************snow:start**********************************************************
+	/*    1、对高ID客户端可以进行正常的呼出连接请求
+	/*    2、TCP端口被防火墙，UDP端口开放，我们就发送一个UDP包到客户端，请求客户端进行回呼
+	/*    3、客户端被墙，但连接到我们的服务器，我们就发送一个回呼请求到服务器，请服务器中转发送给客户端，让户端进行回呼
+	/*    4、客户端被墙，但有一个KAD伙伴，我们向伙伴发送回调请求让伙伴中转，请求客户端进行回呼
+	/*    5、客户端是个lowid，但在我们的上传队列里，等待客户端进行请求
+	*******************************************************snow:end***********************************************************/
 	if( GetKadState() == KS_QUEUED_FWCHECK )
 		SetKadState(KS_CONNECTING_FWCHECK);
 	else if (GetKadState() == KS_QUEUED_FWCHECK_UDP)

@@ -452,6 +452,7 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
 		uchar aBuffer[PRIMESIZE_BYTES];
 		cryptDHGexpAmodP.Encode(aBuffer, PRIMESIZE_BYTES);
 
+		///snow:将公钥A发送给服务器，服务器可以据此计算出公钥B及共享密钥K  B=G exp b mod P  K=A exp b mod P  其中b为服务器端的私钥，P（dh768_p）和G（2）为固定数值，可公开，所以服务器和客户端约定一致，不可更改！
 		fileRequest.Write(aBuffer, PRIMESIZE_BYTES);
 		uint8 byPadding = (uint8)(cryptRandomGen.GenerateByte() % 16); // add random padding
 		fileRequest.WriteUInt8(byPadding);
@@ -646,6 +647,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					m_pfiReceiveBuffer->Read(aBuffer, PRIMESIZE_BYTES);
 					CryptoPP::Integer cryptDHAnswer((byte*)aBuffer, PRIMESIZE_BYTES);
 					CryptoPP::Integer cryptDHPrime((byte*)dh768_p, PRIMESIZE_BYTES);  // our fixed prime
+					///snow:cryptDHAnswer为服务器计算出的公钥B，客户端根据公钥B，私钥a，素数P计算出共享密钥K，存入cryptResult  K=B exp a mod p
 					CryptoPP::Integer cryptResult = CryptoPP::a_exp_b_mod_c(cryptDHAnswer, m_cryptDHA, cryptDHPrime);
 
 					m_cryptDHA = 0;
@@ -653,6 +655,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					ASSERT( cryptResult.MinEncodedSize() <= PRIMESIZE_BYTES );
 
 					// create the keys
+					///snow:对DH交换计算出的共享密钥K进行md5和rc4加密，产生最后的密钥
 					cryptResult.Encode(aBuffer, PRIMESIZE_BYTES);
 					aBuffer[PRIMESIZE_BYTES] = MAGICVALUE_REQUESTER;
 					MD5Sum md5(aBuffer, sizeof(aBuffer));

@@ -1,0 +1,141 @@
+
+
+09:42:00 >>> OP__Hello            to   219.129.140.142 '(null)' (,Connecting/None/None)
+09:42:01 snow:CAsyncSocketExHelperWindows::WindowProc FD_WRITE
+09:42:01 CEMSocket:OnSend start
+09:42:01 snow:CEncryptedStreamSocket:OnSend start
+09:42:01 snow:CEncryptedStreamSocket:StartNegotiation m_StreamCryptState == ECS_PENDING
+09:42:01 snow:CEncryptedStreamSocket:SendNegotiatingData start
+09:42:01 snow:CEncryptedStreamSocket:SendNegotiatingData before crypt size:35 content:C46F5E8300001CB8087A482EC2AF3922C56EFDA6E1148C5F349FB2C7FC4EF06234C73A¤¤¤¤ллллллллю■ю■ю■
+09:42:01 snow:CEncryptedStreamSocket:SendNegotiatingData after crypt size:35 content:697BD6379ED78E354068F182DA5DF94F083D7A658CCE5D59D7970910CD50F28F551E63¤¤¤¤ллллллллю■ю■ю■
+09:42:01 snow:CAsyncSocketEx::Send before send,size : 40 , content : C2EB464E32697BD6379ED78E354068F182DA5DF94F083D7A658CCE5D59D7970910CD50F28F551E63¤¤¤¤ллллллллю■ю■
+09:42:01 snow:CAsyncSocketEx::Sendгмafter send
+09:42:01 snow:CEncryptedStreamSocket:OnSend StartNegotiation(true)
+09:42:01 CEMSocket:OnSend end
+
+09:42:03 OP_HelloAnswer           from 219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connecting/None/None)
+09:42:03   Hash=F307BE77490ECA0A9987F472B5346F83 (eMule)  UserID=4072233840 (112.91.185.242)  Port=4666  Tags=6
+  Name='http://emule-project.net'
+  Version=60
+  KadPort=4668  UDPPort=4668
+  PeerCache=1  UDPVer=4  DataComp=1  SecIdent=3  SrcExchg=4  ExtReq=2  Commnt=1  Preview=0  NoViewFiles=1  Unicode=1
+  KadVersion=9, LargeFiles=1 ExtMultiPacket=1 CryptLayerSupport=1 CryptLayerRequest=1 CryptLayerRequires=0 SupportsSourceEx2=1 SupportsCaptcha=1 DirectUDPCallback=0
+  ClientVer=0.50.0.0  Comptbl=0
+  Server=195.154.83.5:7111
+09:42:03 >>> OP__SecIdentState    to   219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connecting/None/None)
+09:42:03 Write IdentifierDesc: 7
+09:42:03 >>> OP__MultiPacket_Ext2 to   219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None); File=This Ain't The Expendables XXX 3D 2012 BDRip halfSBS 1080p (IgorekSh).mkv
+09:42:03 >>> OP__MPReqFileName    to   219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None); File=This Ain't The Expendables XXX 3D 2012 BDRip halfSBS 1080p (IgorekSh).mkv
+09:42:03 >>> OP__MPSetReqFileID   to   219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None); File=This Ain't The Expendables XXX 3D 2012 BDRip halfSBS 1080p (IgorekSh).mkv
+09:42:03 >>> OP__MPReqSources     to   219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None); File=This Ain't The Expendables XXX 3D 2012 BDRip halfSBS 1080p (IgorekSh).mkv
+09:42:03 SXSend (Version 2): Client source request; 219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None), File="This Ain't The Expendables XXX 3D 2012 BDRip halfSBS 1080p (IgorekSh).mkv"
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:2
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:3
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:4
+09:42:03 snow:CEMSocket:Send end
+09:42:03 UploadBandwidthThrottler: Time since last loop too long. time: 0:0:2:988 wanted: 0:0:0:1 Max: 0:0:2:1
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:2
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:3
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:4
+09:42:03 CEMSocket:OnReceive start
+09:42:03 snow:CEMSocket:Send end
+09:42:03 CEMSocket:Receive start
+09:42:03 snow:CEncryptedStreamSocket:Receive start
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:42:03 snow:CEncryptedStreamSocket:Receive before DeCrypt size:6 content:485F6A2E88D6¤¤¤¤лллллллл
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEncryptedStreamSocket:Receive ECS_NEGOTIATING
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:2
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:CEncryptedStreamSocket:Negotiate before decrypt size:4 content:485F6A2E¤¤¤¤ллллллллю■ю■
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:3
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEncryptedStreamSocket:Negotiate after decrypt size:4 content:C46F5E83¤¤¤¤ллллллллю■ю■
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_MAGICVALUE
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:4
+09:42:03 snow:CEncryptedStreamSocket:Negotiate before decrypt size:2 content:88D6¤¤¤¤ллллллллю■ю■ю■ю■
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEncryptedStreamSocket:Negotiate after decrypt size:2 content:0000¤¤¤¤ллллллллю■ю■ю■ю■
+09:42:03 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_METHODTAGSPADLEN
+09:42:03 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_PADDING
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:5
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:109 content:E36800000001109C431EB71E0E142BF1BCF52D41C16FB070053C043ED806000000020100011800687474703A2F2F656D756C652D70726F6A6563742E6E6574030100113C000000030100F97C637C63030100FA1E421334030100FEB92D0000030100FB00C80000B06730245810¤¤¤¤ллллллллю■
+09:42:03 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:109 content:E1DA7D084BF91C78408B6BDE92B386D9D795B31DA9EDB188DD5B4C03EDC1F83C67A848C75B62904E9F94E8857DCA1BB7DB885B09E3F6EDE87F5C58675A4995793E06FD76DDCC1AA89BEDCB2AFBDAA50E54F64C64B773920F6B7553BB1126381AA59D82D3C02F62BD92C8CC381C¤¤¤¤ллллллллю■
+09:42:03 CEncryptedStreamSocket:Send start
+09:42:03 snow:CEncryptedStreamSocket:Send end
+09:42:03 snow:CAsyncSocketEx::Send before send,size : 109 , content : E1DA7D084BF91C78408B6BDE92B386D9D795B31DA9EDB188DD5B4C03EDC1F83C67A848C75B62904E9F94E8857DCA1BB7DB885B09E3F6EDE87F5C58675A4995793E06FD76DDCC1AA89BEDCB2AFBDAA50E54F64C64B773920F6B7553BB1126381AA59D82D3C02F62BD92C8CC381C¤¤¤¤ллллллллю■
+09:42:03 snow:CAsyncSocketEx::Sendгмafter send
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:2
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CEMSocket:Send start
+09:42:03 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:3
+09:42:03 snow:CEMSocket:Send end
+09:42:03 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:42:04 CEMSocket:OnReceive start
+09:42:04 CEMSocket:Receive start
+09:42:04 snow:CEncryptedStreamSocket:Receive start
+09:42:04 snow:CEncryptedStreamSocket:Receive before DeCrypt size:128 content:E0820DF9160AC449ADD12FF4FC674712D440A558FEC9349C83822707FAFCC727B0830C2F897E3AC8DB700344D67D2C2273D33C1E88DA638435479E7A978A214B4469028EA7D27471EB00082B38CB8385EE2AAFE7BD8C7409D77490F33EA1FC58BCB4F325A468F3DF11C20BE188079CF337B17712DAAFE0BDA0BF104A621468BD¤¤¤¤ллллллллю■ю■ю■ю■ю■ю■
+09:42:04 snow:CEncryptedStreamSocket:Receive ECS_NEGOTIATING
+09:42:04 snow:CEncryptedStreamSocket:Negotiate before decrypt size:4 content:E0820DF9¤¤¤¤ллллллллю■ю■
+09:42:04 snow:CEncryptedStreamSocket:Negotiate after decrypt size:4 content:C46F5E83¤¤¤¤ллллллллю■ю■
+09:42:04 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_MAGICVALUE
+09:42:04 snow:CEncryptedStreamSocket:Negotiate before decrypt size:2 content:160A¤¤¤¤лллллллл
+09:42:04 snow:CEncryptedStreamSocket:Negotiate after decrypt size:2 content:007A¤¤¤¤лллллллл
+09:42:04 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_METHODTAGSPADLEN
+09:42:04 snow:CEncryptedStreamSocket:Negotiate before decrypt size:122 content:C449ADD12FF4FC674712D440A558FEC9349C83822707FAFCC727B0830C2F897E3AC8DB700344D67D2C2273D33C1E88DA638435479E7A978A214B4469028EA7D27471EB00082B38CB8385EE2AAFE7BD8C7409D77490F33EA1FC58BCB4F325A468F3DF11C20BE188079CF337B17712DAAFE0BDA0BF104A621468BD¤¤¤¤лллллллл
+09:42:04 snow:CEncryptedStreamSocket:Negotiate after decrypt size:122 content:2963F5EABF17B8440294AD64EA42AB8F373685225F5796D6CBBF9D424264CCA2A6F71BD6DE0CE2AE137CA7641F07346A423EED6617A1617CC7041FCB7D37CB3A1AE5717429BD183115D09BB8993AB4A179055AE0704A4DFF6999EFABF29B5572EDF69ECB8871835770593066422352BD43527297509C81E91848¤¤¤¤лллллллл
+09:42:04 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_PADDING
+09:42:04 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:42:04 CEMSocket:OnReceive start
+09:42:04 CEMSocket:Receive start
+09:42:04 snow:CEncryptedStreamSocket:Receive start
+09:42:04 snow:CEncryptedStreamSocket:Receive before DeCrypt size:91 content:3F16FF6F4A61F59BD033830464C25F41C63A0CA4670E0F3A91380B7804780EDB44359124479C9C5EE085AB2C58782E412F2E05C390B29AC8115ADB6EBE6BCEB6E2CA055C9A4EEA47CC38E6C621BBFFDBB3B8B379219201D030D556¤¤¤¤ллллллллю■ю■ю■
+09:42:04 snow:CEncryptedStreamSocket:Receive ECS_NEGOTIATING
+09:42:04 snow:CEncryptedStreamSocket:Negotiate before decrypt size:4 content:3F16FF6F¤¤¤¤ллллллллю■ю■
+09:42:04 snow:CEncryptedStreamSocket:Negotiate after decrypt size:4 content:C46F5E83¤¤¤¤ллллллллю■ю■
+09:42:04 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_MAGICVALUE
+09:42:04 snow:CEncryptedStreamSocket:Negotiate before decrypt size:2 content:4A61¤¤¤¤лллллллл
+09:42:04 snow:CEncryptedStreamSocket:Negotiate after decrypt size:2 content:0055¤¤¤¤лллллллл
+09:42:04 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_METHODTAGSPADLEN
+09:42:04 snow:CEncryptedStreamSocket:Negotiate before decrypt size:85 content:F59BD033830464C25F41C63A0CA4670E0F3A91380B7804780EDB44359124479C9C5EE085AB2C58782E412F2E05C390B29AC8115ADB6EBE6BCEB6E2CA055C9A4EEA47CC38E6C621BBFFDBB3B8B379219201D030D556¤¤¤¤ллллллллю■
+09:42:04 snow:CEncryptedStreamSocket:Negotiate after decrypt size:85 content:56FCA020C9049F15526E8C0D6A623C9B2C20401858F10C3A9D5C59E8189CC74D1852C72C2478B8733F9650126A383E0D6B9F0DD0CDB74CC42849EC1FA272E900B6542DBB340BB17189E2E5E541C7528ACAFD7DE17B¤¤¤¤ллллллллю■ю■ю■ю■ю■
+09:42:04 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_PADDING
+
+09:42:05 OP_Signature             from 219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None)
+09:42:05 OP_MultiPacketAns        from 219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None); File=07AAE4E22D13DFBF768780B443CA8D3F
+09:42:05 Read IdentifierDesc: 7
+09:42:05 OP_MPReqFileNameAns      from 219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None); File=07AAE4E22D13DFBF768780B443CA8D3F
+09:42:05   Filename="This Ain't The Expendables XXX 3D 2012 BDRip halfSBS 1080p (IgorekSh).mkv"
+09:42:05 OP_MPFileStatus          from 219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None); File=07AAE4E22D13DFBF768780B443CA8D3F
+09:42:05   Parts=1237  
+
+09:42:05 >>> OP__StartupLoadReq   to   219.129.140.142 'http://emule-project.net' (eMule v0.50a,Connected/None/None)
+09:42:06 OP_QueueRanking          from 219.129.140.142 'http://emule-project.net' (eMule v0.50a,OnQueue/None/None)
+09:42:06   QR=1861

@@ -1,0 +1,324 @@
+09:41:33 snow:CAsyncSocketExHelperWindows::WindowProc FD_ACCEPT
+09:41:33 snow:CEMSocket:Send start
+09:41:33 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:33 snow:CEMSocket:Send end
+09:41:33 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:33 CEMSocket:OnReceive start
+09:41:33 CEMSocket:Receive start
+09:41:33 snow:CEncryptedStreamSocket:Receive start
+09:41:33 snow:CEncryptedStreamSocket:Receive before DeCrypt size:83 content:670087BD212A11DC904C6D2CA163FBED9409C998E5F3E1165F935448D21CF7C25B02C17E1016557ECB380F8AA363F926FBA4B55B0970F5341FBD7FAFE8FFF350B64013E8BB86469F4A2D765DD76E84A6D42FD3¤¤¤¤ллллллллю■ю■ю■
+09:41:33 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_RANDOMPART
+09:41:33 snow:CEncryptedStreamSocket:Negotiate before decrypt size:4 content:2A11DC90¤¤¤¤ллллллллю■ю■
+09:41:33 snow:CEncryptedStreamSocket:Negotiate after decrypt size:4 content:C46F5E83¤¤¤¤ллллллллю■ю■
+09:41:33 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_MAGICVALUE
+09:41:33 snow:CEncryptedStreamSocket:Negotiate before decrypt size:3 content:4C6D2C¤¤¤¤ллллллллю■ю■ю■
+09:41:33 snow:CEncryptedStreamSocket:Negotiate after decrypt size:3 content:000047¤¤¤¤ллллллллю■ю■ю■
+09:41:33 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_METHODTAGSPADLEN
+09:41:33 snow:CEncryptedStreamSocket:Negotiate before decrypt size:71 content:A163FBED9409C998E5F3E1165F935448D21CF7C25B02C17E1016557ECB380F8AA363F926FBA4B55B0970F5341FBD7FAFE8FFF350B64013E8BB86469F4A2D765DD76E84A6D42FD3¤¤¤¤ллллллллю■ю■ю■
+09:41:33 snow:CEncryptedStreamSocket:Negotiate after decrypt size:71 content:0A69AAD9E30739D60BF273DAE9081CCA12A8DE5FE281BA09F88EE64A31A7AA3E6D3F0A585BD437337E703252735917C67B0EBEB517EF02D630C425B84F4219C9B44AF1033B49FB¤¤¤¤ллллллллю■ю■ю■
+09:41:33 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_PADDING
+09:41:33 snow:CEncryptedStreamSocket:SendNegotiatingData start
+09:41:33 snow:CEncryptedStreamSocket:SendNegotiatingData before crypt size:131 content:C46F5E83007DF378F7423C3157C7FD399C1EC7B1F80179C66FB4597C8BE764AB52DEE34675CF3FE3CA8C1678FC618E638240EAAECD1B5B90C692183777CEB0C408AD9F98EE1F20CE5FD0430809073F6F03CE09F5045326DED38EBD7EFE24F044CF8B6CF77C6F3F409E55EB69E47FB864090F4E0F036F82B67EEF71D988B0CB308EC272¤¤¤¤ллллллллю■ю■ю■
+09:41:33 snow:CEncryptedStreamSocket:SendNegotiatingData after crypt size:131 content:278E2AF2E7F1B1ED2BDB0C7B688F0DD170C0C3CA000331CF300116659C4092993759C3A264C17DB0049616DF9FC2587B6A9E4765439C23A593E4D03FFE53A236ABBA6EB0A2A094FCA6F0593EF14CFD29EEB313D890E27F9FD536957D7BAF6E83F13850EA958E4BB816DE5761FBC9C302DB7C18E9D41957F8B7D081CD878656AAF4B372¤¤¤¤ллллллллю■ю■ю■
+09:41:33 snow:CAsyncSocketEx::Send before send,size : 131 , content : 278E2AF2E7F1B1ED2BDB0C7B688F0DD170C0C3CA000331CF300116659C4092993759C3A264C17DB0049616DF9FC2587B6A9E4765439C23A593E4D03FFE53A236ABBA6EB0A2A094FCA6F0593EF14CFD29EEB313D890E27F9FD536957D7BAF6E83F13850EA958E4BB816DE5761FBC9C302DB7C18E9D41957F8B7D081CD878656AAF4B372¤¤¤¤ллллллллю■ю■ю■
+09:41:33 snow:CAsyncSocketEx::Sendгмafter send
+09:41:33 snow:CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader
+09:41:33 snow:CAsyncSocketExHelperWindows::WindowProc FD_WRITE
+09:41:33 CEMSocket:OnSend start
+09:41:33 snow:CEncryptedStreamSocket:OnSend start
+09:41:33 snow:CEncryptedStreamSocket:OnSend end
+09:41:33 CEMSocket:OnSend end
+
+09:41:35 snow:CEncryptedStreamSocket:Receive start
+09:41:35 snow:CEncryptedStreamSocket:Receive before DeCrypt size:108 content:342980320F447714CEA92C21F67BD68D5B0AE618D9BF5108E2119CF175159F764B1890BBE56D4539C03EAA56285C028FD3ECBDB4EF2885155E1A5664A16B821C5AF9EA460D95F6DA0E3C8575C4DCECF05E1477B4A8F5699A997F281666067A2E8E48685CA01B238A2086079E¤¤¤¤ллллллллю■ю■
+09:41:35 snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+09:41:35 snow:CEncryptedStreamSocket:Receive after DeCrypt size:108 content:E36700000001101CECEC307B0E07E22446D5608BEF6FF001000000C9110800000002010001070043C3A96C696E65030100113C000000030100F9E2113391030100FC5F92595F030100FD32EF0000030100FA1E421334030100FEB92D0000030100FB00C80000000000000000¤¤¤¤ллллллллю■ю■
+09:41:35 snow:CEMSocket:Send start
+09:41:35 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:35 snow:CEMSocket:Send end
+09:41:35 snow:CEMSocket:Send start
+09:41:35 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:35 snow:CEMSocket:Send end
+09:41:35 snow:CEMSocket:Send start
+09:41:35 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:35 snow:CEMSocket:Send end
+09:41:35 snow:CEMSocket:Send start
+09:41:35 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:35 snow:CEMSocket:Send end
+09:41:35 snow:CEMSocket::SendPacket controlpacket_queue size:1
+09:41:35 snow:CEMSocket::SendPacket QueueForSendingControlPacket socket:1448
+09:41:35 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:35 snow:CEMSocket:Send start
+09:41:35 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:2
+09:41:35 snow:CEMSocket:Send end
+09:41:35 snow:CEMSocket:Send start
+09:41:35 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:108 content:E3670000004C9C431EB71E0E142BF1BCF52D41C16FB0010000003ED806000000020100011800687474703A2F2F656D756C652D70726F6A6563742E6E6574030100113C000000030100F97C637C63030100FA1E421334030100FEB92D0000030100FB00C80000000000000000¤¤¤¤ллллллллю■ю■
+09:41:35 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:108 content:9BBE6E27C1F3C8D7A3F9F40CE98FAF27B4723169296DCFB07271B96902D64CF0B7702711CE62BEC8FAD4850A9A7F0DC3065EEA9DA1CCC494A68869A0B31C337CCC523BA37B1D2201A12AE5D3F4D56B586CAF14B2AC65A56E3081F6C70E8DD5C029B66264390914102B39112D¤¤¤¤ллллллллю■ю■
+09:41:35 CEncryptedStreamSocket:Send start
+09:41:35 snow:CEncryptedStreamSocket:Send end
+09:41:35 snow:CAsyncSocketEx::Send before send,size : 108 , content : 9BBE6E27C1F3C8D7A3F9F40CE98FAF27B4723169296DCFB07271B96902D64CF0B7702711CE62BEC8FAD4850A9A7F0DC3065EEA9DA1CCC494A68869A0B31C337CCC523BA37B1D2201A12AE5D3F4D56B586CAF14B2AC65A56E3081F6C70E8DD5C029B66264390914102B39112D¤¤¤¤ллллллллю■ю■
+09:41:35 snow:CAsyncSocketEx::Sendгмafter send
+
+09:41:36 OP_SecIdentState         from 1@0.0.0.0 (91.160.66.64) 'Cижline' (eMule v0.50a,None/None/None)
+09:41:36 >>> OP__PublicKey        to   1@0.0.0.0 (91.160.66.64) 'Cижline' (eMule v0.50a,None/None/None)
+09:41:36 OP_PublicKey             from 1@0.0.0.0 (91.160.66.64) 'Cижline' (eMule v0.50a,None/None/None)
+09:41:36 >>> OP__Signature        to   1@0.0.0.0 (91.160.66.64) 'Cижline' (eMule v0.50a,None/None/None)
+
+09:41:36 snow:CEncryptedStreamSocket:Receive start
+09:41:36 snow:CEncryptedStreamSocket:Receive before DeCrypt size:94 content:45936E3E707050D227CD4265292CAAB608C6D34B44C25A7AACB56E6E1434C8AC6CBBB1914942B349C74BBC953B6C423C0E49393AD5EE548DBC27D8F8BC48B402CAC8D558CE84D55B8247E481DB7228FD44A92054378CA1D651FD0E4C1492¤¤¤¤лллллллл
+09:41:36 snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+09:41:36 snow:CEncryptedStreamSocket:Receive after DeCrypt size:94 content:C506000000870249770000C54E000000854C304A300D06092A864886F70D01010105000339003036023100AF21D0D78BCCD237FA2990F20C6BF5284D9FD358CC9E8C1F33123913DF43C5828F08DDC55DD4B7D9EE66796A49870463020111¤¤¤¤лллллллл
+09:41:36 snow:CEMSocket::SendPacket controlpacket_queue size:1
+09:41:36 snow:CEMSocket::SendPacket QueueForSendingControlPacket socket:1448
+09:41:36 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueueFirst_list size:1
+09:41:36 snow:CEMSocket:Send start
+09:41:36 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:83 content:C54E000000854C304A300D06092A864886F70D01010105000339003036023100A82A2C77C430E0FD525FF8616133940D90F4B50371AEF6177D757F1CB780484A5813140B67B450B1E549F8C33E4ECC6D020111¤¤¤¤ллллллллю■ю■ю■
+09:41:36 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:83 content:83CE9809E90EDCD4085456EE89931A7BF6413699E52E40EBE4CC2A8D616D3F94C0C64F095CA4F4CACCD9CE2E5A4736681A3B85940831662752ABCE4B957065247A93E1DC7B872E739B3ED64EB9CBD897EF34AA¤¤¤¤ллллллллю■ю■ю■
+09:41:36 CEncryptedStreamSocket:Send start
+09:41:36 snow:CEncryptedStreamSocket:Send end
+09:41:36 snow:CAsyncSocketEx::Send before send,size : 83 , content : 83CE9809E90EDCD4085456EE89931A7BF6413699E52E40EBE4CC2A8D616D3F94C0C64F095CA4F4CACCD9CE2E5A4736681A3B85940831662752ABCE4B957065247A93E1DC7B872E739B3ED64EB9CBD897EF34AA¤¤¤¤ллллллллю■ю■ю■
+09:41:36 snow:CAsyncSocketEx::Sendгмafter send
+
+09:41:36 snow:CEncryptedStreamSocket:Receive before DeCrypt size:104 content:59C2DDB81DC6D986B57D2AB42F240416D513CCF2526065D3D995CADE55FC38264B46019202103460BA2806B1FCA28DFF4058A45B0F013BED2171EDD1500B7417AA9633C5FC008022346645DFD332B7C2E68FCF2CF8C3BAC63A42259238DFF824BB5AD56F8030019E¤¤¤¤ллллллллю■ю■
+09:41:36 snow:CEncryptedStreamSocket:Receive ECS_NEGOTIATING
+09:41:36 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_DHANSWER
+09:41:36 snow:CEMSocket:Send start
+09:41:36 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:55 content:C53200000086301F15DFCE15CCB1D9410BC2B566795FF2B5D867558EFB1FC62EDBDF1BB2FA9C6EF5D4B99283665DB5500304060C5FE9F7¤¤¤¤ллллллллю■ю■ю■
+09:41:36 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:55 content:35B2C0B208AFA14C69E96F47EB163245999D51071CA4293AB69381FAB7CF0A2DFAF7FE2315D7D4A3BA53CDA9946A310ABEDE4E2CE43C83¤¤¤¤ллллллллю■ю■ю■
+09:41:36 CEncryptedStreamSocket:Send start
+09:41:36 snow:CEncryptedStreamSocket:Send end
+09:41:36 snow:CAsyncSocketEx::Send before send,size : 55 , content : 35B2C0B208AFA14C69E96F47EB163245999D51071CA4293AB69381FAB7CF0A2DFAF7FE2315D7D4A3BA53CDA9946A310ABEDE4E2CE43C83¤¤¤¤ллллллллю■ю■ю■
+09:41:36 snow:CAsyncSocketEx::Sendгмafter send
+
+09:41:36 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:86 content:E351000000019C431EB71E0E142BF1BCF52D41C16FB0000000003ED804000000020100011800687474703A2F2F656D756C652D70726F6A6563742E6E6574030100113C0000000301002019070000030100FB00C80000¤¤¤¤лллллллл
+09:41:36 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:86 content:170344FE395E402F9ED3F89FCA3074F92262DA96D421EB00B059A008358E57204613CE6635D1FF5FA93FF17B4F35CC893C86E59420AA15AAD7BBD48FE948FC9F671981C7DB50FE09CA8C9B9077E0D8852AA099EEB358¤¤¤¤лллллллл
+09:41:36 CEncryptedStreamSocket:Send start
+09:41:36 snow:CEncryptedStreamSocket:SendNegotiatingData start
+09:41:36 snow:CAsyncSocketEx::Send before send,size : 96 , content : 7EDF9A91530441D20654170344FE395E402F9ED3F89FCA3074F92262DA96D421EB00B059A008358E57204613CE6635D1FF5FA93FF17B4F35CC893C86E59420AA15AAD7BBD48FE948FC9F671981C7DB50FE09CA8C9B9077E0D8852AA099EEB358¤¤¤¤ллллллллю■ю■
+09:41:36 snow:CAsyncSocketEx::Sendгмafter send
+
+09:41:37 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:37 CEMSocket:OnReceive start
+09:41:37 CEMSocket:Receive start
+09:41:37 snow:CEncryptedStreamSocket:Receive start
+09:41:37 snow:CEncryptedStreamSocket:Receive before DeCrypt size:61 content:0F940636DD8D6FBCD1F13BFCBB848246EC60D506BC47FA9562DB9246AD1EB69044631B4E6670D0F43007A52E111565F09683A39ECA2DDA638908BB84BF¤¤¤¤ллллллллю■
+09:41:37 snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+09:41:37 snow:CEncryptedStreamSocket:Receive after DeCrypt size:61 content:C501000000A8C53200000086309AF9B4A6616A52F1427A5EE79D086BF238D8BC84E1B012D89AAFF0D1E040B1179110CA3C7702227B3BAEBA00B0927E77¤¤¤¤ллллллллю■
+
+
+09:41:37 snow:CAsyncSocketExHelperWindows::WindowProc FD_ACCEPT
+09:41:37 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:37 CEMSocket:OnReceive start
+09:41:37 CEMSocket:Receive start
+09:41:37 snow:CEncryptedStreamSocket:Receive start
+09:41:37 snow:CEncryptedStreamSocket:Receive before DeCrypt size:16 content:AB5A0B4E5C6FA102B876B72BACCCE538¤¤¤¤ллллллллю■ю■
+09:41:37 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_RANDOMPART
+09:41:37 snow:CEncryptedStreamSocket:Negotiate before decrypt size:4 content:6FA102B8¤¤¤¤ллллллллю■ю■
+09:41:37 snow:CEncryptedStreamSocket:Negotiate after decrypt size:4 content:C46F5E83¤¤¤¤ллллллллю■ю■
+09:41:37 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_MAGICVALUE
+09:41:37 snow:CEncryptedStreamSocket:Negotiate before decrypt size:3 content:76B72B¤¤¤¤ллллллллю■ю■ю■
+09:41:37 snow:CEncryptedStreamSocket:Negotiate after decrypt size:3 content:000004¤¤¤¤ллллллллю■ю■ю■
+09:41:37 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_METHODTAGSPADLEN
+09:41:37 snow:CEncryptedStreamSocket:Negotiate before decrypt size:4 content:ACCCE538¤¤¤¤ллллллллю■ю■
+09:41:37 snow:CEncryptedStreamSocket:Negotiate after decrypt size:4 content:00000000¤¤¤¤ллллллллю■ю■
+09:41:37 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_PADDING
+09:41:37 snow:CEncryptedStreamSocket:SendNegotiatingData start
+09:41:37 snow:CEncryptedStreamSocket:SendNegotiatingData before crypt size:15 content:C46F5E83000934371922AFFF5BD17D¤¤¤¤ллллллллю■ю■ю■
+09:41:37 snow:CEncryptedStreamSocket:SendNegotiatingData after crypt size:15 content:BC39C7A95B1E762F2BE4D40B73039E¤¤¤¤ллллллллю■ю■ю■
+09:41:37 snow:CAsyncSocketEx::Send before send,size : 15 , content : BC39C7A95B1E762F2BE4D40B73039E¤¤¤¤ллллллллю■ю■ю■ю■ю■ю■ю■
+09:41:37 snow:CEMSocket:Send start
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:37 snow:CEMSocket:Send end
+09:41:37 snow:CAsyncSocketEx::Sendгмafter send
+09:41:37 snow:CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader
+09:41:37 snow:CAsyncSocketExHelperWindows::WindowProc FD_WRITE
+09:41:37 CEMSocket:OnSend start
+09:41:37 snow:CEncryptedStreamSocket:OnSend start
+09:41:37 snow:CEncryptedStreamSocket:OnSend end
+09:41:37 CEMSocket:OnSend end
+09:41:37 snow:CEMSocket:Send start
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:37 snow:CEMSocket:Send end
+09:41:37 snow:CEMSocket:Send start
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:37 snow:CEMSocket:Send end
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:2
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:3
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:4
+09:41:37 snow:CEMSocket:Send start
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:37 snow:CEMSocket:Send end
+09:41:37 snow:CEMSocket:Send start
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:37 snow:CEMSocket:Send end
+09:41:37 OP_Hello                 from 176.103.48.36   'eServer' (eMule v0.47c [eserver],None/None/None)
+09:41:37   Hash=AD7727272E0EA7D2ABE16B2551136F69 (eMule)  UserID=607152048 (176.103.48.36)  Port=4662  Tags=4
+  Name='eServer'
+  Version=60
+  ClientVer=0.47.2.0  Comptbl=0
+  ModID=eserver
+  Server=0.0.0.0:0
+09:41:37 >>> OP__HelloAnswer      to   176.103.48.36   'eServer' (eMule v0.47c [eserver],None/None/None)
+09:41:37 KADEMLIA2_RES            from 220.197.181.192:26171
+09:41:37 Verified contact with legacy challenge (KADEMLIA2_REQ) - 220.197.181.192
+09:41:37 KADEMLIA2_REQ            from 14.215.2.202:1144    
+09:41:37 >>> KADEMLIA2_RES        to   14.215.2.202:1144    ; Count=0
+09:41:37 snow:CEMSocket:Send start
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:37 snow:CEMSocket:Send end
+09:41:37 snow:CEMSocket:Send start
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:37 snow:CEMSocket:Send end
+09:41:37 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:37 CEMSocket:OnReceive start
+09:41:37 CEMSocket:Receive start
+09:41:37 snow:CEncryptedStreamSocket:Receive start
+09:41:37 snow:CEncryptedStreamSocket:Receive before DeCrypt size:64 content:D838041FE35D19D1EDB46F4CA94D9CA5144457C428EF6ACAB242F9DB590ED7266BDA928D15A072D179A42F5B72661C166907A6AAA488D30DFE31C999447392BD¤¤¤¤ллллллллю■ю■ю■ю■ю■ю■
+09:41:37 snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+09:41:37 snow:CEncryptedStreamSocket:Receive after DeCrypt size:64 content:E33B0000000110AD7727272E0EA7D2ABE16B2551136F69B067302436120400000097016553657276657289113C88FB00BD975565736572766572000000000000¤¤¤¤ллллллллю■ю■ю■ю■ю■ю■
+09:41:37 snow:CEMSocket::SendPacket controlpacket_queue size:1
+09:41:37 snow:CEMSocket::SendPacket QueueForSendingControlPacket socket:1460
+09:41:37 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:2
+09:41:37 snow:CEMSocket:Send start
+09:41:37 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:108 content:E3670000004C9C431EB71E0E142BF1BCF52D41C16FB0010000003ED806000000020100011800687474703A2F2F656D756C652D70726F6A6563742E6E6574030100113C000000030100F97C637C63030100FA1E421334030100FEB92D0000030100FB00C80000000000000000¤¤¤¤ллллллллю■ю■
+09:41:37 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:108 content:9523A0CD89C1D793577406755DE310DD0D0A8E318DF826D417EC5779B15022491E7B2155BEDB6C7F98C180933C585A74E51BAB3307EF6249D828183D07155E8B4B4F58DAC59FA4FF3EA3E000693D673E81F668800326F53E967E299C573E623B35056EB03C8D7AE6352A0D02¤¤¤¤ллллллллю■ю■
+09:41:37 CEncryptedStreamSocket:Send start
+09:41:37 snow:CEncryptedStreamSocket:Send end
+09:41:37 snow:CAsyncSocketEx::Send before send,size : 108 , content : 9523A0CD89C1D793577406755DE310DD0D0A8E318DF826D417EC5779B15022491E7B2155BEDB6C7F98C180933C585A74E51BAB3307EF6249D828183D07155E8B4B4F58DAC59FA4FF3EA3E000693D673E81F668800326F53E967E299C573E623B35056EB03C8D7AE6352A0D02¤¤¤¤ллллллллю■ю■
+09:41:37 snow:CAsyncSocketEx::Sendгмafter send
+
+09:41:38 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:38 snow:CServerSocket:OnReceive start
+09:41:38 CEMSocket:OnReceive start
+09:41:38 CEMSocket:Receive start
+09:41:38 snow:CEncryptedStreamSocket:Receive start
+09:41:38 snow:CEncryptedStreamSocket:Receive before DeCrypt size:243 content:66599D632016C3288288615D63B726522505EB2EA55AA2293DD5AE54051662438185F0398DB207503CB8795F2C087A3B02FD923B551961B1A7356FF703B6BA7C5D65922B1753D77BAE143BE4F80C4181282B108B7B6DE16F6FAF06F58DF658A2E5B22D1C62C5E904B6B44AA7FAC9025AABD8F4E7F21364D25FD74603E92CAB23AF77DDCEBD8D98782456C7EE39CA92D155DCF69B81B40A7A44FE3613620B2AFA0E8CAB3C3EF0C415E671AB72CCCE6DA9F739CBFCA855C8E8B980722E3AAAA3F427DD304F5451B33396E0293ED0E0E6AA418D81C583D420F9ACA9808F08EBAFD8FDBE787221CCF858CFA322AF00272EB7D4ECC1¤¤¤¤ллллллллю■ю■ю■
+09:41:38 snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+09:41:38 snow:CEncryptedStreamSocket:Receive after DeCrypt size:243 content:E3110000004070053C04F91700005810000070053C04E3090000003479470100A8CFA301D4CA0000003878DA5D8FCB6AC3400C45E9D65F719729149B2C4AA11FD0751769F6138F3C33608F1C6964C8DF57267DD02E047ADE7B747850928D041E5AB8E2F8D21F9F71982D45ABB63C76EF3305259C8B9686DCDAFA3A0C1A260A352A5B8D99B5F5232F985830660A2B7C04A5D184C0D3A4993DD11C84E2B0156916E621522C636814B1DF979ABA532E8A2F983D5BB9AA1F465C6E389DF151234992DDF109CA58EF58DB0F963A57DBEC77AD6749BD58F7E65CA1DE70357227578537D452FA2EFF48B54CFFECF6C76CD14FF7FA6DA8¤¤¤¤ллллллллю■ю■ю■
+
+
+
+
+
+09:41:44 snow:CAsyncSocketExHelperWindows::WindowProc FD_ACCEPT
+09:41:44 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueue_list size:1
+09:41:44 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:44 CEMSocket:OnReceive start
+09:41:44 CEMSocket:Receive start
+09:41:44 snow:CEncryptedStreamSocket:Receive start
+09:41:44 snow:CEncryptedStreamSocket:Receive before DeCrypt size:104 content:34E3FBFBFED7C93DC6D5B019ED7A451E353D96B3352D47864F9FB7C4998ECAC12A39F460647D1864F5C90DD608DD14AF64CC86FD954216B5995885E516C9E4FA01DB04A2D12EB59D962A0636E65BC24CDF396293BFDCAB07EBA6A22761A5D14DB66F291FC7FFFD8B¤¤¤¤ллллллллю■ю■
+09:41:44 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_RANDOMPART
+09:41:44 snow:CEncryptedStreamSocket:Negotiate before decrypt size:4 content:D7C93DC6¤¤¤¤ллллллллю■ю■
+09:41:44 snow:CEncryptedStreamSocket:Negotiate after decrypt size:4 content:C46F5E83¤¤¤¤ллллллллю■ю■
+09:41:44 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_MAGICVALUE
+09:41:44 snow:CEncryptedStreamSocket:Negotiate before decrypt size:3 content:D5B019¤¤¤¤ллллллллю■ю■ю■
+09:41:44 snow:CEncryptedStreamSocket:Negotiate after decrypt size:3 content:00005C¤¤¤¤ллллллллю■ю■ю■
+09:41:44 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_METHODTAGSPADLEN
+09:41:44 snow:CEncryptedStreamSocket:Negotiate before decrypt size:92 content:ED7A451E353D96B3352D47864F9FB7C4998ECAC12A39F460647D1864F5C90DD608DD14AF64CC86FD954216B5995885E516C9E4FA01DB04A2D12EB59D962A0636E65BC24CDF396293BFDCAB07EBA6A22761A5D14DB66F291FC7FFFD8B¤¤¤¤ллллллллю■ю■
+09:41:44 snow:CEncryptedStreamSocket:Negotiate after decrypt size:92 content:20F2C93FA84BCF625FF623AC37BCB1DF8CF9BBF697D109C542D482E3A2F5CC3FE8DEE1B937E1F6870BF2B6302EDA600D9F5DA972544352760FFEF1D97FAF737E1B7F6F7F3AC8AC2F9AA4EE976717A04D066EC9A0C74786B1B1C47330¤¤¤¤ллллллллю■ю■
+09:41:44 snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_PADDING
+09:41:44 snow:CEncryptedStreamSocket:SendNegotiatingData start
+09:41:44 snow:CEncryptedStreamSocket:SendNegotiatingData before crypt size:32 content:C46F5E83001AA5D91543C21CBC4136BC2B4F3D55979CDB285402157AA4896037¤¤¤¤ллллллллю■ю■
+09:41:44 snow:CEncryptedStreamSocket:SendNegotiatingData after crypt size:32 content:2396B71DC7991EF5589CF7BDB4518ECCA86F0A7A5880055480E8C361551BD108¤¤¤¤ллллллллю■ю■
+09:41:44 snow:CAsyncSocketEx::Send before send,size : 32 , content : 2396B71DC7991EF5589CF7BDB4518ECCA86F0A7A5880055480E8C361551BD108¤¤¤¤ллллллллю■ю■
+09:41:44 snow:CAsyncSocketEx::Sendгмafter send
+09:41:44 snow:CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader
+  
+09:41:45 OP_Hello                 from 79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+09:41:45   Hash=B2C02E84100ED1A8DA8B732310076F5F (eMule)  UserID=701042767 (79.16.201.41)  Port=7869  Tags=6
+  Name='http://emule-project.net'
+  Version=60
+  KadPort=7879  UDPPort=7879
+  PeerCache=1  UDPVer=4  DataComp=1  SecIdent=3  SrcExchg=4  ExtReq=2  Commnt=1  Preview=0  NoViewFiles=1  Unicode=1
+  KadVersion=9, LargeFiles=1 ExtMultiPacket=1 CryptLayerSupport=1 CryptLayerRequest=1 CryptLayerRequires=0 SupportsSourceEx2=1 SupportsCaptcha=1 DirectUDPCallback=0
+  ClientVer=0.50.0.0  Comptbl=0
+  Server=85.204.50.116:4232
+09:41:45 >>> OP__HelloAnswer      to   79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+09:41:45 >>> OP__SecIdentState    to   79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+
+
+09:41:45 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:45 CEMSocket:OnReceive start
+09:41:45 CEMSocket:Receive start
+09:41:45 snow:CEncryptedStreamSocket:Receive start
+09:41:45 snow:CEncryptedStreamSocket:Receive before DeCrypt size:109 content:38F8B02C80601D8B65DBD86E8EC004875AB0F0AE9A0E91B0053A4B17936C27F0AE2DE933173E15BE892A66130139611F00C2301FBB435FEEA5C9902CEEA08C57CEEA4ECF9406467B4D411F97F706F58533EF60F4AECF3048F2BAFE4CF2A4FC62258444B29AD0EDCC8C03491D88¤¤¤¤ллллллллю■
+09:41:45 snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+09:41:45 snow:CEncryptedStreamSocket:Receive after DeCrypt size:109 content:E3680000000110B2C02E84100ED1A8DA8B732310076F5F4F10C929BD1E06000000020100011800687474703A2F2F656D756C652D70726F6A6563742E6E6574030100113C000000030100F9C71EC71E030100FA1E421334030100FEB92D0000030100FB00C8000055CC32748810¤¤¤¤ллллллллю■
+
+09:41:45 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:108 content:E3670000004C9C431EB71E0E142BF1BCF52D41C16FB070053C043ED806000000020100011800687474703A2F2F656D756C652D70726F6A6563742E6E6574030100113C000000030100F97C637C63030100FA1E421334030100FEB92D0000030100FB00C80000B06730245810¤¤¤¤ллллллллю■ю■
+09:41:45 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:108 content:7D1E106B8412E6E5C625817D14DFC2EA01C56BD80594ABD49F6901500B8808C9817F3B24F8D2F70150DE27E7F32C094E7EE5C7FF1E4A5CBD1F909C921DA462BE9379A8499AADBB6623EBFE3C4FB16B2C75C9F3979416AEE3DBD0C2BFEE0A614E176AAE43C38A5760E85A85CA¤¤¤¤ллллллллю■ю■
+09:41:45 CEncryptedStreamSocket:Send start
+09:41:45 snow:CEncryptedStreamSocket:Send end
+09:41:45 snow:CAsyncSocketEx::Send before send,size : 108 , content : 7D1E106B8412E6E5C625817D14DFC2EA01C56BD80594ABD49F6901500B8808C9817F3B24F8D2F70150DE27E7F32C094E7EE5C7FF1E4A5CBD1F909C921DA462BE9379A8499AADBB6623EBFE3C4FB16B2C75C9F3979416AEE3DBD0C2BFEE0A614E176AAE43C38A5760E85A85CA¤¤¤¤ллллллллю■ю■
+09:41:45 snow:CAsyncSocketEx::Sendгмafter send
+09:41:45 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:11 content:C50600000087027D490000¤¤¤¤ллллллллю■ю■ю■ю■ю■ю■ю■
+09:41:45 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:11 content:6C2BCA9A5B79612F723129¤¤¤¤ллллллллю■ю■ю■
+09:41:45 CEncryptedStreamSocket:Send start
+09:41:45 snow:CEncryptedStreamSocket:Send end
+09:41:45 snow:CAsyncSocketEx::Send before send,size : 11 , content : 6C2BCA9A5B79612F723129¤¤¤¤ллллллллю■ю■ю■
+09:41:45 snow:CAsyncSocketEx::Sendгмafter send
+
+09:41:46 snow:CAsyncSocketExHelperWindows::WindowProc FD_CONNECT
+09:41:46 snow:CAsyncSocketExHelperWindows::WindowProc FD_WRITE
+09:41:46 CEMSocket:OnSend start
+09:41:46 snow:CEncryptedStreamSocket:OnSend start
+09:41:46 snow:CEncryptedStreamSocket:OnSend end
+09:41:46 CEMSocket:OnSend end
+09:41:46 snow:CEMSocket:Send start
+09:41:46 CEncryptedStreamSocket:Send start
+09:41:46 snow:CEncryptedStreamSocket:Send end
+09:41:46 snow:CAsyncSocketEx::Send before send,size : 109 , content : E36800000001109C431EB71E0E142BF1BCF52D41C16FB070053C043ED806000000020100011800687474703A2F2F656D756C652D70726F6A6563742E6E6574030100113C000000030100F97C637C63030100FA1E421334030100FEB92D0000030100FB00C80000B06730245810¤¤¤¤ллллллллю■
+09:41:46 snow:CAsyncSocketEx::Sendгмafter send
+09:41:46 snow:CEMSocket:Send end
+ 
+09:41:46 OP_SecIdentState         from 79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+09:41:46 >>> OP__PublicKey        to   79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+09:41:46 OP_PublicKey             from 79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+09:41:46 >>> OP__Signature        to   79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+
+///snow: Receive OP_SECIDENTSTATE
+09:41:46 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:46 CEMSocket:OnReceive start
+09:41:46 CEMSocket:Receive start
+09:41:46 snow:CEncryptedStreamSocket:Receive start
+09:41:46 snow:CEncryptedStreamSocket:Receive before DeCrypt size:94 content:460B04D94229E524C0A24F598A84440CA201BCCCAE00AA0FF7DF94F6910ED00604ADB662A30D93730B8A7FFCE152F510C7D2A87B218B6F0723346AAA4239EA7A6D3D709936D9BEB3CFAA7E1B0F5B71C74611AAA2C7DFEAE5651DB016F04C¤¤¤¤лллллллл
+09:41:46 snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+09:41:46 snow:CEncryptedStreamSocket:Receive after DeCrypt size:94 content:C50600000087022E090000C54E000000854C304A300D06092A864886F70D01010105000339003036023100AFA55174DFEDB3A958443242C2F97FF24307750A7467CE613F03DBEA6213F2B0A09AB6702E57ED91A8A6D7CA82C4A5C1020111¤¤
+
+///snow: send  OP_PUBLICKEY¤¤лллллллл
+09:41:46 snow:CEMSocket::SendPacket controlpacket_queue size:1
+09:41:46 snow:CEMSocket::SendPacket QueueForSendingControlPacket socket:1456
+09:41:46 snow:UploadBandwidthThrottler::QueueForSendingControlPacket m_TempControlQueueFirst_list size:1
+09:41:46 snow:CEMSocket:Send start
+09:41:46 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:83 content:C54E000000854C304A300D06092A864886F70D01010105000339003036023100A82A2C77C430E0FD525FF8616133940D90F4B50371AEF6177D757F1CB780484A5813140B67B450B1E549F8C33E4ECC6D020111¤¤¤¤ллллллллю■ю■ю■
+09:41:46 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:83 content:AFFFF6BC0744C65680EE2D6A944BBC0B390AFB9625A3EC21110DAE8EA29558993052658164488D9D6904A8F93B26F722C47B15E31EA7DA0CD8ABA271EBBFE26D1763E6EFDE68FF926BE2360484A237E72DA345¤¤¤¤ллллллллю■ю■ю■
+09:41:46 CEncryptedStreamSocket:Send start
+09:41:46 snow:CEncryptedStreamSocket:Send end
+09:41:46 snow:CAsyncSocketEx::Send before send,size : 83 , content : AFFFF6BC0744C65680EE2D6A944BBC0B390AFB9625A3EC21110DAE8EA29558993052658164488D9D6904A8F93B26F722C47B15E31EA7DA0CD8ABA271EBBFE26D1763E6EFDE68FF926BE2360484A237E72DA345¤¤¤¤ллллллллю■ю■ю■
+
+
+
+///snow: send OP_SIGNATURE
+09:41:46 snow:CEMSocket:Send start
+09:41:46 snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt size:55 content:C532000000863085ADD5AD6774AF16B4528CB12020F49E0F8A190E9B9EEF34487A24166E3C7E5FD0392EF636EB692ADFA76191167FF41E¤¤¤¤ллллллллю■ю■ю■
+09:41:46 snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt size:55 content:345A401F906E078F69FD97E2AAA4AB0D3053F3D2B0A82B6873CF058C6080ADD0F78A25A8CABFB4DAD91F6B1662A5387AA068A9515DAA43¤¤¤¤ллллллллю■ю■ю■
+09:41:46 CEncryptedStreamSocket:Send start
+09:41:46 snow:CEncryptedStreamSocket:Send end
+09:41:46 snow:CAsyncSocketEx::Send before send,size : 55 , content : 345A401F906E078F69FD97E2AAA4AB0D3053F3D2B0A82B6873CF058C6080ADD0F78A25A8CABFB4DAD91F6B1662A5387AA068A9515DAA43¤¤¤¤ллллллллю■ю■ю■
+09:41:46 snow:CAsyncSocketEx::Sendгмafter send
+
+09:41:48 OP_KAD_FWTCPCHECK_ACK    from 79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+09:41:48 OP_Signature             from 79.16.201.41    'http://emule-project.net' (eMule v0.50a,None/None/None)
+
+///snow:Receive OP_KAD_FWTCPCHECK_ACK && OP_Signature   ▒и╬─          
+09:41:48 snow:CAsyncSocketExHelperWindows::WindowProc FD_READ
+09:41:48 CEMSocket:OnReceive start
+09:41:48 CEMSocket:Receive start
+09:41:48 snow:CEncryptedStreamSocket:Receive start
+09:41:48 snow:CEncryptedStreamSocket:Receive before DeCrypt size:61 content:742E84C6007D50560078D096CD4E6D712EC9AC334EFA1AF447330BADC6DF10C4E2A67029B5F147249EC6B97DDD9C9B8EBBDDF9F49461635AE8D7290E0A¤¤¤¤ллллллллю■
+09:41:48 snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING
+09:41:48 snow:CEncryptedStreamSocket:Receive after DeCrypt size:61 content:C501000000A8C532000000863024C454FDC435A8B72B35C6F021AAC2F88936ACBC046E65EA3E6699815B60CC9771D009C513887E195753F360ACF58090¤¤¤¤ллллллллю■
+09:41:48 snow:CEMSocket:Send start
+09:41:48 CEncryptedStreamSocket:Send start
+09:41:48 snow:CEncryptedStreamSocket:Send end
+09:41:48 snow:CAsyncSocketEx::Send before send,size : 55 , content : C53200000086302D17C781663EB3E986F8DB23D0E465A943033C2FDD94FF4174A94F905EB955A09027B00FB469F0579819A8A9A6321F52¤¤¤¤ллллллллю■ю■ю■
