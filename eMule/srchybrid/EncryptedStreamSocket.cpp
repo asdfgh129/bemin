@@ -599,6 +599,9 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					//DEBUG_ONLY( DebugLog(_T("CEncryptedStreamSocket: Finished Obufscation handshake with client %s (incoming)"), DbgGetIPString()) );
 					break;
 				}
+
+
+				///snow:处理呼出连接
 				case ONS_BASIC_CLIENTB_MAGICVALUE:{
 					if (m_pfiReceiveBuffer->ReadUInt32() != MAGICVALUE_SYNC){
 						DebugLogError(_T("CEncryptedStreamSocket: EncryptedstreamSyncError: Client sent wrong Magic Value as answer, cannot complete handshake (%s)"), DbgGetIPString());

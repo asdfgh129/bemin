@@ -1501,6 +1501,8 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 	if ( HasLowID() )
 	{
 		ASSERT( pClassSocket == NULL );
+
+		///snow:lowid 2 lowid 无法回调
 		if(!theApp.CanDoCallback(this)) // lowid2lowid check used for the whole function, don't remove
 		{
 			// We cannot reach this client, so we hard fail to connect, if this client should be kept,
@@ -1514,7 +1516,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 			return true;
 		}
 
-		// are callbacks disallowed?
+		// are callbacks disallowed?   ///snow:客户端不允许回调
 		if (bNoCallbacks){
 			DebugLogError(_T("TryToConnect: Would like to do callback on a no-callback client, %s"), DbgGetClientInfo());
 			if(Disconnected(_T("LowID: No Callback Option allowed")))
@@ -1538,7 +1540,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 			}
 			return true;
 		}
-	}
+	}  ///snow:end of if(lowid)
 
 	// Prechecks finished, now for the real connecting
 	////////////////////////////////////////////////////
@@ -1566,6 +1568,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 	}
 	////////////////////////////////////////////////////////////
 	// 4) Direct Callback Connections
+	///snow:支持UDP回调，向客户端发一个UDP包（OP_DIRECTCALLBACKREQ），让客户端发起连接
 	else if (SupportsDirectUDPCallback() && thePrefs.GetUDPPort() != 0 && GetConnectIP() != 0)
 	{
 		m_nConnectingState = CCS_DIRECTCALLBACK;
@@ -1586,6 +1589,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 	}
 	////////////////////////////////////////////////////////////
 	// 6) Server Callback + 7) Kad Callback
+	///snow:通过Server或Kad伙伴中转，向客户端发送回调请求信息包，让客户端进行回调
 	if (GetDownloadState() == DS_CONNECTING)
 		SetDownloadState(DS_WAITCALLBACK);
 	
@@ -1602,7 +1606,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 		if (thePrefs.GetDebugServerTCPLevel() > 0 || thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugSend("OP__CallbackRequest", this);
 		theStats.AddUpDataOverheadServer(packet->size);
-		theApp.serverconnect->SendPacket(packet);
+		theApp.serverconnect->SendPacket(packet);  ///snow:向服务器发送信息包，服务器收到后会转发给客户端
 		return true;
 	}
 	else if (HasValidBuddyID() && Kademlia::CKademlia::IsConnected())
@@ -1620,7 +1624,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 			packet->opcode = KADEMLIA_CALLBACK_REQ;
 			theStats.AddUpDataOverheadKad(packet->size);
 			// FIXME: We dont know which kadversion the buddy has, so we need to send unencrypted
-			theApp.clientudp->SendPacket(packet, GetBuddyIP(), GetBuddyPort(), false, NULL, true, 0);
+			theApp.clientudp->SendPacket(packet, GetBuddyIP(), GetBuddyPort(), false, NULL, true, 0); ///snow:向KAD Buddy发送信息包，让buddy中转，让客户端发送连接请求
 			SetDownloadState(DS_WAITCALLBACKKAD);
 		}
 		else
