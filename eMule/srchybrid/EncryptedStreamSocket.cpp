@@ -527,7 +527,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					return 0;
 				case ONS_BASIC_CLIENTA_RANDOMPART:{  ///snow:incoming connection
 					ASSERT( m_pRC4ReceiveKey == NULL );
-					///snow:准备ClinetB Key
+					///snow:准备ClientB Key
 					///	 - Client B (Incomming connection):
 				    ///  Sendkey:	Md5(<UserHashClientB 16><MagicValue203 1><RandomKeyPartClientA 4>) 21
 				    /// Receivekey: Md5(<UserHashClientB 16><MagicValue34 1><RandomKeyPartClientA 4>)  21
