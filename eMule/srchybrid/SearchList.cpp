@@ -297,7 +297,7 @@ UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size, bool 
 		if (thePrefs.GetDebugServerTCPLevel() > 0){
 			Debug(_T("*** NOTE: ProcessSearchAnswer(Server %s:%u): ***AddData: %u bytes\n"), ipstr(nServerIP), nServerPort, iAddData);
 			DebugHexDump(in_packet + packet.GetPosition(), iAddData);
-		}
+		}1
 	}
 
 	packet.Close();

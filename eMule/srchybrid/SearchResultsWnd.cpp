@@ -1187,19 +1187,19 @@ bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSu
 bool CSearchResultsWnd::StartNewSearch(SSearchParams* pParams)
 {
 	
-	if (pParams->eType == SearchTypeAutomatic){
+	if (pParams->eType == SearchTypeAutomatic){    ///snow:自动情况下的处理
 		// select between kad and server
 		// its easy if we are connected to one network only anyway
-		if (!theApp.serverconnect->IsConnected() && Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::IsConnected())
+		if (!theApp.serverconnect->IsConnected() && Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::IsConnected())   ///snow:Kad连接，server未连接
 			pParams->eType = SearchTypeKademlia;
-		else if (theApp.serverconnect->IsConnected() && (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected()))
+		else if (theApp.serverconnect->IsConnected() && (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected()))   ///snow:server连接,Kad未连接
 			pParams->eType = SearchTypeEd2kServer;
-		else if (!theApp.serverconnect->IsConnected() && (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected())){
+		else if (!theApp.serverconnect->IsConnected() && (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected())){  ///snow:都未连接
 			AfxMessageBox(GetResString(IDS_NOTCONNECTEDANY), MB_ICONWARNING);
 			delete pParams;
 			return false;
 		}
-		else {
+		else {    ///snow:KAD和SERVER两者都连接，当连接的服务器是静态的，或者服务器连接的客户端超过4万少于500万，文件数大于500万，服务器列表的服务器少于40个，使用server搜索；否则，进行KAD搜索
 			// connected to both
 			// We choose Kad, except 
 			// - if we are connected to a static server 
@@ -1220,7 +1220,7 @@ bool CSearchResultsWnd::StartNewSearch(SSearchParams* pParams)
 	}
 
 	ESearchType eSearchType = pParams->eType;
-	if (eSearchType == SearchTypeEd2kServer || eSearchType == SearchTypeEd2kGlobal)
+	if (eSearchType == SearchTypeEd2kServer || eSearchType == SearchTypeEd2kGlobal)   ///snow:Ed2k服务器搜索或全局服务器搜索
 	{
 		if (!theApp.serverconnect->IsConnected()) {
 			AfxMessageBox(GetResString(IDS_ERR_NOTCONNECTED), MB_ICONWARNING);
@@ -1302,7 +1302,7 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams* pParams)
 		strResultType.Empty();
 	m_nEd2kSearchID++;
 	pParams->dwSearchID = m_nEd2kSearchID;
-	theApp.searchlist->NewSearch(&searchlistctrl, strResultType, m_nEd2kSearchID, pParams->eType, pParams->strExpression);
+	theApp.searchlist->NewSearch(&searchlistctrl, strResultType, m_nEd2kSearchID, pParams->eType, pParams->strExpression);   ///snow:将当前搜索添加到搜索历史中
 	canceld = false;
 
 	if (m_uTimerLocalServer){
@@ -1322,9 +1322,9 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams* pParams)
 	if (thePrefs.GetDebugServerTCPLevel() > 0)
 		Debug(_T(">>> Sending OP__SearchRequest\n"));
 	theStats.AddUpDataOverheadServer(packet->size);
-	theApp.serverconnect->SendPacket(packet,false);
+	theApp.serverconnect->SendPacket(packet,false);   ///snow:向服务器发送搜索请求
 
-	if (pParams->eType == SearchTypeEd2kGlobal && theApp.serverconnect->IsUDPSocketAvailable())
+	if (pParams->eType == SearchTypeEd2kGlobal && theApp.serverconnect->IsUDPSocketAvailable())    ///snow:全局服务器搜索
 	{
 		// set timeout timer for local server
 		m_uTimerLocalServer = SetTimer(TimerServerTimeout, 50000, NULL);
@@ -1409,7 +1409,7 @@ bool CSearchResultsWnd::DoNewKadSearch(SSearchParams* pParams)
 	Kademlia::CSearch* pSearch = NULL;
 	try
 	{
-		pSearch = Kademlia::CSearchManager::PrepareFindKeywords(pParams->strKeyword, uSearchTermsSize, pSearchTermsData);
+		pSearch = Kademlia::CSearchManager::PrepareFindKeywords(pParams->strKeyword, uSearchTermsSize, pSearchTermsData);   ///snow:分析搜索关键字
 		delete[] pSearchTermsData;
 		if (!pSearch){
 			ASSERT(0);
@@ -1425,8 +1425,8 @@ bool CSearchResultsWnd::DoNewKadSearch(SSearchParams* pParams)
 	CStringA strResultType = pParams->strFileType;
 	if (strResultType == ED2KFTSTR_PROGRAM)
 		strResultType.Empty();
-	theApp.searchlist->NewSearch(&searchlistctrl, strResultType, pParams->dwSearchID, pParams->eType, pParams->strExpression);
-	CreateNewTab(pParams);
+	theApp.searchlist->NewSearch(&searchlistctrl, strResultType, pParams->dwSearchID, pParams->eType, pParams->strExpression);  ///snow:添加到搜索历史中
+	CreateNewTab(pParams); ///snow:一个搜索关键字一个Tab
 	return true;
 }
 
