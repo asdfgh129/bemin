@@ -66,7 +66,7 @@ static uint32 igraph, istats, i2Secs;
 
 CUploadQueue::CUploadQueue()
 {
-	VERIFY( (h_timer = SetTimer(0,0,100,UploadTimer)) != NULL );
+	VERIFY( (h_timer = SetTimer(0,0,100,UploadTimer)) != NULL );   ///加载定时器UploadTimer
 	if (thePrefs.GetVerbose() && !h_timer)
 		AddDebugLogLine(true,_T("Failed to create 'upload queue' timer - %s"),GetErrorMessage(GetLastError()));
 	datarate = 0;
@@ -879,6 +879,7 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 		if (!theApp.emuledlg->IsRunning())
 			return;
 
+		///snow:处理Log日志记录，将队列中的记录写入日志文件中
         // Elandal:ThreadSafeLogging -->
         // other threads may have queued up log lines. This prints them.
         theApp.HandleDebugLogQueue();

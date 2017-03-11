@@ -194,6 +194,7 @@ void AddLogTextV(UINT uFlags, EDebugLogPriority dlpPriority, LPCTSTR pszLine, va
 {
 	ASSERT(pszLine != NULL);
 
+	///snow:如果是Debug Log且 未设定存储冗余日志记录且优先级小于设定记录优先级
 	if ((uFlags & LOG_DEBUG) && !(thePrefs.GetVerbose() && dlpPriority >= thePrefs.GetVerboseLogPriority()))
 		return;	
 
@@ -202,22 +203,23 @@ void AddLogTextV(UINT uFlags, EDebugLogPriority dlpPriority, LPCTSTR pszLine, va
 	szLogLine[_countof(szLogLine) - 1] = _T('\0');
 	
 	if (theApp.emuledlg)
-		theApp.emuledlg->AddLogText(uFlags, szLogLine);
+		theApp.emuledlg->AddLogText(uFlags, szLogLine);   ///snow:调用主窗口的Log函数，主要是增加了窗口更新功能
 	else
 	{
 		TRACE(_T("App Log: %s\n"), szLogLine);
 
 		TCHAR szFullLogLine[1060];
+		///snow:添加时间
 		int iLen = _sntprintf(szFullLogLine, _countof(szFullLogLine), _T("%s: %s\r\n"), CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), szLogLine);
 		if (iLen > 0)
 		{
-			if (!(uFlags & LOG_DEBUG))
+			if (!(uFlags & LOG_DEBUG))    ///snow: 0001 0000  除了LOG_DEBUG记录外，其它写入emule.log日志
 			{
 				if (thePrefs.GetLog2Disk())
 					theLog.Log(szFullLogLine, iLen);
 			}
 
-			if (thePrefs.GetVerbose() && ((uFlags & LOG_DEBUG) || thePrefs.GetFullVerbose()))
+			if (thePrefs.GetVerbose() && ((uFlags & LOG_DEBUG) || thePrefs.GetFullVerbose()))  ///snow:将LOG_DEBUG记录写入emule_verbose.log
 			{
 				if (thePrefs.GetDebug2Disk())
 					theVerboseLog.Log(szFullLogLine, iLen);

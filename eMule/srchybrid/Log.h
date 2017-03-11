@@ -17,9 +17,9 @@ enum EDebugLogPriority{
 
 // Log message targets flags
 #define	LOG_DEFAULT		0x00
-#define	LOG_DEBUG		0x10
-#define	LOG_STATUSBAR	0x20
-#define	LOG_DONTNOTIFY	0x40
+#define	LOG_DEBUG		0x10   ///snow:0001 0000
+#define	LOG_STATUSBAR	0x20   ///snow:0010 0000
+#define	LOG_DONTNOTIFY	0x40   ///snow:0100 0000
 
 
 void Log(LPCTSTR pszLine, ...);

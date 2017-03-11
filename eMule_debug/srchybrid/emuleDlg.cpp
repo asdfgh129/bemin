@@ -908,7 +908,7 @@ void CemuleDlg::AddLogText(UINT uFlags, LPCTSTR pszText)
 		return;
 	}
 
-	if (uFlags & LOG_STATUSBAR)
+	if (uFlags & LOG_STATUSBAR)   
 	{
         if (statusbar->m_hWnd /*&& ready*/)
 		{

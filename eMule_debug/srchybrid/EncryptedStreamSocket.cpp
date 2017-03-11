@@ -751,7 +751,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 ///snow start:此函数在四个地方被调用：Send(),OnSend(),StartNegotiation(),Negotiate()
 ///   在Send()中，
 int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLen, uint32 nStartCryptFromByte, bool bDelaySend){
-	theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:SendNegotiatingData start"));
+	//theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:SendNegotiatingData start"));
 	ASSERT( m_StreamCryptState == ECS_NEGOTIATING || m_StreamCryptState == ECS_ENCRYPTING );
 	ASSERT( nStartCryptFromByte <= nBufLen );
 	ASSERT( m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING || !bDelaySend );
@@ -766,7 +766,7 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 			memcpy(pBuffer, lpBuf, nStartCryptFromByte);
 		if (nBufLen - nStartCryptFromByte > 0)
 		{
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:SendNegotiatingData before crypt size:%i content:%s"),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)pBuffer + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
+			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:SendNegotiatingData before crypt size:%i content:%s"),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)lpBuf + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
 			RC4Crypt((uchar*)lpBuf + nStartCryptFromByte, pBuffer + nStartCryptFromByte, nBufLen - nStartCryptFromByte, m_pRC4SendKey);
 			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:SendNegotiatingData after crypt size:%i content:%s"),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)pBuffer + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
 		}

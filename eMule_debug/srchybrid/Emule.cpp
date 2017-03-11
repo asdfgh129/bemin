@@ -2330,7 +2330,7 @@ void CemuleApp::QueueDebugLogLineEx(UINT uFlags, LPCTSTR line, ...)
 	if (iLen > 0)
 	{
 		SLogItem* newItem = new SLogItem;
-		newItem->uFlags = uFlags | LOG_DEBUG;
+		newItem->uFlags = uFlags | LOG_DEBUG;   ///
 		newItem->line.SetString(bufferline, iLen);
 		m_QueueDebugLog.AddTail(newItem);
 	}

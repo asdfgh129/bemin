@@ -900,6 +900,7 @@ void CemuleDlg::ResetDebugLog(){
 	serverwnd->debuglog->Reset();
 }
 
+///snow:由全局函数AddLogTextV()调用，主要是为了处理界面相关更新，包括状态栏和serverWnd、以及通知栏三部分
 void CemuleDlg::AddLogText(UINT uFlags, LPCTSTR pszText)
 {
 	if (GetCurrentThreadId() != g_uMainThreadId)
@@ -908,7 +909,7 @@ void CemuleDlg::AddLogText(UINT uFlags, LPCTSTR pszText)
 		return;
 	}
 
-	if (uFlags & LOG_STATUSBAR)
+	if (uFlags & LOG_STATUSBAR)    ///snow:更新状态栏
 	{
         if (statusbar->m_hWnd /*&& ready*/)
 		{
@@ -926,6 +927,7 @@ void CemuleDlg::AddLogText(UINT uFlags, LPCTSTR pszText)
 		return;
 
 	TCHAR temp[1060];
+	///snow:加入时间
 	int iLen = _sntprintf(temp, _countof(temp), _T("%s: %s\r\n"), CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), pszText);
 	if (iLen >= 0)
 	{

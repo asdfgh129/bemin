@@ -2299,7 +2299,7 @@ void Debug(LPCTSTR pszFmtMsg, ...)
 	// get around a bug in the debug device which is not capable of dumping long strings
 	int i = 0;
 	while (i < strBuff.GetLength()){
-		OutputDebugString(strBuff.Mid(i, 1024));
+		OutputDebugString(strBuff.Mid(i, 1024));  ///snow:WinApi函数，写到哪去了？猜想是output窗口
 		i += 1024;
 	}
 	va_end(pArgs);

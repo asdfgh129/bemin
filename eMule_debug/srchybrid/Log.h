@@ -87,3 +87,4 @@ protected:
 
 extern CLogFile theLog;
 extern CLogFile theVerboseLog;
+extern CLogFile theDebugLog;
