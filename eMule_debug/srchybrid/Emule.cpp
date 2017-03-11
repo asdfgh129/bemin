@@ -876,6 +876,7 @@ BOOL CemuleApp::InitInstance()
 
 	ClearDebugLogQueue(true);
 	ClearLogQueue(true);
+	ClearTraceLogQueue(true); ///snow:add by snow to trace
 
 	AddDebugLogLine(DLP_VERYLOW, _T("%hs: returning: FALSE"), __FUNCTION__);
 	return FALSE;
@@ -2337,6 +2338,73 @@ void CemuleApp::QueueDebugLogLineEx(UINT uFlags, LPCTSTR line, ...)
 
 	m_queueLock.Unlock();
 }
+
+///<--------------------------------------------
+//   snow:add by snow for debug info
+bool CemuleApp::IsTraceLog(LPCTSTR keyword)
+{
+    LPCTSTR keywords[]=
+	{
+		_T("PacketContent")
+	}
+	bool bRecord = false;
+	for (int i = 0; i < _countof(keywords); i++)
+	{
+			if (_tcsncmp(keyword, keywords[i], sizeof(keywords[i])) == 0)
+			{
+				bRecord = true;
+				break;
+			}
+	}
+	return bRecord;
+
+}
+
+void CemuleApp::QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line, ...)
+{
+	if(IsTraceLog(keyword)) return;
+
+	m_queueLock.Lock();
+
+	TCHAR bufferline[1000];
+	va_list argptr;
+	va_start(argptr, line);
+	int iLen = _vsntprintf(bufferline, _countof(bufferline), line, argptr);
+	va_end(argptr);
+	if (iLen > 0)
+	{
+		SLogItem* newItem = new SLogItem;
+		newItem->uFlags = LOG_DEBUG;
+		newItem->line.SetString(bufferline, iLen);
+		m_QueueTraceLog.AddTail(newItem);
+	}
+
+	m_queueLock.Unlock();
+}
+void CemuleApp::HandleTraceLogQueue()
+{
+	m_queueLock.Lock();
+	while (!m_QueueTraceLog.IsEmpty())
+	{
+		const SLogItem* newItem = m_QueueTraceLog.RemoveHead();
+		if (thePrefs.GetVerbose())
+			LogT(newItem->uFlags, _T("%s"), newItem->line);
+		delete newItem;
+	}
+	m_queueLock.Unlock();
+}
+void CemuleApp::ClearTraceLogQueue(bool bDebugPendingMsgs)
+{
+	m_queueLock.Lock();
+	while(!m_QueueTraceLog.IsEmpty())
+	{
+		if (bDebugPendingMsgs)
+			TRACE(_T("Queued dbg log msg: %s\n"), m_QueueTraceLog.GetHead()->line);
+		delete m_QueueTraceLog.RemoveHead();
+	}
+	m_queueLock.Unlock();
+}
+///------------------------------------------>
 
 /// <summary>
 /// Queues the log line ex.

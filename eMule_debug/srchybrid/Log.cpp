@@ -74,6 +74,27 @@ void Log(UINT uFlags, LPCTSTR pszFmt, ...)
 	va_end(argp);
 }
 
+///snow:add by snow to trace
+void LogT(UINT uFlags, LPCTSTR pszFmt, ...)
+{
+	va_list argp;
+	va_start(argp, pszFmt);
+	ASSERT(pszLine != NULL);
+
+	TCHAR szLogLine[1000];
+	_vsntprintf(szLogLine, _countof(szLogLine), pszLine, argptr);
+	szLogLine[_countof(szLogLine) - 1] = _T('\0');
+	
+		TCHAR szFullLogLine[1060];
+		int iLen = _sntprintf(szFullLogLine, _countof(szFullLogLine), _T("%s: %s\r\n"), CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), szLogLine);
+		if (iLen > 0)
+		{
+			theDebugLog.Log(szFullLogLine, iLen);
+		}
+//	AddLogTextT(uFlags, DLP_DEFAULT, pszFmt, argp);//LogV(uFlags, pszFmt, argp);
+	va_end(argp);
+}
+
 void LogError(UINT uFlags, LPCTSTR pszFmt, ...)
 {
 	va_list argp;
@@ -225,6 +246,8 @@ void AddLogTextV(UINT uFlags, EDebugLogPriority dlpPriority, LPCTSTR pszLine, va
 		}
 	}
 }
+
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
