@@ -116,6 +116,7 @@ CLogFile theLog;
 /// The verbose log
 /// </summary>
 CLogFile theVerboseLog;
+CLogFile theDebugLog;
 /// <summary>
 /// The G_B low color desktop
 /// </summary>
@@ -737,17 +738,22 @@ BOOL CemuleApp::InitInstance()
 #endif
 	VERIFY( theLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, thePrefs.GetLog2Disk()) + _T("eMule.log")) );
 	VERIFY( theVerboseLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_Verbose.log")) );
+	VERIFY( theDebugLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_Debug.log")) );    ///snow:add by snow
 	theLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theLog.SetFileFormat(thePrefs.GetLogFileFormat());
 	theVerboseLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theVerboseLog.SetFileFormat(thePrefs.GetLogFileFormat());
+	theDebugLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());    ///snow:add by snow
+	theDebugLog.SetFileFormat(thePrefs.GetLogFileFormat());      ///snow:add by snow
 	if (thePrefs.GetLog2Disk()){
 		theLog.Open();
 		theLog.Log(_T("\r\n"));
 	}
-	if (thePrefs.GetDebug2Disk()){
+	if (thePrefs.GetDebug2Disk()){    ///
 		theVerboseLog.Open();
 		theVerboseLog.Log(_T("\r\n"));
+		theDebugLog.Open();           ///snow:add by snow
+		theDebugLog.Log(_T("\r\n"));   ///snow:add by snow
 	}
 	Log(_T("Starting eMule v%s"), m_strCurVersionLong);
 

@@ -571,7 +571,7 @@ uint64 CEMSocket::GetSentPayloadSinceLastCallAndReset() {
 
 void CEMSocket::OnSend(int nErrorCode){
 
-	theApp.QueueDebugLogLine(false,_T("CEMSocket:OnSend start"));
+//	theApp.QueueDebugLogLine(false,_T("CEMSocket:OnSend start"));
     //onSendWillBeCalledOuter = false;
 
     if (nErrorCode){
@@ -601,7 +601,7 @@ void CEMSocket::OnSend(int nErrorCode){
     }
 	
     sendLocker.Unlock();
-	theApp.QueueDebugLogLine(false,_T("CEMSocket:OnSend end"));
+//	theApp.QueueDebugLogLine(false,_T("CEMSocket:OnSend end"));
 }
 
 //void CEMSocket::StoppedSendSoUpdateStats() {
@@ -652,7 +652,7 @@ void CEMSocket::OnSend(int nErrorCode){
  */
 SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSize, bool onlyAllowedToSendControlPacket) {
 	//EMTrace("CEMSocket::Send linked: %i, controlcount %i, standartcount %i, isbusy: %i",m_bLinkedPackets, controlpacket_queue.GetCount(), standartpacket_queue.GetCount(), IsBusy());
-	theApp.QueueDebugLogLine(false,_T("snow:CEMSocket:Send start"));
+//	theApp.QueueDebugLogLine(false,_T("snow:CEMSocket:Send start"));
 
 	sendLocker.Lock();
 
@@ -830,7 +830,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
     sendLocker.Unlock();
 
     SocketSentBytes returnVal = { !anErrorHasOccured, sentStandardPacketBytesThisCall, sentControlPacketBytesThisCall };
-	theApp.QueueDebugLogLine(false,_T("snow:CEMSocket:Send end"));
+//	theApp.QueueDebugLogLine(false,_T("snow:CEMSocket:Send end"));
     return returnVal;
 }
 

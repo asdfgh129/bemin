@@ -735,17 +735,17 @@ BOOL CemuleApp::InitInstance()
 #ifdef _DEBUG
 	_sntprintf(s_szCrtDebugReportFilePath, _countof(s_szCrtDebugReportFilePath) - 1, _T("%s%s"), thePrefs.GetMuleDirectory(EMULE_LOGDIR, false), APP_CRT_DEBUG_LOG_FILE);
 #endif
-	VERIFY( theLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, thePrefs.GetLog2Disk()) + _T("eMule.log")) );
+	VERIFY( theLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, thePrefs.GetLog2Disk()) + _T("eMule.log")) );   ///snow:日志文件名
 	VERIFY( theVerboseLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_Verbose.log")) );
 	theLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theLog.SetFileFormat(thePrefs.GetLogFileFormat());
 	theVerboseLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theVerboseLog.SetFileFormat(thePrefs.GetLogFileFormat());
-	if (thePrefs.GetLog2Disk()){
+	if (thePrefs.GetLog2Disk()){    ///snow:将日志保存到磁盘，在选项Extended中设置
 		theLog.Open();
 		theLog.Log(_T("\r\n"));
 	}
-	if (thePrefs.GetDebug2Disk()){
+	if (thePrefs.GetDebug2Disk()){    ///snow:将日志保存到磁盘，在选项Extended中设置
 		theVerboseLog.Open();
 		theVerboseLog.Log(_T("\r\n"));
 	}
