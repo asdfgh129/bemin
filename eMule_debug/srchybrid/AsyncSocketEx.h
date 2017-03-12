@@ -215,10 +215,10 @@ public:
 
 	///<---------------------------------  by snow to trace
 #ifdef _AFX
-    CString GetSocketAddress();
+    CString GetPeerAddress();
 #endif
 
-    int GetSocketPort();
+    int GetPeerPort();
 	///------------------------------------->by snow
 
 #ifdef _DEBUG

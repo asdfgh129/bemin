@@ -167,16 +167,16 @@ void CEncryptedStreamSocket::CryptPrepareSendData(uchar* pBuffer, uint32 nLen){
 	{
 		char * dst;
 
-//		theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt:%s"),ByteToHexStr(pBuffer,nLen).GetBuffer(0));
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CEncryptedStreamSocket:CryptPrepareSendData before Crypt:Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nLen,ByteToHexStr(pBuffer,nLen).GetBuffer(0));
 		RC4Crypt(pBuffer, pBuffer, nLen, m_pRC4SendKey);
-	//	theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt:%s"),ByteToHexStr(pBuffer,nLen).GetBuffer(0));
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CEncryptedStreamSocket:CryptPrepareSendData after Crypt:Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nLen,ByteToHexStr(pBuffer,nLen).GetBuffer(0));
 	}
 }
 
 // unfortunatly sending cannot be made transparent for the derived class, because of WSA_WOULDBLOCK
 // together with the fact that each byte must pass the keystream only once
 int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
-	theApp.QueueDebugLogLine(false,_T("CEncryptedStreamSocket:Send start"));
+	//theApp.QueueDebugLogLine(false,_T("CEncryptedStreamSocket:Send start"));
 	if (!IsEncryptionLayerReady()){
 		ASSERT( false ); // must be a bug
 		return 0;
@@ -200,7 +200,7 @@ int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
 		m_StreamCryptState = ECS_NONE;
 		DebugLogError(_T("CEncryptedStreamSocket: Overwriting State ECS_UNKNOWN with ECS_NONE because of premature Send() (%s)"), DbgGetIPString());
 	}
-	theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Send end"));
+	//theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Send end"));
 	return CAsyncSocketEx::Send(lpBuf, nBufLen, nFlags);
 }
 
@@ -291,10 +291,11 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 			}
 		}
 		case ECS_ENCRYPTING:
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING"));
+			//theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING"));
 			// basic obfuscation enabled and set, so decrypt and pass along
 			RC4Crypt((uchar*)lpBuf, (uchar*)lpBuf, m_nObfuscationBytesReceived, m_pRC4ReceiveKey);
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive after DeCrypt size:%i content:%s"),m_nObfuscationBytesReceived,ByteToHexStr((uchar*)lpBuf,m_nObfuscationBytesReceived).GetBuffer(0));
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CEncryptedStreamSocket:Receive after DeCrypt: Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),m_nObfuscationBytesReceived,ByteToHexStr((uchar*)lpBuf,m_nObfuscationBytesReceived).GetBuffer(0));
+
 			
 			return m_nObfuscationBytesReceived;
 		case ECS_NEGOTIATING:{
@@ -766,9 +767,9 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 			memcpy(pBuffer, lpBuf, nStartCryptFromByte);
 		if (nBufLen - nStartCryptFromByte > 0)
 		{
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:SendNegotiatingData before crypt size:%i content:%s"),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)lpBuf + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CEncryptedStreamSocket:SendNegotiatingData before crypt Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)lpBuf + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
 			RC4Crypt((uchar*)lpBuf + nStartCryptFromByte, pBuffer + nStartCryptFromByte, nBufLen - nStartCryptFromByte, m_pRC4SendKey);
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:SendNegotiatingData after crypt size:%i content:%s"),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)pBuffer + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CEncryptedStreamSocket:SendNegotiatingData after crypt Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)pBuffer + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
 		}
 		if (m_pfiSendBuffer != NULL){
 			// we already have data pending. Attach it and try to send
