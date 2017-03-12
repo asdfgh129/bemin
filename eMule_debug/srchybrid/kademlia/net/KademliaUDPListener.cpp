@@ -258,6 +258,10 @@ void CKademliaUDPListener::ProcessPacket(const byte* pbyData, uint32 uLenData, u
 	//	AddDebugLogLine( false, _T("Processing UDP Packet from %s port %ld : opcode length %ld", ipstr(senderAddress->sin_addr), ntohs(senderAddress->sin_port), uLenPacket);
 	//	CMiscUtils::debugHexDump(pbyPacketData, uLenPacket);
 
+	///snow:add by snow
+theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CKademliaUDPListener::ProcessPacket--- IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),ipstr(ntohl(uIP)), ntohs(uUDPPort),uLenPacket,GetKadOpcodeStr(byOpcode).GetBuffer(0),GetProtocolStr(OP_EMULEPROT).GetBuffer(0),ByteToHexStr((uchar*)pbyPacketData,uLenPacket).GetBuffer(0));
+
+
 	switch (byOpcode)
 	{
 		case KADEMLIA2_BOOTSTRAP_REQ:

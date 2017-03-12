@@ -239,6 +239,11 @@ void CClientUDPSocket::OnReceive(int nErrorCode)
 
 bool CClientUDPSocket::ProcessPacket(const BYTE* packet, UINT size, uint8 opcode, uint32 ip, uint16 port)
 {
+
+///snow:add by snow
+theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CClientUDPSocket::ProcessPacket--- IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),ipstr(ntohl(ip)),port,size,GetOpcodeStr(opcode,CLIENT2CLIENTExUDP).GetBuffer(0),GetProtocolStr(OP_EMULEPROT).GetBuffer(0),ByteToHexStr((uchar*)packet,size).GetBuffer(0));
+
+
 	switch(opcode)
 	{
 		case OP_REASKCALLBACKUDP:

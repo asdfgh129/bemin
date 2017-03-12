@@ -254,3 +254,4 @@ public:
 protected:
 	HICON m_hIcon;
 };
+

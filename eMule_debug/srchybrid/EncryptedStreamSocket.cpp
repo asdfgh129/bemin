@@ -200,7 +200,7 @@ int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
 		m_StreamCryptState = ECS_NONE;
 		DebugLogError(_T("CEncryptedStreamSocket: Overwriting State ECS_UNKNOWN with ECS_NONE because of premature Send() (%s)"), DbgGetIPString());
 	}
-	//theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Send end"));
+	//theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Send end"));
 	return CAsyncSocketEx::Send(lpBuf, nBufLen, nFlags);
 }
 
@@ -211,9 +211,9 @@ bool CEncryptedStreamSocket::IsEncryptionLayerReady(){
 
 
 int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
-	theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive start"));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Receive start"));
 	m_nObfuscationBytesReceived = CAsyncSocketEx::Receive(lpBuf, nBufLen, nFlags);
-	theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive before DeCrypt size:%i content:%s"),m_nObfuscationBytesReceived,ByteToHexStr((uchar*)lpBuf,m_nObfuscationBytesReceived).GetBuffer(0));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Receive before DeCrypt size:%i content:%s"),m_nObfuscationBytesReceived,ByteToHexStr((uchar*)lpBuf,m_nObfuscationBytesReceived).GetBuffer(0));
 	m_bFullReceive = m_nObfuscationBytesReceived == (uint32)nBufLen;
 
 	if(m_nObfuscationBytesReceived == SOCKET_ERROR || m_nObfuscationBytesReceived <= 0){
@@ -221,14 +221,14 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 	}
 	switch (m_StreamCryptState) {
 		case ECS_NONE: // disabled, just pass it through
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_NONE"));
+			theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Receive ECS_NONE"));
 			return m_nObfuscationBytesReceived;
 		case ECS_PENDING:
 		case ECS_PENDING_SERVER:
 			ASSERT( false );
 			DebugLogError(_T("CEncryptedStreamSocket Received data before sending on outgoing connection"));
 			m_StreamCryptState = ECS_NONE;
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_PENDING_SERVER"));
+			theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Receive ECS_PENDING_SERVER"));
 			return m_nObfuscationBytesReceived;
 		case ECS_UNKNOWN:{
 			uint32 nRead = 1;
@@ -252,7 +252,7 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 					DebugLogError(_T("CEncryptedStreamSocket: Client %s sent more data then expected while negotiating, disconnecting (1)"), DbgGetIPString());
 					OnError(ERR_ENCRYPTION);
 				}
-				theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader"));
+				theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Receive ECS_UNKNOWN if !bNormalHeader"));
 				return 0;
 			}
 			else{
@@ -286,12 +286,12 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 					else
 						AddDebugLogLine(DLP_DEFAULT, false, _T("Incoming unencrypted firewallcheck connection permitted despite RequireEncryption setting  - %s"), DbgGetIPString() );
 				}
-				theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_UNKNOWN else"));
+				theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Receive ECS_UNKNOWN else"));
 				return m_nObfuscationBytesReceived; // buffer was unchanged, we can just pass it through
 			}
 		}
 		case ECS_ENCRYPTING:
-			//theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING"));
+			//theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Receive ECS_ENCRYPTING"));
 			// basic obfuscation enabled and set, so decrypt and pass along
 			RC4Crypt((uchar*)lpBuf, (uchar*)lpBuf, m_nObfuscationBytesReceived, m_pRC4ReceiveKey);
 			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CEncryptedStreamSocket:Receive after DeCrypt: Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),m_nObfuscationBytesReceived,ByteToHexStr((uchar*)lpBuf,m_nObfuscationBytesReceived).GetBuffer(0));
@@ -299,7 +299,7 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 			
 			return m_nObfuscationBytesReceived;
 		case ECS_NEGOTIATING:{
-			theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Receive ECS_NEGOTIATING"));
+			theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Receive ECS_NEGOTIATING"));
 			const uint32 nRead = Negotiate((uchar*)lpBuf, m_nObfuscationBytesReceived);
 			if (nRead == (-1))
 				return 0;
@@ -394,13 +394,13 @@ void CEncryptedStreamSocket::SetConnectionEncryption(bool bEnabled, const uchar*
 }
 
 void CEncryptedStreamSocket::OnSend(int){
-	theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:OnSend start"));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:OnSend start"));
 	///snow:呼出连接，准备开始握手，开始协商，退出函数
 	///snow:ECS_PENDING或ECS_PENDING_SERVER状态在SetConnectionEncryption函数中设置
 	// if the socket just connected and this is outgoing, we might want to start the handshake here
 	if (m_StreamCryptState == ECS_PENDING || m_StreamCryptState == ECS_PENDING_SERVER){
 		StartNegotiation(true);
-		theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:OnSend StartNegotiation(true)"));
+		theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:OnSend StartNegotiation(true)"));
 		return;
 	}
 	///snow:其它状态，必须是ECS_NEGOTIATING或ECS_ENCRYPTING
@@ -408,9 +408,9 @@ void CEncryptedStreamSocket::OnSend(int){
 	if (m_pfiSendBuffer != NULL){
 		ASSERT( m_StreamCryptState >= ECS_NEGOTIATING );
 		SendNegotiatingData(NULL, 0);
-		theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:OnSend SendNegotiatingData(NULL, 0)"));
+		theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:OnSend SendNegotiatingData(NULL, 0)"));
 	}
-	theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:OnSend end"));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:OnSend end"));
 }
 
 ///snow:此函数在两个地方被调用，一个是Receive()函数，以StartNegotiation（false)方式调用，表示是incoming connection，
@@ -425,7 +425,7 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
 	else if (m_StreamCryptState == ECS_PENDING){   ///snow:到客户端的Outgoing connection
 		///snow:握手,准备ClientA报文，共29字节
 	    ///  Client A: <SemiRandomNotProtocolMarker 1[Unencrypted]><RandomKeyPart 4[Unencrypted]><MagicValue 4><EncryptionMethodsSupported 1><EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen%max256>
-		theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:StartNegotiation m_StreamCryptState == ECS_PENDING"));
+		theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:StartNegotiation m_StreamCryptState == ECS_PENDING"));
 		CSafeMemFile fileRequest(29);
 		const uint8 bySemiRandomNotProtocolMarker = GetSemiRandomNotProtocolMarker();
 		fileRequest.WriteUInt8(bySemiRandomNotProtocolMarker);
@@ -449,7 +449,7 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing){
 		///snow:准备Client端的握手协商报文
 		///   Client: <SemiRandomNotProtocolMarker 1[Unencrypted]><G^A 96 [Unencrypted]><RandomBytes 0-15 [Unencrypted]>
         ///    Server: <G^B 96 [Unencrypted]><MagicValue 4><EncryptionMethodsSupported 1><EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen>
-		theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:StartNegotiation m_StreamCryptState == ECS_PENDING_SERVER"));
+		theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:StartNegotiation m_StreamCryptState == ECS_PENDING_SERVER"));
 		CSafeMemFile fileRequest(113);
 		const uint8 bySemiRandomNotProtocolMarker = GetSemiRandomNotProtocolMarker();
 		fileRequest.WriteUInt8(bySemiRandomNotProtocolMarker);
@@ -523,9 +523,9 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 
 			if (m_NegotiatingState != ONS_BASIC_CLIENTA_RANDOMPART && m_NegotiatingState != ONS_BASIC_SERVER_DHANSWER){ // don't have the keys yet
 				BYTE* pCryptBuffer = m_pfiReceiveBuffer->Detach();
-				theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate before decrypt size:%i content:%s"),nCurrentBytesLen,ByteToHexStr((uchar*)pCryptBuffer,nCurrentBytesLen).GetBuffer(0));
+				theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate before decrypt size:%i content:%s"),nCurrentBytesLen,ByteToHexStr((uchar*)pCryptBuffer,nCurrentBytesLen).GetBuffer(0));
 				RC4Crypt(pCryptBuffer, pCryptBuffer, nCurrentBytesLen, m_pRC4ReceiveKey);
-				theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate after decrypt size:%i content:%s"),nCurrentBytesLen,ByteToHexStr((uchar*)pCryptBuffer,nCurrentBytesLen).GetBuffer(0));
+				theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate after decrypt size:%i content:%s"),nCurrentBytesLen,ByteToHexStr((uchar*)pCryptBuffer,nCurrentBytesLen).GetBuffer(0));
 				m_pfiReceiveBuffer->Attach(pCryptBuffer, 512);
 			}
 			m_pfiReceiveBuffer->SeekToBegin();
@@ -535,7 +535,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					ASSERT( false );
 					return 0;
 				case ONS_BASIC_CLIENTA_RANDOMPART:{  ///snow:incoming connection
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_RANDOMPART"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_RANDOMPART"));
 					ASSERT( m_pRC4ReceiveKey == NULL );
 					///snow:准备ClinetB Key
 					///	 - Client B (Incomming connection):
@@ -557,7 +557,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					break;
 				}
 				case ONS_BASIC_CLIENTA_MAGICVALUE:{
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_MAGICVALUE"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_MAGICVALUE"));
 					uint32 dwValue = m_pfiReceiveBuffer->ReadUInt32();
 					if (dwValue == MAGICVALUE_SYNC){  ///snow:randompart同步成功，协商加密方法
 						// yup, the one or the other way it worked, this is an encrypted stream
@@ -574,7 +574,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					break;
 			    }
 				case ONS_BASIC_CLIENTA_METHODTAGSPADLEN:
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_METHODTAGSPADLEN"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_METHODTAGSPADLEN"));
 					m_dbgbyEncryptionSupported = m_pfiReceiveBuffer->ReadUInt8();
 					m_dbgbyEncryptionRequested = m_pfiReceiveBuffer->ReadUInt8();
 					if (m_dbgbyEncryptionRequested != ENM_OBFUSCATION)
@@ -586,7 +586,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					if (m_nReceiveBytesWanted > 0)
 						break;
 				case ONS_BASIC_CLIENTA_PADDING:{
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_PADDING"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTA_PADDING"));
 
 					///snow:准备HandShake ClientB报文，
 					///		Client B: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen%max 256>
@@ -613,7 +613,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					break;
 				}
 				case ONS_BASIC_CLIENTB_MAGICVALUE:{
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_MAGICVALUE"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_MAGICVALUE"));
 					if (m_pfiReceiveBuffer->ReadUInt32() != MAGICVALUE_SYNC){
 						DebugLogError(_T("CEncryptedStreamSocket: EncryptedstreamSyncError: Client sent wrong Magic Value as answer, cannot complete handshake (%s)"), DbgGetIPString());
 						OnError(ERR_ENCRYPTION);
@@ -624,7 +624,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					break;
 				}
 				case ONS_BASIC_CLIENTB_METHODTAGSPADLEN:{
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_METHODTAGSPADLEN"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_METHODTAGSPADLEN"));
 					m_dbgbyEncryptionMethodSet = m_pfiReceiveBuffer->ReadUInt8();
 					if (m_dbgbyEncryptionMethodSet != ENM_OBFUSCATION){
 						DebugLogError( _T("CEncryptedStreamSocket: Client %s set unsupported encryption method (%i), handshake failed"), DbgGetIPString(), m_dbgbyEncryptionMethodSet);
@@ -637,14 +637,14 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 						break;
 				}
 				case ONS_BASIC_CLIENTB_PADDING:
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_PADDING"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_CLIENTB_PADDING"));
 					// ignore the random bytes, the handshake is complete
 					m_NegotiatingState = ONS_COMPLETE;
 					m_StreamCryptState = ECS_ENCRYPTING;
 					//DEBUG_ONLY( DebugLog(_T("CEncryptedStreamSocket: Finished Obufscation handshake with client %s (outgoing)"), DbgGetIPString()) );
 					break;
 				case ONS_BASIC_SERVER_DHANSWER:{
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_DHANSWER"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_DHANSWER"));
 					ASSERT( !m_cryptDHA.IsZero() );
 					///snow start :    - RC4 Keycreation:
      ///- Client (Outgoing connection):
@@ -677,7 +677,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					break;
 				}
 				case ONS_BASIC_SERVER_MAGICVALUE:{
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_MAGICVALUE"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_MAGICVALUE"));
 					uint32 dwValue = m_pfiReceiveBuffer->ReadUInt32();
 					if (dwValue == MAGICVALUE_SYNC){
 						// yup, the one or the other way it worked, this is an encrypted stream
@@ -694,7 +694,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					break;
 			    }
 				case ONS_BASIC_SERVER_METHODTAGSPADLEN:
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_METHODTAGSPADLEN"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_METHODTAGSPADLEN"));
 					m_dbgbyEncryptionSupported = m_pfiReceiveBuffer->ReadUInt8();
 					m_dbgbyEncryptionRequested = m_pfiReceiveBuffer->ReadUInt8();
 					if (m_dbgbyEncryptionRequested != ENM_OBFUSCATION)
@@ -706,7 +706,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 					if (m_nReceiveBytesWanted > 0)
 						break;
 				case ONS_BASIC_SERVER_PADDING:{
-					theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_PADDING"));
+					theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:Negotiate ONS_BASIC_SERVER_PADDING"));
 					///   Client: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen> (Answer delayed till first payload to save a frame)
 					// ignore the random bytes (they are decrypted already), send the response, set status complete
 					CSafeMemFile fileResponse(26);
@@ -752,7 +752,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar* pBuffer, uint32 nLen){
 ///snow start:此函数在四个地方被调用：Send(),OnSend(),StartNegotiation(),Negotiate()
 ///   在Send()中，
 int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLen, uint32 nStartCryptFromByte, bool bDelaySend){
-	//theApp.QueueDebugLogLine(false,_T("snow:CEncryptedStreamSocket:SendNegotiatingData start"));
+	//theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEncryptedStreamSocket:SendNegotiatingData start"));
 	ASSERT( m_StreamCryptState == ECS_NEGOTIATING || m_StreamCryptState == ECS_ENCRYPTING );
 	ASSERT( nStartCryptFromByte <= nBufLen );
 	ASSERT( m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING || !bDelaySend );

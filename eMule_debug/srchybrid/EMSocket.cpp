@@ -274,7 +274,7 @@ BOOL CEMSocket::AsyncSelect(long lEvent){
 }
 
 void CEMSocket::OnReceive(int nErrorCode){
-	theApp.QueueDebugLogLine(false,_T("CEMSocket:OnReceive start"));
+	//theApp.QueueDebugLogLine(false,_T("CEMSocket:OnReceive start"));
 	// the 2 meg size was taken from another place
 	static char GlobalReadBuffer[2000000];
 
@@ -434,7 +434,7 @@ void CEMSocket::OnReceive(int nErrorCode){
 		pendingHeaderSize = rend - rptr;
 		memcpy(pendingHeader, rptr, pendingHeaderSize);
 	}	
-	theApp.QueueDebugLogLine(false,_T("CEMSocket:OnReceive end"));
+	//theApp.QueueDebugLogLine(false,_T("CEMSocket:OnReceive end"));
 }
 
 void CEMSocket::SetDownloadLimit(uint32 limit){	
@@ -652,7 +652,7 @@ void CEMSocket::OnSend(int nErrorCode){
  */
 SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSize, bool onlyAllowedToSendControlPacket) {
 	//EMTrace("CEMSocket::Send linked: %i, controlcount %i, standartcount %i, isbusy: %i",m_bLinkedPackets, controlpacket_queue.GetCount(), standartpacket_queue.GetCount(), IsBusy());
-//	theApp.QueueDebugLogLine(false,_T("snow:CEMSocket:Send start"));
+//	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEMSocket:Send start"));
 
 	sendLocker.Lock();
 
@@ -830,7 +830,7 @@ SocketSentBytes CEMSocket::Send(uint32 maxNumberOfBytesToSend, uint32 minFragSiz
     sendLocker.Unlock();
 
     SocketSentBytes returnVal = { !anErrorHasOccured, sentStandardPacketBytesThisCall, sentControlPacketBytesThisCall };
-//	theApp.QueueDebugLogLine(false,_T("snow:CEMSocket:Send end"));
+//	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CEMSocket:Send end"));
     return returnVal;
 }
 
@@ -901,7 +901,7 @@ uint32 CEMSocket::GetNeededBytes() {
 // also added trace so that we can debug after the fact ...
 int CEMSocket::Receive(void* lpBuf, int nBufLen, int nFlags)
 {
-	theApp.QueueDebugLogLine(false,_T("CEMSocket:Receive start"));
+	//theApp.QueueDebugLogLine(false,_T("CEMSocket:Receive start"));
 //	EMTrace("CEMSocket::Receive on %d, maxSize=%d",(SOCKET)this,nBufLen);
 	int recvRetCode = CEncryptedStreamSocket::Receive(lpBuf,nBufLen,nFlags); // deadlake PROXYSUPPORT - changed to AsyncSocketEx
 	switch (recvRetCode) {
@@ -964,7 +964,7 @@ int CEMSocket::Receive(void* lpBuf, int nBufLen, int nFlags)
 //		EMTrace("CEMSocket::OnReceive on %d, receivedSize=%d",(SOCKET)this,recvRetCode);
 		return recvRetCode;
 	}
-	theApp.QueueDebugLogLine(false,_T("CEMSocket:OnReceive end"));
+	//theApp.QueueDebugLogLine(false,_T("CEMSocket:OnReceive end"));
 	return SOCKET_ERROR;
 
 }

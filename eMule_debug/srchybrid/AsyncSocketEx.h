@@ -80,7 +80,7 @@ class CAsyncSocketExHelperWindow;
 #define WM_SOCKETEX_NOTIFY		(WM_USER + 0x101 + 2)				// 0x0503
 #define MAX_SOCKETS				(0xBFFF - WM_SOCKETEX_NOTIFY + 1)	// 0xBAFD 47869d
 
-#define TRACE_PACKET_DATA _T("PacketData")
+
 
 #ifndef NOLAYERS
 class CAsyncSocketExLayer;

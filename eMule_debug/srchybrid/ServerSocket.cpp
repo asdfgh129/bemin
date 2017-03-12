@@ -108,13 +108,13 @@ BOOL CServerSocket::OnHostNameResolved(const SOCKADDR_IN *pSockAddr)
 void CServerSocket::OnConnect(int nErrorCode)
 {
 
-	theApp.QueueDebugLogLine(false,_T("snow:CServerSocket:OnConnect start"));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CServerSocket:OnConnect start"));
 	CAsyncSocketEx::OnConnect(nErrorCode);
 
 	switch (nErrorCode)
 	{
 		case 0:
-			theApp.QueueDebugLogLine(false,_T("snow:CServerSocket:OnConnect SetConnectionState(CS_WAITFORLOGIN)"));
+			theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CServerSocket:OnConnect SetConnectionState(CS_WAITFORLOGIN)"));
 			SetConnectionState(CS_WAITFORLOGIN);
 			break;
 			///snow:地址不可用,拒绝连接,超时,地址使用中四种情况时，设置删除标志，设置连接状态为CS_SERVERDEAD，销毁socket
@@ -150,11 +150,11 @@ void CServerSocket::OnConnect(int nErrorCode)
 			serverconnect->DestroySocket(this);
 			return;
 	}
-	theApp.QueueDebugLogLine(false,_T("snow:CServerSocket:OnConnect end"));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CServerSocket:OnConnect end"));
 }
 
 void CServerSocket::OnReceive(int nErrorCode){
-	theApp.QueueDebugLogLine(false,_T("snow:CServerSocket:OnReceive start"));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CServerSocket:OnReceive start"));
 	///snow:连接尚未建立或不在正在连接中，销毁socket
 	if (connectionstate != CS_CONNECTED && !this->serverconnect->IsConnecting()){
 		serverconnect->DestroySocket(this);
@@ -164,7 +164,7 @@ void CServerSocket::OnReceive(int nErrorCode){
 	CEMSocket::OnReceive(nErrorCode);
 	m_dwLastTransmission = GetTickCount();///nsow:Retrieves the number of milliseconds that have elapsed since the system was started, up to 49.7 days.
 
-	theApp.QueueDebugLogLine(false,_T("snow:CServerSocket:OnReceive end"));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CServerSocket:OnReceive end"));
 
 }
 
@@ -696,7 +696,7 @@ void CServerSocket::ProcessPacketError(UINT size, UINT opcode, LPCTSTR pszError)
 
 void CServerSocket::ConnectTo(CServer* server, bool bNoCrypt)
 {
-	theApp.QueueDebugLogLine(false,_T("snow:CServerSocket:ConnectTo begin"));
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CServerSocket:ConnectTo begin"));
 
 	if (cur_server){  ///snow: 在连接服务器之前，应该先断开当前服务器的连接，cur_server置NULL
 		ASSERT(0);
@@ -769,6 +769,9 @@ bool CServerSocket::PacketReceived(Packet* packet)
 
 		if (packet->prot == OP_EDONKEYPROT)
 		{
+
+		///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CServerSocket:PacketReceived--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
 			ProcessPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode);
 		}
 		else
@@ -818,14 +821,15 @@ void CServerSocket::SetConnectionState(int newstate){
 void CServerSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize, bool bForceImmediateSend){
 	m_dwLastTransmission = GetTickCount();
 	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize, bForceImmediateSend);
-	theApp.QueueDebugLogLine(false,_T("snow:CServerSocket:SendPacket size: %i content:%s"),packet->size,ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CServerSocket:SendPacket--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
 
 	/*{
 		char * pszBufferHex = new char[packet->size*2];
 	ByteToHexStr((uchar*)packet->pBuffer,pszBufferHex,packet->size);
 	//pszBufferHex[packet->size*2]='\0';
 	CString sb(pszBufferHex);
-	theApp.QueueDebugLogLine(false,_T("snow:CServerSocket:SendPacket :%s"),sb);
+	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CServerSocket:SendPacket :%s"),sb);
 	delete[] pszBufferHex;
 	}*/
 }

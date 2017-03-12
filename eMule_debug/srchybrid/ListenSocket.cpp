@@ -2208,10 +2208,17 @@ void CClientReqSocket::OnError(int nErrorCode)
 
 bool CClientReqSocket::PacketReceivedCppEH(Packet* packet)
 {
+
+
 	bool bResult;
 	UINT uRawSize = packet->size;
 	switch (packet->prot){
 		case OP_EDONKEYPROT:
+
+			///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CClientReqSocket:PacketReceivedCppEH--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2CLIENT).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
+
 			bResult = ProcessPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode);
 			break;
 		case OP_PACKEDPROT:
@@ -2222,6 +2229,11 @@ bool CClientReqSocket::PacketReceivedCppEH(Packet* packet)
 				break;
 			}
 		case OP_EMULEPROT:
+
+			///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CClientReqSocket:PacketReceivedCppEH--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2CLIENTEx).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
+
 			bResult = ProcessExtPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode, uRawSize);
 			break;
 		default:{
@@ -2346,6 +2358,9 @@ void CClientReqSocket::SendPacket(Packet* packet, bool delpacket, bool controlpa
 {
 	ResetTimeOutTimer();
 	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize, bForceImmediateSend);
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CClientReqSocket:SendPacket--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
 }
 
 bool CListenSocket::SendPortTestReply(char result, bool disconnect)

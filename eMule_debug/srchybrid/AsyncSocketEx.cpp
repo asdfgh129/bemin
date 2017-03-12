@@ -283,7 +283,7 @@ public:
 						{
 							case FD_READ:
 							{
-								theApp.QueueDebugLogLine(false,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_READ"));
+								theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_READ"));
 								DWORD nBytes;
 								if (!pSocket->IOCtl(FIONREAD, &nBytes))
 									nErrorCode = WSAGetLastError();
@@ -295,19 +295,19 @@ public:
 								pSocket->OnReceive(nErrorCode);
 								break;
 							case FD_WRITE:
-								theApp.QueueDebugLogLine(false,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_WRITE"));
+								theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_WRITE"));
 								pSocket->OnSend(nErrorCode);
 								break;
 							case FD_CONNECT:
-								theApp.QueueDebugLogLine(false,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_CONNECT"));
+								theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_CONNECT"));
 								pSocket->OnConnect(nErrorCode);
 								break;
 							case FD_ACCEPT:
-								theApp.QueueDebugLogLine(false,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_ACCEPT"));
+								theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_ACCEPT"));
 								pSocket->OnAccept(nErrorCode);
 								break;
 							case FD_CLOSE:
-								theApp.QueueDebugLogLine(false,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_CLOSE"));
+								theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketExHelperWindows::WindowProc FD_CLOSE"));
 								pSocket->OnClose(nErrorCode);
 								break;
 						}
@@ -793,7 +793,7 @@ int CAsyncSocketEx::Receive(void* lpBuf, int nBufLen, int nFlags /*=0*/)
 #endif //NOLAYERS
 		int iLen; 
 		int len = recv(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CAsyncSocketEx::Receive() Socket Received,Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),len,ByteToHexStr((uchar*)lpBuf,len).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CAsyncSocketEx::Receive() Socket Received --- Socket:%i ,IP:%s ,port:%i ,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),len,ByteToHexStr((uchar*)lpBuf,len).GetBuffer(0));
    return len;
 }
 
@@ -808,7 +808,7 @@ int CAsyncSocketEx::Send(const void* lpBuf, int nBufLen, int nFlags /*=0*/)
 		//TRACE("snow:CAsyncSocketEx::Send£¬before send,lpbuf:%x",(LPSTR)lpBuf);
 		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CAsyncSocketEx::Send() Socket will be sended,Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0));
 		int len= send(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
-	//	theApp.QueueDebugLogLine(false,_T("snow:CAsyncSocketEx::Send£¬after send"));
+	//	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketEx::Send£¬after send"));
 		return len;
 }
 
@@ -848,9 +848,10 @@ BOOL CAsyncSocketEx::Connect(const SOCKADDR* lpSockAddr, int nSockAddrLen)
 		return m_pFirstLayer->Connect(lpSockAddr, nSockAddrLen);
 	else
 #endif //NOLAYERS
-		theApp.QueueDebugLogLine(false,_T("snow:CAsyncSocketEx:before Connect"));
+	//	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketEx:before Connect"));
+;
 	bool ret=connect(m_SocketData.hSocket, lpSockAddr, nSockAddrLen) != SOCKET_ERROR;
-	theApp.QueueDebugLogLine(false,_T("snow:CAsyncSocketEx:after connect"));
+	//theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketEx:after connect"));
 	return ret;
 }
 

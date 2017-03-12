@@ -430,9 +430,27 @@ struct RC4_Key_Struct{
 RC4_Key_Struct* RC4CreateKey(const uchar* pachKeyData, uint32 nLen, RC4_Key_Struct* key = NULL, bool bSkipDiscard = false);
 void RC4Crypt(const uchar* pachIn, uchar* pachOut, uint32 nLen, RC4_Key_Struct* key);
 
+
+
+///<----------------------------------by snow
 CString formatTime(DWORD ms);
 
 void ByteToHexStr(const unsigned char* source, char* dest, int sourceLen);
 CString ByteToHexStr(const unsigned char* source, int sourceLen);
 void Byte2HexStr( const char *sSrc,  char *sDest, int nSrcLen );
 void HexStrToByte(const char* source, unsigned char* dest, int sourceLen);
+
+CString GetProtocolStr(int protocol);
+CString GetOpcodeStr(int opcode,int type);
+CString GetKadOpcodeStr(int opcode);
+
+#define CLIENT2SERVER 0x01
+#define CLIENT2SERVERUDP 0x02
+#define CLIENT2CLIENT   0x03
+#define CLIENT2CLIENTEx 0x04
+#define CLIENT2CLIENTExUDP 0x05
+
+
+
+
+///---------------------------------------->by snow
