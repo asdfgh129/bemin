@@ -883,6 +883,7 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
         // other threads may have queued up log lines. This prints them.
         theApp.HandleDebugLogQueue();
         theApp.HandleLogQueue();
+		theApp.HandleTraceLogQueue();   ////snow:add by snow
         // Elandal: ThreadSafeLogging <--
 
 		// ZZ:UploadSpeedSense -->

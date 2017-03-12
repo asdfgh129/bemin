@@ -79,10 +79,10 @@ void LogT(UINT uFlags, LPCTSTR pszFmt, ...)
 {
 	va_list argp;
 	va_start(argp, pszFmt);
-	ASSERT(pszLine != NULL);
+	ASSERT(pszFmt != NULL);
 
 	TCHAR szLogLine[1000];
-	_vsntprintf(szLogLine, _countof(szLogLine), pszLine, argptr);
+	_vsntprintf(szLogLine, _countof(szLogLine), pszFmt, argp);
 	szLogLine[_countof(szLogLine) - 1] = _T('\0');
 	
 		TCHAR szFullLogLine[1060];

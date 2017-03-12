@@ -4066,7 +4066,7 @@ CString formatTime(DWORD ms) {
 //字节流转换为十六进制字符串
 void ByteToHexStr(const unsigned char* source, char* dest, int sourceLen)
 {
-    short i;
+    int i;
     unsigned char highByte, lowByte;
 
     for (i = 0; i < sourceLen; i++)
@@ -4079,7 +4079,7 @@ void ByteToHexStr(const unsigned char* source, char* dest, int sourceLen)
         if (highByte > 0x39)
                 dest[i * 2] = highByte + 0x07;
         else
-                dest[i * 2] = highByte;
+			dest[i * 2] = highByte;   ///snow:char * dest = new char[sourceLen*2];时就会出错
 
         lowByte += 0x30;
         if (lowByte > 0x39)
@@ -4093,10 +4093,10 @@ void ByteToHexStr(const unsigned char* source, char* dest, int sourceLen)
 CString ByteToHexStr(const unsigned char* source, int sourceLen)
 { 
 	  
-	char * dest = new char[sourceLen*2];
+	char * dest = new char[sourceLen*2+1];   ///snow:之前没有+1，上面的转换就会出错
 	memset(dest,0,sourceLen*2);
 	ByteToHexStr(source, dest, sourceLen);
-//	dest[sourceLen*2]='\0';
+	dest[sourceLen*2]='\0';    ///snow:也是上面定义没有+1的错
 	CString sb(dest);
 	delete[] dest;
 	return sb;

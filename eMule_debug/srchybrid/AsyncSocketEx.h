@@ -80,6 +80,7 @@ class CAsyncSocketExHelperWindow;
 #define WM_SOCKETEX_NOTIFY		(WM_USER + 0x101 + 2)				// 0x0503
 #define MAX_SOCKETS				(0xBFFF - WM_SOCKETEX_NOTIFY + 1)	// 0xBAFD 47869d
 
+#define TRACE_PACKET_DATA _T("PacketData")
 
 #ifndef NOLAYERS
 class CAsyncSocketExLayer;
@@ -212,11 +213,20 @@ public:
 	// Any combination of FD_READ, FD_WRITE, FD_CLOSE, FD_ACCEPT, FD_CONNECT and FD_FORCEREAD is valid for lEvent.
 	BOOL TriggerEvent(long lEvent);
 
+	///<---------------------------------  by snow to trace
+#ifdef _AFX
+    CString GetSocketAddress();
+#endif
+
+    int GetSocketPort();
+	///------------------------------------->by snow
+
 #ifdef _DEBUG
 	// Diagnostic Support
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
+
 
 protected:
 	//Strucure to hold the socket data
@@ -228,7 +238,12 @@ protected:
 
 	//If using layers, only the events specified with m_lEvent will send to the event handlers.
 	long m_lEvent;
-
+///<---------------------------------  by snow to trace
+#ifdef _AFX
+	CString m_strSocketAddress;
+#endif	
+	UINT m_iSocketPort;
+///------------------------------------->by snow
 	//AsyncGetHostByName
 	char *m_pAsyncGetHostByNameBuffer; //Buffer for hostend structure
 	HANDLE m_hAsyncGetHostByNameHandle; //TaskHandle

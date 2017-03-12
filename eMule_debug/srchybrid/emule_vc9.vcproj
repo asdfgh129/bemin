@@ -64,7 +64,7 @@
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="4"
-				DebugInformationFormat="1"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -81,7 +81,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib winmm.lib ws2_32.lib gdiplus.lib ADSIId.lib crypt32.lib wmvcore.lib zlibstat.lib cryptlib.lib id3libD.lib cximage.lib libpngd.lib resizablelib.lib miniupnpc.lib"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\zlib\contrib\vstudio\vc9\x86\ZlibStatDebug;..\cryptopp\Win32\Output\Debug;.\CxImage\Debug_vc9;..\id3lib\libprj;..\libpng\projects\visualc9\Win32_LIB_Debug;..\ResizableLib\Debug_Static;.\miniupnpc\Debug_vc9"
 				IgnoreDefaultLibraryNames=""
 				DelayLoadDLLs="oleacc.dll;gdiplus.dll"

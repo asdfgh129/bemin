@@ -2345,8 +2345,8 @@ bool CemuleApp::IsTraceLog(LPCTSTR keyword)
 {
     LPCTSTR keywords[]=
 	{
-		_T("PacketContent")
-	}
+		_T("PacketData")
+	};
 	bool bRecord = false;
 	for (int i = 0; i < _countof(keywords); i++)
 	{
@@ -2362,7 +2362,7 @@ bool CemuleApp::IsTraceLog(LPCTSTR keyword)
 
 void CemuleApp::QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line, ...)
 {
-	if(IsTraceLog(keyword)) return;
+	if(!IsTraceLog(keyword)) return;
 
 	m_queueLock.Lock();
 

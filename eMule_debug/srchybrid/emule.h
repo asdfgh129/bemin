@@ -190,7 +190,7 @@ public:
 
 	///snow:add by snow to trace --------->
 	void			QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line,...);
-	bool            IsTraceLog();
+	bool            IsTraceLog(LPCTSTR keyword);
     //void			QueueDebugLogLineEx(UINT uFlags, LPCTSTR line,...);
     void			HandleTraceLogQueue();
     void			ClearTraceLogQueue(bool bDebugPendingMsgs = false);
