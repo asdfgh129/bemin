@@ -1339,6 +1339,7 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams* pParams)
 		}
 		searchpacket = packet;
 		searchpacket->opcode = OP_GLOBSEARCHREQ; // will be changed later when actually sending the packet!!
+		///snow:在OnTimer()中发送  searchpacket->opcode = OP_GLOBSEARCHREQ2;  theApp.serverconnect->SendUDPPacket(searchpacket, toask, false);
 		m_b64BitSearchPacket = bPacketUsing64Bit;
 		servercount = 0;
 		searchprogress.SetRange32(0, theApp.serverlist->GetServerCount() - 1);
@@ -1389,6 +1390,7 @@ bool CSearchResultsWnd::DoNewKadSearch(SSearchParams* pParams)
 	pParams->strKeyword.Trim();
 
 	CSafeMemFile data(100);
+	///snow:根据pParams构造SearchPacket
 	if (!GetSearchPacket(&data, pParams, true, NULL)/* || (!pParams->strBooleanExpr.IsEmpty() && data.GetLength() == 0)*/)
 		return false;
 

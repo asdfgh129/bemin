@@ -189,6 +189,7 @@ void CSearchList::NewSearch(CSearchListCtrl* pWnd, CStringA strResultFileType, u
 
 }
 
+///snow:在CUpDownClient::ProcessSharedFileList()中调用，处理客户端的共享文件列表
 UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size,
 									  CUpDownClient* Sender, bool* pbMoreResultsAvailable, LPCTSTR pszDirectory)
 {
@@ -257,6 +258,7 @@ UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size,
 	return GetResultCount(nSearchID);
 }
 
+///snow:在CServerSocket::ProcessPacket()中case OP_SEARCHRESULT分支调用，由服务器返回
 UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size, bool bOptUTF8,
 									  uint32 nServerIP, uint16 nServerPort, bool* pbMoreResultsAvailable)
 {
@@ -304,6 +306,8 @@ UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size, bool 
 	return GetED2KResultCount();
 }
 
+
+///snow:在CUDPSocket::ProcessPacket()中case OP_GLOBSEARCHRES分支调用
 UINT CSearchList::ProcessUDPSearchAnswer(CFileDataIO& packet, bool bOptUTF8, uint32 nServerIP, uint16 nServerPort)
 {
 	CSearchFile* toadd = new CSearchFile(&packet, bOptUTF8, m_nCurED2KSearchID, nServerIP, nServerPort, NULL, false, true);
@@ -1643,6 +1647,7 @@ void CSearchList::SaveSpamFilter(){
 	DebugLog(_T("Stored searchspam.met, wrote %u records"), nCount);
 }
 
+///snow:将搜索结果保存起来，在下次启动程序的时候加载这些结果
 void CSearchList::StoreSearches(){
 	// store open searches on shutdown to restore them on the next startup
 	CString fullpath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR);
@@ -1702,6 +1707,7 @@ void CSearchList::StoreSearches(){
 	DebugLog(_T("Stored %u open search for restoring on next start"), nCount);
 }
 
+///snow:加载保存的搜索结果
 void CSearchList::LoadSearches(){
 	ASSERT( m_listFileLists.GetCount() == 0 );
 	CString fullpath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR);
