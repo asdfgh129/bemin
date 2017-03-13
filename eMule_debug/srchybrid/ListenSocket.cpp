@@ -2216,7 +2216,7 @@ bool CClientReqSocket::PacketReceivedCppEH(Packet* packet)
 		case OP_EDONKEYPROT:
 
 			///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CClientReqSocket:PacketReceivedCppEH--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2CLIENT).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientReqSocket|Function:PacketReceivedCppEH|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2CLIENT).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0),TrimZero((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
 
 
 			bResult = ProcessPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode);
@@ -2231,7 +2231,7 @@ bool CClientReqSocket::PacketReceivedCppEH(Packet* packet)
 		case OP_EMULEPROT:
 
 			///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CClientReqSocket:PacketReceivedCppEH--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2CLIENTEx).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientReqSocket|Function:PacketReceivedCppEH|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2CLIENTEx).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0),TrimZero((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
 
 
 			bResult = ProcessExtPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode, uRawSize);
@@ -2357,10 +2357,12 @@ SocketSentBytes CClientReqSocket::SendFileAndControlData(uint32 maxNumberOfBytes
 void CClientReqSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize, bool bForceImmediateSend)
 {
 	ResetTimeOutTimer();
-	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize, bForceImmediateSend);
-	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CClientReqSocket:SendPacket--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
 
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientReqSocket|Function:SendPacket|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0),TrimZero((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
+	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize, bForceImmediateSend);
+	
 }
 
 bool CListenSocket::SendPortTestReply(char result, bool disconnect)

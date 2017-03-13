@@ -771,7 +771,8 @@ bool CServerSocket::PacketReceived(Packet* packet)
 		{
 
 		///snow:add by snow
-		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CServerSocket:PacketReceived--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CServerSocket|Function:PacketReceived|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0),TrimZero((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
 			ProcessPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode);
 		}
 		else
@@ -820,11 +821,13 @@ void CServerSocket::SetConnectionState(int newstate){
 
 void CServerSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize, bool bForceImmediateSend){
 	m_dwLastTransmission = GetTickCount();
-	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize, bForceImmediateSend);
-	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CServerSocket:SendPacket--- Socket:%i ,IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
 
-	/*{
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CServerSocket|Function:SendPacket|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0),TrimZero((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
+
+	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize, bForceImmediateSend);
+		/*{
 		char * pszBufferHex = new char[packet->size*2];
 	ByteToHexStr((uchar*)packet->pBuffer,pszBufferHex,packet->size);
 	//pszBufferHex[packet->size*2]='\0';

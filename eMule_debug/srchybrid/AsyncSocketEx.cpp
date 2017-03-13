@@ -793,7 +793,7 @@ int CAsyncSocketEx::Receive(void* lpBuf, int nBufLen, int nFlags /*=0*/)
 #endif //NOLAYERS
 		int iLen; 
 		int len = recv(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CAsyncSocketEx::Receive() Socket Received --- Socket:%i ,IP:%s ,port:%i ,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),len,ByteToHexStr((uchar*)lpBuf,len).GetBuffer(0));
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CAsyncSocketEx|Function:Receive|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),len,ByteToHexStr((uchar*)lpBuf,len).GetBuffer(0));
    return len;
 }
 
@@ -806,7 +806,7 @@ int CAsyncSocketEx::Send(const void* lpBuf, int nBufLen, int nFlags /*=0*/)
 #endif //NOLAYERS
 		
 		//TRACE("snow:CAsyncSocketEx::Send£¬before send,lpbuf:%x",(LPSTR)lpBuf);
-		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CAsyncSocketEx::Send() Socket will be sended,Socket:%i,IP:%s,port:%i,size : %i , content : %s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0));
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CAsyncSocketEx|Function:Send|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0));
 		int len= send(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
 	//	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketEx::Send£¬after send"));
 		return len;

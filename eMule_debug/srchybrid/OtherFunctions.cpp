@@ -4024,7 +4024,7 @@ bool AddIconGrayscaledToImageList(CImageList& rList, HICON hIcon)
 	return bResult;
 }
 
-
+///<-------------------------------------------add by snow
 CString formatTime(DWORD ms) {  
    // USE_CONVERSION;
 	uint32 ss = 1000;  
@@ -4094,7 +4094,7 @@ CString ByteToHexStr(const unsigned char* source, int sourceLen)
 { 
 	  
 	char * dest = new char[sourceLen*2+1];   ///snow:之前没有+1，上面的转换就会出错
-	memset(dest,0,sourceLen*2);
+	memset(dest,0,sourceLen*2+1);
 	ByteToHexStr(source, dest, sourceLen);
 	dest[sourceLen*2]='\0';    ///snow:也是上面定义没有+1的错
 	CString sb(dest);
@@ -4141,6 +4141,28 @@ void HexStrToByte(const char* source, unsigned char* dest, int sourceLen)
         dest[i / 2] = (highByte << 4) | lowByte;
     }
     return ;
+}
+
+CString TrimZero(const unsigned char* source,int sourceLen)
+{
+
+	int i,len=0;
+	char * dest = new char[sourceLen+1];   ///snow:之前没有+1，上面的转换就会出错
+	memset(dest,0,sourceLen+1);
+
+    for (i = 0; i < sourceLen; i++)
+    {
+        if(source[i]!='\0')
+		{
+			dest[len]=source[i];
+			len++;
+		}
+	}
+	dest[len]='\0';	
+		CString sb(dest);
+	delete[] dest;
+		return sb;
+		
 }
 
 CString GetProtocolStr(int protocol)

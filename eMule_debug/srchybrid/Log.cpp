@@ -86,7 +86,7 @@ void LogT(UINT uFlags, LPCTSTR pszFmt, ...)
 	szLogLine[_countof(szLogLine) - 1] = _T('\0');
 	
 		TCHAR szFullLogLine[1060];
-		int iLen = _sntprintf(szFullLogLine, _countof(szFullLogLine), _T("%s: %s\r\n"), CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), szLogLine);
+		int iLen = _sntprintf(szFullLogLine, _countof(szFullLogLine), _T("%s|%s\r\n"), CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), szLogLine);
 		if (iLen > 0)
 		{
 			theDebugLog.Log(szFullLogLine, iLen);

@@ -241,7 +241,7 @@ bool CClientUDPSocket::ProcessPacket(const BYTE* packet, UINT size, uint8 opcode
 {
 
 ///snow:add by snow
-theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("snow:CClientUDPSocket::ProcessPacket--- IP:%s ,port:%i ,size : %i , opcode : %s, prot : %s, content : %s"),ipstr(ntohl(ip)),port,size,GetOpcodeStr(opcode,CLIENT2CLIENTExUDP).GetBuffer(0),GetProtocolStr(OP_EMULEPROT).GetBuffer(0),ByteToHexStr((uchar*)packet,size).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientUDPSocket|Function:ProcessPacket|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),ipstr(ntohl(ip)),port,size,GetOpcodeStr(opcode,CLIENT2CLIENTExUDP).GetBuffer(0),_T("UDP"),ByteToHexStr((uchar*)packet,size).GetBuffer(0),TrimZero((uchar*)packet,size).GetBuffer(0));
 
 
 	switch(opcode)

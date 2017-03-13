@@ -759,7 +759,9 @@ void CKeyEntry::ReadPublishTrackingDataFromFile(CDataIO* pData, bool bIncludesAI
 	RecalcualteTrustValue();
 #ifdef _DEBUG
 	if (m_aAICHHashs.GetCount() == 1)
-		DebugLog(_T("Loaded 1 AICH Hash (%s, publishers %u of %u) for file %s"), m_aAICHHashs[0].GetString(), m_anAICHHashPopularity[0], m_pliPublishingIPs->GetCount(), m_uSourceID.ToHexString());
+		;
+		///snow:太多AICH信息了，先注释了
+		//DebugLog(_T("Loaded 1 AICH Hash (%s, publishers %u of %u) for file %s"), m_aAICHHashs[0].GetString(), m_anAICHHashPopularity[0], m_pliPublishingIPs->GetCount(), m_uSourceID.ToHexString());
 	else if (m_aAICHHashs.GetCount() > 1)
 	{
 		DebugLogWarning(_T("Loaded multiple (%u) AICH Hashs for file %s, dumping..."), m_aAICHHashs.GetCount(), m_uSourceID.ToHexString());
