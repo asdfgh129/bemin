@@ -258,12 +258,12 @@ UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size,
 	return GetResultCount(nSearchID);
 }
 
-///snow:在CServerSocket::ProcessPacket()中case OP_SEARCHRESULT分支调用，由服务器返回
+///snow:在CServerSocket::ProcessPacket()中case OP_SEARCHRESULT分支调用，由服务器返回，处理使用Server搜索时返回的结果
 UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size, bool bOptUTF8,
 									  uint32 nServerIP, uint16 nServerPort, bool* pbMoreResultsAvailable)
 {
 	CSafeMemFile packet(in_packet, size);
-	UINT results = packet.ReadUInt32();
+	UINT results = packet.ReadUInt32();  ///前四个字节表示搜索记录数，0x012C=300
 	for (UINT i = 0; i < results; i++){
 		CSearchFile* toadd = new CSearchFile(&packet, bOptUTF8, m_nCurED2KSearchID);
 		toadd->SetClientServerIP(nServerIP);
@@ -307,7 +307,7 @@ UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size, bool 
 }
 
 
-///snow:在CUDPSocket::ProcessPacket()中case OP_GLOBSEARCHRES分支调用
+///snow:在CUDPSocket::ProcessPacket()中case OP_GLOBSEARCHRES分支调用，处理Global搜索时返回的结果
 UINT CSearchList::ProcessUDPSearchAnswer(CFileDataIO& packet, bool bOptUTF8, uint32 nServerIP, uint16 nServerPort)
 {
 	CSearchFile* toadd = new CSearchFile(&packet, bOptUTF8, m_nCurED2KSearchID, nServerIP, nServerPort, NULL, false, true);

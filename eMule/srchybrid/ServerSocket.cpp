@@ -386,13 +386,15 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 				theApp.downloadqueue->ResetLocalServerRequests();
 				break;
 			}
-			case OP_SEARCHRESULT:{
+			case OP_SEARCHRESULT:{   ///snow:使用server搜索时，返回搜索结果
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					Debug(_T("ServerMsg - OP_SearchResult\n"));
 				CServer* cur_srv = (serverconnect) ? serverconnect->GetCurrentServer() : NULL;
 				CServer* pServer = cur_srv ? theApp.serverlist->GetServerByAddress(cur_srv->GetAddress(), cur_srv->GetPort()) : NULL;
 				(void)pServer;
 				bool bMoreResultsAvailable;
+
+				///snow:调用CSearchList::ProcessSearchAnswer()对搜索结果进行处理
 				UINT uSearchResults = theApp.searchlist->ProcessSearchAnswer(packet, size, true/*pServer ? pServer->GetUnicodeSupport() : false*/, cur_srv ? cur_srv->GetIP() : 0, cur_srv ? cur_srv->GetPort() : (uint16)0, &bMoreResultsAvailable);
 				theApp.emuledlg->searchwnd->LocalEd2kSearchEnd(uSearchResults, bMoreResultsAvailable);
 				break;

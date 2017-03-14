@@ -48,6 +48,7 @@ bool IsValidSearchResultClientIPPort(uint32 nIP, uint16 nPort)
 			&& ((nIP & 0xFF000000) != 0);
 }
 
+///snow:将字符型的Tag名字转换为代码，比如："Artist"转换成0xD0
 void ConvertED2KTag(CTag*& pTag)
 {
 	if (pTag->GetNameID() == 0 && pTag->GetName() != NULL)
@@ -79,7 +80,7 @@ void ConvertED2KTag(CTag*& pTag)
 			{
 				if (pTag->IsStr())
 				{
-					if (_aEmuleToED2KMetaTagsMap[j].nID == FT_MEDIA_LENGTH)
+				if (_aEmuleToED2KMetaTagsMap[j].nID == FT_MEDIA_LENGTH)   ///snow:转换成时间格式，媒体播放时间长度
 					{
 						UINT nMediaLength = 0;
 						UINT hour = 0, min = 0, sec = 0;
@@ -158,20 +159,50 @@ CSearchFile::CSearchFile(const CSearchFile* copyfrom)
 CSearchFile::CSearchFile(CFileDataIO* in_data, bool bOptUTF8, 
 						 uint32 nSearchID, uint32 nServerIP, uint16 nServerPort, LPCTSTR pszDirectory, bool bKademlia, bool bServerUDPAnswer)
 {
+	/*****************************************************snow:start****************************************************************
+	/*    CSearchFile字节流示例
+
+	98 00 00 00 c2 70 df 6f 09 9f 44 da d7 6a fb 52 01 3f ce 8c 54 78 c9 9d 43 67 07 00 00 00 
+	82 01 2c 00 49 72 6f 6e 20 4d 61 6e 20 33 20 64 76 64 39 20 50 41 4c 20 28 50 61 72 63 68  
+	65 61 64 61 29 20 56 54 53 5f 30 36 5f 31 2e 56 4f 42 83 02 00 e0 5e 57 89 15 04 89 30 04 
+	88 d4 83 04 94 d5 78 76 69 64 88 d3 46 27
+
+	98 00 00 00   搜索到152个文件
+	第一个文件信息
+	c2 70 df 6f 09 9f 44 da d7 6a fb 52 01 3f ce 8c  文件Hash 16字节
+	54 78 c9 9d   clientIP
+	43 67         clientPort
+	07 00 00 00   tag数 7个
+	tag1:文件名
+	82 01 2C 00  TAGTYPE_STRING FT_FILENAME 44字节
+	tag2:  文件长度
+	83 02 00 e0 5e 57  TAGTYPE_UINT32 5G
+	tag3:可用源数
+	89 15 04  TAGTYPE_UINT8 FT_SOURCES 4个源
+	tag4：完整源数
+	89 30 04  UINT8 FT_COMPLETE_SOURCES 4个完整源
+	tag5：比特率
+	88 d4 83 04  UINT16  d4=FT_MEDIA_BITRATE  0x0483=1155
+	tag6：codec
+	94 d5 78 76 69 64  (m_uType(0x14) >= TAGTYPE_STR1(0x11) && m_uType <= TAGTYPE_STR16(0x20)  d5=FT_MEDIA_CODEC 78 76 69 64 = xvid
+	tag7:影片长度
+	88 d3 46 27  UINT16 d3=FT_MEDIA_LENGTH  0x2746=10054  
+	*****************************************************snow:end***********************************************/
+
 	m_bMultipleAICHFound = false;
 	m_bKademlia = bKademlia;
 	m_bServerUDPAnswer = bServerUDPAnswer;
 	m_nSearchID = nSearchID;
-	m_FileIdentifier.SetMD4Hash(in_data);
-	m_nClientID = in_data->ReadUInt32();
-	m_nClientPort = in_data->ReadUInt16();
+	m_FileIdentifier.SetMD4Hash(in_data);  ///snow:读取16字节的Hash
+	m_nClientID = in_data->ReadUInt32();   ///snow:读取4字节的IP
+	m_nClientPort = in_data->ReadUInt16();  ///snow:读取两字节的Port
 	if ((m_nClientID || m_nClientPort) && !IsValidSearchResultClientIPPort(m_nClientID, m_nClientPort)){
 		if (thePrefs.GetDebugServerSearchesLevel() > 1)
 			Debug(_T("Filtered source from search result %s:%u\n"), DbgGetClientID(m_nClientID), m_nClientPort);
 		m_nClientID = 0;
 		m_nClientPort = 0;
 	}
-	UINT tagcount = in_data->ReadUInt32();
+	UINT tagcount = in_data->ReadUInt32();   ///snow:4字节的tag数
 	// NSERVER2.EXE (lugdunum v16.38 patched for Win32) returns the ClientIP+Port of the client which offered that
 	// file, even if that client has not filled the according fields in the OP_OFFERFILES packet with its IP+Port.
 	//
@@ -189,7 +220,10 @@ CSearchFile::CSearchFile(CFileDataIO* in_data, bool bOptUTF8,
 		CTag* tag = new CTag(in_data, bOptUTF8);
 		if (thePrefs.GetDebugServerSearchesLevel() > 1)
 			Debug(_T("  %s\n"), tag->GetFullInfo(DbgGetFileMetaTagName));
+		
+		///snow:如果存在字符型的Tag名字，转换成代码
 		ConvertED2KTag(tag);
+		
 		if (tag)
 		{
 			// Convert ED2K-server file rating tag
@@ -213,7 +247,7 @@ CSearchFile::CSearchFile(CFileDataIO* in_data, bool bOptUTF8,
 
 				tag->SetInt(m_uUserRating);
 			}
-			else if (tag->GetNameID() == FT_AICH_HASH && tag->IsStr())
+			else if (tag->GetNameID() == FT_AICH_HASH && tag->IsStr())   ///snow:处理AICH标签
 			{
 				CAICHHash hash;
 				if (DecodeBase32(tag->GetStr(),hash) == (UINT)CAICHHash::GetHashSize())
@@ -237,11 +271,11 @@ CSearchFile::CSearchFile(CFileDataIO* in_data, bool bOptUTF8,
 	//
 	// but, in no case, we will use the receive file type when adding this search result to the download queue, to avoid
 	// that we are using 'wrong' file types in part files. (this has to be handled when creating the part files)
-	const CString& rstrFileType = GetStrTagValue(FT_FILETYPE);
-	SetFileName(GetStrTagValue(FT_FILENAME), false, rstrFileType.IsEmpty(), true);
+	const CString& rstrFileType = GetStrTagValue(FT_FILETYPE);   ///获取文件类型
+	SetFileName(GetStrTagValue(FT_FILENAME), false, rstrFileType.IsEmpty(), true);   ///snow:对文件名进行规范化
 
 	uint64 ui64FileSize = 0;
-	CTag* pTagFileSize = GetTag(FT_FILESIZE);
+	CTag* pTagFileSize = GetTag(FT_FILESIZE);   ///snow:获取文件长度
 	if (pTagFileSize)
 	{
 		if (pTagFileSize->IsInt())
@@ -277,6 +311,8 @@ CSearchFile::CSearchFile(CFileDataIO* in_data, bool bOptUTF8,
 			SetFileType(rstrFileType);
 	}
 
+	///snow:添加服务器到CSimpleArray<SServer> m_aServers中
+	///snow:应该是两个用途，1、把服务器添加到服务器列表中  2、spam过滤
 	m_nClientServerIP = nServerIP;
 	m_nClientServerPort = nServerPort;
 	if (m_nClientServerIP && m_nClientServerPort){

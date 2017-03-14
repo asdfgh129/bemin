@@ -172,7 +172,7 @@ void CAbstractFile::AddTagUnique(CTag* pTag)
 void CAbstractFile::SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystemChars, bool bAutoSetFileType, bool bRemoveControlChars)
 { 
 	m_strFileName = pszFileName;
-	if (bReplaceInvalidFileSystemChars){
+	if (bReplaceInvalidFileSystemChars){    ///snow:替换不规则文件名
 		m_strFileName.Replace(_T('/'), _T('-'));
 		m_strFileName.Replace(_T('>'), _T('-'));
 		m_strFileName.Replace(_T('<'), _T('-'));
@@ -184,9 +184,9 @@ void CAbstractFile::SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSys
 		m_strFileName.Replace(_T('|'), _T('-'));
 	}
 	if (bAutoSetFileType)
-		SetFileType(GetFileTypeByName(m_strFileName));
+		SetFileType(GetFileTypeByName(m_strFileName));    ///snow:设置文件类型
 	
-	if (bRemoveControlChars){
+	if (bRemoveControlChars){     ///snow:去除控制字符
 		for (int i = 0; i < m_strFileName.GetLength(); )
 			if (m_strFileName.GetAt(i) <= '\x1F')
 				m_strFileName.Delete(i);
