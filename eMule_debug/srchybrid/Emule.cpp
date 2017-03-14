@@ -2366,7 +2366,7 @@ void CemuleApp::QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line, ...)
 
 	m_queueLock.Lock();
 
-	TCHAR bufferline[1000];
+	TCHAR bufferline[200000];
 	va_list argptr;
 	va_start(argptr, line);
 	int iLen = _vsntprintf(bufferline, _countof(bufferline), line, argptr);

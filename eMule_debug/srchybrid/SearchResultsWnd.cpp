@@ -1007,6 +1007,7 @@ static void AddAndAttr(UINT uTag, UINT uOpr, uint64 ullVal)
 
 bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSupports64Bit, bool* pbPacketUsing64Bit)
 {
+
 	CStringA strFileType;
 	if (pParams->strFileType == ED2KFTSTR_ARCHIVE){
 		// eDonkeyHybrid 0.48 uses type "Pro" for archives files

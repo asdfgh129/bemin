@@ -520,7 +520,14 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 			memcpy(sendbuffer+2,cur_packet->packet->pBuffer,cur_packet->packet->size);
 			
 			if (cur_packet->bEncrypt && (theApp.GetPublicIP() > 0 || cur_packet->bKad)){
+
+					///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientUDPSocket|Function:SendControlData before Encrypt|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),ipstr(ntohl(cur_packet->dwIP)),cur_packet->nPort,nLen,(cur_packet->bKad?GetKadOpcodeStr(cur_packet->packet->opcode).GetBuffer(0):GetOpcodeStr(cur_packet->packet->opcode,CLIENT2CLIENTExUDP).GetBuffer(0)),(cur_packet->bKad?_T("Kademlia"):_T("UDP")),ByteToHexStr((uchar*)sendbuffer,nLen).GetBuffer(0),TrimZero((uchar*)sendbuffer,nLen).GetBuffer(0));
+
 				nLen = EncryptSendClient(&sendbuffer, nLen, cur_packet->pachTargetClientHashORKadID, cur_packet->bKad,  cur_packet->nReceiverVerifyKey, (cur_packet->bKad ? Kademlia::CPrefs::GetUDPVerifyKey(cur_packet->dwIP) : (uint16)0));
+
+				///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientUDPSocket|Function:SendControlData after Encrypt|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),ipstr(ntohl(cur_packet->dwIP)),cur_packet->nPort,nLen,(cur_packet->bKad?GetKadOpcodeStr(cur_packet->packet->opcode).GetBuffer(0):GetOpcodeStr(cur_packet->packet->opcode,CLIENT2CLIENTExUDP).GetBuffer(0)),(cur_packet->bKad?_T("Kademlia"):_T("UDP")),ByteToHexStr((uchar*)sendbuffer,nLen).GetBuffer(0),TrimZero((uchar*)sendbuffer,nLen).GetBuffer(0));
 				//DEBUG_ONLY(  AddDebugLogLine(DLP_VERYLOW, false, _T("Sent obfuscated UDP packet to clientIP: %s, Kad: %s, ReceiverKey: %u"), ipstr(cur_packet->dwIP), cur_packet->bKad ? _T("Yes") : _T("No"), cur_packet->nReceiverVerifyKey) );
 			}
 
@@ -554,6 +561,10 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 
 int CClientUDPSocket::SendTo(char* lpBuf,int nBufLen,uint32 dwIP, uint16 nPort){
 	// NOTE: *** This function is invoked from a *different* thread!
+
+	///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientUDPSocket|Function:SendTo|Socket:|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:%s"),ipstr(ntohl(dwIP)),nPort,nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0),TrimZero((uchar*)lpBuf,nBufLen).GetBuffer(0));
+
 	uint32 result = CAsyncSocket::SendTo(lpBuf,nBufLen,nPort,ipstr(dwIP));
 	if (result == (uint32)SOCKET_ERROR){
 		uint32 error = GetLastError();
@@ -576,6 +587,9 @@ bool CClientUDPSocket::SendPacket(Packet* packet, uint32 dwIP, uint16 nPort, boo
 	newpending->bEncrypt = bEncrypt && (pachTargetClientHashORKadID != NULL || (bKad && nReceiverVerifyKey != 0));
 	newpending->bKad = bKad;
 	newpending->nReceiverVerifyKey = nReceiverVerifyKey;
+
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientUDPSocket|Function:SendPacket|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),ipstr(ntohl(dwIP)),nPort,newpending->packet->size,(bKad?GetKadOpcodeStr(newpending->packet->opcode).GetBuffer(0):GetOpcodeStr(newpending->packet->opcode,CLIENT2CLIENTExUDP).GetBuffer(0)),(bKad?_T("Kademlia"):_T("UDP")),ByteToHexStr((uchar*)newpending->packet->pBuffer,newpending->packet->size).GetBuffer(0),TrimZero((uchar*)newpending->packet->pBuffer,newpending->packet->size).GetBuffer(0));
 
 #ifdef _DEBUG
 	if (newpending->packet->size > UDP_KAD_MAXFRAGMENT)

@@ -81,11 +81,11 @@ void LogT(UINT uFlags, LPCTSTR pszFmt, ...)
 	va_start(argp, pszFmt);
 	ASSERT(pszFmt != NULL);
 
-	TCHAR szLogLine[1000];
+	TCHAR szLogLine[200000];
 	_vsntprintf(szLogLine, _countof(szLogLine), pszFmt, argp);
 	szLogLine[_countof(szLogLine) - 1] = _T('\0');
 	
-		TCHAR szFullLogLine[1060];
+		TCHAR szFullLogLine[200060];
 		int iLen = _sntprintf(szFullLogLine, _countof(szFullLogLine), _T("%s|%s\r\n"), CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), szLogLine);
 		if (iLen > 0)
 		{
