@@ -746,6 +746,10 @@ SocketSentBytes CUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, uint3
 int CUDPSocket::SendTo(BYTE* lpBuf, int nBufLen, uint32 dwIP, uint16 nPort)
 {
 	// NOTE: *** This function is invoked from a *different* thread!
+
+		///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Class:CUDPSocket|Function:SendTo|Socket:|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:%s"),ipstr(dwIP),nPort,nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0),TrimZero((uchar*)lpBuf,nBufLen).GetBuffer(0));
+
 	int iResult = CAsyncSocket::SendTo(lpBuf, nBufLen, nPort, ipstr(dwIP));
 	if (iResult == SOCKET_ERROR) {
 		DWORD dwError = GetLastError();
@@ -794,20 +798,34 @@ void CUDPSocket::SendPacket(Packet* packet, CServer* pServer, uint16 nSpecialPor
 		}
 	}
 
-	// Create raw UDP packet
+	// Create raw UDP packet  ///snow:构造RawPacket
 	BYTE* pRawPacket;
 	UINT uRawPacketSize;
 	uint16 nPort = 0;
 	if (packet != NULL){
-		pRawPacket = new BYTE[packet->size + 2];
-		memcpy(pRawPacket, packet->GetUDPHeader(), 2);
-		memcpy(pRawPacket + 2, packet->pBuffer, packet->size);
+		pRawPacket = new BYTE[packet->size + 2];  ///snow:RawPacket比packet多2个字节
+		memcpy(pRawPacket, packet->GetUDPHeader(), 2);  ///snow:UDP包头2个字节，Opcode和Protocol
+		memcpy(pRawPacket + 2, packet->pBuffer, packet->size);///snow:从pRawPacket第3字节开始，复制packet->pBuffer
 		uRawPacketSize = packet->size + 2;
+
+		///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CUDPSocket|Function:SendPacket before Encrypt|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),ipstr(pServer->GetIP()),pServer->GetPort(),uRawPacketSize,GetOpcodeStr(packet->opcode,CLIENT2SERVERUDP).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0),TrimZero((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0));
+
+
+
+		///snow:加密传输
 		if (thePrefs.IsServerCryptLayerUDPEnabled() && pServer->GetServerKeyUDP() != 0 && pServer->SupportsObfuscationUDP()){
 			uRawPacketSize = EncryptSendServer(&pRawPacket, uRawPacketSize, pServer->GetServerKeyUDP());
+
+			
+
 			if (thePrefs.GetDebugServerUDPLevel() > 0)
 				DEBUG_ONLY(DebugLog(_T("Sending encrypted packet to server %s, UDPKey %u"), pServer->GetListName(), pServer->GetServerKeyUDP()));
 			nPort = pServer->GetObfuscationPortUDP();
+
+			///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CUDPSocket|Function:SendPacket after Encrypt|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),ipstr(pServer->GetIP()),nPort,uRawPacketSize,GetOpcodeStr(packet->opcode,CLIENT2SERVERUDP).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0),TrimZero((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0));
+
 		}
 		else
 			nPort = pServer->GetPort() + 4;

@@ -294,4 +294,5 @@ inline BOOL afxIsWin95()
 ///<-----------------------------by snow for trace
 #define CAsyncSocketEx_workflow _T("CAsyncSocketEx_Workflow")
 #define TRACE_PACKET_DATA _T("PacketData")
+#define TRACE_STREAM_DATA _T("StreamData")
 ///----------------------------------->by snow

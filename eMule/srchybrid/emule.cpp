@@ -2165,7 +2165,9 @@ bool CemuleApp::IsTraceLog(LPCTSTR keyword)
 {
     LPCTSTR keywords[]=
 	{
-		_T("PacketData")
+	    //_T("CAsyncSocketEx_Workflow"),
+		_T("PacketData"),
+		_T("StreamData")
 	};
 	bool bRecord = false;
 	for (int i = 0; i < _countof(keywords); i++)
@@ -2189,7 +2191,10 @@ void CemuleApp::QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line, ...)
 	TCHAR bufferline[200000];
 	va_list argptr;
 	va_start(argptr, line);
-	int iLen = _vsntprintf(bufferline, _countof(bufferline), line, argptr);
+	CString str;
+	str.Format(_T("%s|%s"),keyword,line);
+	LPCTSTR msg=str;
+	int iLen = _vsntprintf(bufferline, _countof(bufferline), msg, argptr);
 	va_end(argptr);
 	if (iLen > 0)
 	{

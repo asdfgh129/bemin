@@ -217,29 +217,31 @@ void CSearchResultsWnd::StartSearch(SSearchParams* pParams)
 	}
 }
 
+///snow:竟然没有被调用！！
 void CSearchResultsWnd::OnTimer(UINT nIDEvent)
 {
 	CResizableFormView::OnTimer(nIDEvent);
-
-	if (m_uTimerLocalServer != 0 && nIDEvent == m_uTimerLocalServer)
-	{
+    
+	///snow:在DoNewEd2KSearch()中global search分支下设置m_uTimerLocalServer=SetTimer(TimerServerTimeout, 50000, 0)  m_uTimerLocalServer=nIDEvent=1
+	if (m_uTimerLocalServer != 0 && nIDEvent == m_uTimerLocalServer)   
+		{   ///snow:此分支处理定时器1，把自己取消，如果启用globsearch，设置定时器2
 		if (thePrefs.GetDebugServerSearchesLevel() > 0)
 			Debug(_T("Timeout waiting on search results of local server\n"));
 		// the local server did not answer within the timeout
-		VERIFY( KillTimer(m_uTimerLocalServer) );
+		VERIFY( KillTimer(m_uTimerLocalServer) );                      ///snow:取消DoNewEd2KSearch()中global search分支下设置的定时器1，也就是说定时器1只使用一次
 		m_uTimerLocalServer = 0;
 
 		// start the global search
 		if (globsearch)
 		{
 			if (global_search_timer == 0)
-				VERIFY( (global_search_timer = SetTimer(TimerGlobalSearch, 750, 0)) != NULL );
+				VERIFY( (global_search_timer = SetTimer(TimerGlobalSearch, 750, 0)) != NULL ); ///snow:设置定时器2，定时器2的取消在CancelEd2kSearch()中
 		}
 		else
-			CancelEd2kSearch();
+			CancelEd2kSearch(); ///snow:取消定时器1、2，GlobalSearch等
 	}
 	else if (nIDEvent == global_search_timer)
-	{
+		{     ///snow:处理定时器2分支，每次取一个服务器，向该服务器发送搜索请求
 	    if (theApp.serverconnect->IsConnected())
 		{
 			CServer* pConnectedServer = theApp.serverconnect->GetCurrentServer();
@@ -255,11 +257,11 @@ void CSearchResultsWnd::OnTimer(UINT nIDEvent)
 				toask = theApp.serverlist->GetNextSearchServer();
 				if (toask == NULL)
 					break;
-				if (toask == pConnectedServer) {
+				if (toask == pConnectedServer) {   ///snow:当前服务器
 					toask = NULL;
 					continue;
 				}
-				if (toask->GetFailedCount() >= thePrefs.GetDeadServerRetries()) {
+				if (toask->GetFailedCount() >= thePrefs.GetDeadServerRetries()) {   ///snow:连接失败次数超过死服务器重试次数的
 					toask = NULL;
 					continue;
 				}
@@ -267,15 +269,19 @@ void CSearchResultsWnd::OnTimer(UINT nIDEvent)
 			}
 
 			if (toask)
-			{
-				bool bRequestSent = false;
+				{   ///snow:找到可用服务器了，根据服务器的UDPFlags和是否支持LargeFilesUDP，分三种情况处理
+				    ///1、支持大文件UDP且有UDP标记  OP_GLOBSEARCHREQ3
+				    ///2、不支持大文件UDP但有UDP标记   OP_GLOBSEARCHREQ2;
+				    ///3、
+ 				bool bRequestSent = false;
 				if (toask->SupportsLargeFilesUDP() && (toask->GetUDPFlags() & SRV_UDPFLG_EXT_GETFILES))
-				{
+					{   ///snow:服务器标记了UDPFlags且运行大文件UDP
 					CSafeMemFile data(50);
 					uint32 nTagCount = 1;
 					data.WriteUInt32(nTagCount);
 					CTag tagFlags(CT_SERVER_UDPSEARCH_FLAGS, SRVCAP_UDP_NEWTAGS_LARGEFILES);
 					tagFlags.WriteNewEd2kTag(&data);
+					///snow:将DoNewED2KSearch()中的searchpacket封包，改变Opcode
 					Packet* pExtSearchPacket = new Packet(OP_GLOBSEARCHREQ3, searchpacket->size + (uint32)data.GetLength());
 					data.SeekToBegin();
 					data.Read(pExtSearchPacket->pBuffer, (uint32)data.GetLength());
@@ -288,8 +294,9 @@ void CSearchResultsWnd::OnTimer(UINT nIDEvent)
 
 				}
 				else if (toask->GetUDPFlags() & SRV_UDPFLG_EXT_GETFILES)
-				{
+					{   ///snow:标记了UDPflags
 					if (!m_b64BitSearchPacket || toask->SupportsLargeFilesUDP()){
+						///snow:将DoNewED2KSearch()中的searchpacket封包，改变Opcode
 						searchpacket->opcode = OP_GLOBSEARCHREQ2;
 						if (thePrefs.GetDebugServerUDPLevel() > 0)
 							Debug(_T(">>> Sending %s  to server %-21s (%3u of %3u)\n"), _T("OP__GlobSearchReq2"), ipstr(toask->GetAddress(), toask->GetPort()), servercount, theApp.serverlist->GetServerCount());
@@ -303,7 +310,7 @@ void CSearchResultsWnd::OnTimer(UINT nIDEvent)
 					}
 				}
 				else
-				{
+					{   ///snow:UDPFlags未标记
 					if (!m_b64BitSearchPacket || toask->SupportsLargeFilesUDP()){
 						searchpacket->opcode = OP_GLOBSEARCHREQ;
 						if (thePrefs.GetDebugServerUDPLevel() > 0)
@@ -1305,6 +1312,7 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams* pParams)
 	theApp.searchlist->NewSearch(&searchlistctrl, strResultType, m_nEd2kSearchID, pParams->eType, pParams->strExpression);   ///snow:将当前搜索添加到搜索历史中
 	canceld = false;
 
+	///snow:取消定时器1
 	if (m_uTimerLocalServer){
 		VERIFY( KillTimer(m_uTimerLocalServer) );
 		m_uTimerLocalServer = 0;
@@ -1327,7 +1335,7 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams* pParams)
 	if (pParams->eType == SearchTypeEd2kGlobal && theApp.serverconnect->IsUDPSocketAvailable())    ///snow:全局服务器搜索
 	{
 		// set timeout timer for local server
-		m_uTimerLocalServer = SetTimer(TimerServerTimeout, 50000, NULL);
+	m_uTimerLocalServer = SetTimer(TimerServerTimeout, 50000, NULL);  ///snow:每5秒触发一次WM_TIMER，m_uTimerLocalServer=1，OnTimer()被调用
 
 		if (thePrefs.GetUseServerPriorities())
 			theApp.serverlist->ResetSearchServerPos();
@@ -1339,10 +1347,10 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams* pParams)
 		}
 		searchpacket = packet;
 		searchpacket->opcode = OP_GLOBSEARCHREQ; // will be changed later when actually sending the packet!!
-		///snow:在OnTimer()中发送  searchpacket->opcode = OP_GLOBSEARCHREQ2;  theApp.serverconnect->SendUDPPacket(searchpacket, toask, false);
+		///snow:在OnTimer()中发送  分三种情况：searchpacket->opcode = OP_GLOBSEARCHREQ3、OP_GLOBSEARCHREQ2、OP_GLOBSEARCHREQ;  theApp.serverconnect->SendUDPPacket(searchpacket, toask, false);
 		m_b64BitSearchPacket = bPacketUsing64Bit;
 		servercount = 0;
-		searchprogress.SetRange32(0, theApp.serverlist->GetServerCount() - 1);
+		searchprogress.SetRange32(0, theApp.serverlist->GetServerCount() - 1);   ///snow:搜索进度条
 		globsearch = true;
 	}
 	else{

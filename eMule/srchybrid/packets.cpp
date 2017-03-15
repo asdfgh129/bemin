@@ -193,7 +193,7 @@ char* Packet::GetHeader(){   ///snow:6个字节的包头
 	return head;
 }
 
-char* Packet::GetUDPHeader(){
+char* Packet::GetUDPHeader(){   ///snow:两个字节的UDP包头
 	ASSERT ( !m_bSplitted );
 	UDP_Header_Struct* header = (UDP_Header_Struct*) head;
 	header->command = opcode;
