@@ -232,6 +232,10 @@ bool CUDPSocket::ProcessPacket(const BYTE* packet, UINT size, UINT opcode, uint3
 			theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(pServer);
 		}
 
+		///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CUDPSocket|Function:ProcessPacket|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),ipstr(ntohl(nIP)), ntohs(nUDPPort),size,GetOpcodeStr(opcode,CLIENT2SERVERUDP).GetBuffer(0),_T("UDP"),ByteToHexStr((uchar*)packet,size).GetBuffer(0),TrimZero((uchar*)packet,size).GetBuffer(0));
+
+
 		switch (opcode)
 		{
 			case OP_GLOBSEARCHRES:{

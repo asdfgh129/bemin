@@ -38,6 +38,7 @@ void DebugLog(UINT uFlags, LPCTSTR pszLine, ...);
 void DebugLogError(UINT uFlags, LPCTSTR pszLine, ...);
 void DebugLogWarning(UINT uFlags, LPCTSTR pszLine, ...);
 
+void LogT(UINT uFlags, LPCTSTR pszFmt, ...);   ///snow:add by snow
 void LogV(UINT uFlags, LPCTSTR pszFmt, va_list argp);
 
 void AddLogLine(bool bAddToStatusBar, LPCTSTR pszLine, ...);
@@ -87,3 +88,4 @@ protected:
 
 extern CLogFile theLog;
 extern CLogFile theVerboseLog;
+extern CLogFile theDebugLog;   ///snow:add by snow

@@ -64,7 +64,7 @@
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="4"
-				DebugInformationFormat="1"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

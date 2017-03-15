@@ -188,6 +188,14 @@ public:
     void			ClearLogQueue(bool bDebugPendingMsgs = false);
     // Elandal:ThreadSafeLogging <--
 
+	///snow:add by snow to trace --------->
+	void			QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line,...);
+	bool            IsTraceLog(LPCTSTR keyword);
+    //void			QueueDebugLogLineEx(UINT uFlags, LPCTSTR line,...);
+    void			HandleTraceLogQueue();
+    void			ClearTraceLogQueue(bool bDebugPendingMsgs = false);
+	/// snow:add by snow to trace   <---------
+
 	bool			DidWeAutoStart() { return m_bAutoStart; }
 
 protected:
@@ -216,6 +224,8 @@ protected:
     CTypedPtrList<CPtrList, SLogItem*> m_QueueDebugLog;
     CTypedPtrList<CPtrList, SLogItem*> m_QueueLog;
     // Elandal:ThreadSafeLogging <--
+
+	CTypedPtrList<CPtrList, SLogItem*> m_QueueTraceLog;   ///snow:by snow
 
 	uint32 m_dwPublicIP;
 	bool m_bAutoStart;

@@ -65,6 +65,12 @@ to tim.kosse@gmx.de
 #include "DebugHelpers.h"
 #include "AsyncSocketEx.h"
 
+///snow:<-----add by snow for trace
+#include "emule.h"
+#include "Log.h"
+#include "OtherFunctions.h"
+///snow :--------------------->
+
 #ifndef NOLAYERS
 #include "AsyncSocketExLayer.h"
 #endif //NOLAYERS
@@ -486,6 +492,7 @@ CAsyncSocketEx::CAsyncSocketEx()
 #endif //NOLAYERS
 	m_pAsyncGetHostByNameBuffer = NULL;
 	m_hAsyncGetHostByNameHandle = NULL;
+	m_iSocketPort=0;///snow:by snow
 }
 
 CAsyncSocketEx::~CAsyncSocketEx()
@@ -769,7 +776,12 @@ int CAsyncSocketEx::Receive(void* lpBuf, int nBufLen, int nFlags /*=0*/)
 		return m_pFirstLayer->Receive(lpBuf, nBufLen, nFlags);
 	else
 #endif //NOLAYERS
-		return recv(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
+		///return recv(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);  ///snow:by snow
+		///snow:add by snow
+		; 
+		int len = recv(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CAsyncSocketEx|Function:Receive|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),len,ByteToHexStr((uchar*)lpBuf,len).GetBuffer(0));
+   return len;
 }
 
 int CAsyncSocketEx::Send(const void* lpBuf, int nBufLen, int nFlags /*=0*/)
@@ -779,7 +791,12 @@ int CAsyncSocketEx::Send(const void* lpBuf, int nBufLen, int nFlags /*=0*/)
 		return m_pFirstLayer->Send(lpBuf, nBufLen, nFlags);
 	else
 #endif //NOLAYERS
-		return send(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
+		///return send(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags); ///snow:by snow
+		///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CAsyncSocketEx|Function:Send|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0));
+		int len= send(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
+	//	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketEx::Send£¬after send"));
+		return len;
 }
 
 BOOL CAsyncSocketEx::Connect(LPCSTR lpszHostAddress, UINT nHostPort)
@@ -876,6 +893,41 @@ BOOL CAsyncSocketEx::GetSockName(SOCKADDR* lpSockAddr, int* lpSockAddrLen)
 	else
 		return FALSE;
 }
+
+///<-------------------------------------by snow
+
+#ifdef _AFX
+CString CAsyncSocketEx::GetPeerAddress()
+{
+	if(m_strSocketAddress.IsEmpty()) 
+	{
+		BOOL bResult = GetPeerName(m_strSocketAddress,m_iSocketPort);
+		if(bResult)
+		{
+           return m_strSocketAddress;
+		}
+		else return _T("0.0");
+	}
+  return m_strSocketAddress;
+}
+#endif
+
+int CAsyncSocketEx::GetPeerPort()
+{
+	if(m_iSocketPort==0) 
+	{
+		BOOL bResult = GetPeerName(m_strSocketAddress,m_iSocketPort);
+		if(bResult)
+		{
+
+           return m_iSocketPort;
+		}
+		else return 0;
+	}
+	return m_iSocketPort;
+}
+///------------------------------------->by snow
+
 
 BOOL CAsyncSocketEx::ShutDown(int nHow /*=sends*/)
 {

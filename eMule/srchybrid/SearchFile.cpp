@@ -214,7 +214,7 @@ CSearchFile::CSearchFile(CFileDataIO* in_data, bool bOptUTF8,
 		Debug(_T("Search Result: %s  Client=%u.%u.%u.%u:%u  Tags=%u\n"), md4str(m_FileIdentifier.GetMD4Hash()), (uint8)m_nClientID,(uint8)(m_nClientID>>8),(uint8)(m_nClientID>>16),(uint8)(m_nClientID>>24), m_nClientPort, tagcount);
 
 	// Copy/Convert ED2K-server tags to local tags
-	//
+	///snow:¥¶¿Ìtag
 	for (UINT i = 0; i < tagcount; i++)
 	{
 		CTag* tag = new CTag(in_data, bOptUTF8);

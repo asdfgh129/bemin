@@ -90,9 +90,7 @@ void* AFX_CDECL operator new(size_t nSize, LPCSTR lpszFileName, int nLine);
 #if _MSC_VER >= 1200
 void AFX_CDECL operator delete(void* p, LPCSTR lpszFileName, int nLine);
 #endif
-/// <summary>
-/// The snow
-/// </summary>
+
 by snow end**********************************************/ 
 
 
@@ -108,21 +106,13 @@ by snow end**********************************************/
 #endif
 #endif
 
-/// <summary>
-/// The log
-/// </summary>
 CLogFile theLog;
-/// <summary>
-/// The verbose log
-/// </summary>
 CLogFile theVerboseLog;
-/// <summary>
-/// The G_B low color desktop
-/// </summary>
+
+CLogFile theDebugLog;   ///snow:add by snow
+
 bool g_bLowColorDesktop = false;
-/// <summary>
-/// The G_B GDI plus installed
-/// </summary>
+
 bool g_bGdiPlusInstalled = false;
 
 //#define USE_16COLOR_ICONS
@@ -131,17 +121,12 @@ bool g_bGdiPlusInstalled = false;
 ///////////////////////////////////////////////////////////////////////////////
 // MSLU (Microsoft Layer for Unicode) support - UnicoWS
 // 
-/// <summary>
-/// The G_B unico ws
-/// </summary>
 /// #define USE_16COLOR_ICONS
 /// /////////////////////////////////////////////////////////////////////////////
 /// MSLU (Microsoft Layer for Unicode) support - UnicoWS
 bool g_bUnicoWS = false;
 
-/// <summary>
-/// Shows the unicows error.
-/// </summary>
+
 void ShowUnicowsError()
 {
 	// NOTE: Do *NOT* use any MFC nor W-functions here!
@@ -166,10 +151,7 @@ void ShowUnicowsError()
 				MB_ICONSTOP | MB_SYSTEMMODAL | MB_SETFOREGROUND);
 }
 
-/// <summary>
-/// Explicits the pre load unicows.
-/// </summary>
-/// <returns>HMODULE.</returns>
+
 extern "C" HMODULE __stdcall ExplicitPreLoadUnicows()
 {
 #ifdef _AFXDLL
@@ -197,10 +179,6 @@ extern "C" HMODULE __stdcall ExplicitPreLoadUnicows()
 }
 
 // NOTE: Do *NOT* change the name of this function. It *HAS* to be named "_PfnLoadUnicows" !
-/// <summary>
-/// The _ PFN load unicows
-/// </summary>
-/// NOTE: Do *NOT* change the name of this function. It *HAS* to be named "_PfnLoadUnicows" !
 extern "C" HMODULE (__stdcall *_PfnLoadUnicows)(void) = &ExplicitPreLoadUnicows;
 
 
@@ -231,24 +209,16 @@ static CMemoryState oldMemState, newMemState, diffMemState;
 	//g_pfnPrevCrtAllocHook = _CrtSetAllocHook(&eMuleAllocHook);   
     
 	*/
-
-/// <summary>
-/// The G_PFN previous CRT alloc hook
-/// </summary>
 /// // by snow end
 _CRT_ALLOC_HOOK g_pfnPrevCrtAllocHook = NULL;
-/// <summary>
-/// The g_allocations
-/// </summary>
+
 CMap<const unsigned char*, const unsigned char*, UINT, UINT> g_allocations;
 int eMuleAllocHook(int mode, void* pUserData, size_t nSize, int nBlockUse, long lRequest, const unsigned char* pszFileName, int nLine);
 
 //CString _strCrtDebugReportFilePath(_T("eMule CRT Debug Log.log"));
 // don't use a CString for that memory - it will not be available on application termination!
 #define APP_CRT_DEBUG_LOG_FILE _T("eMule CRT Debug Log.log")
-/// <summary>
-/// The S_SZ CRT debug report file path
-/// </summary>
+
 static TCHAR s_szCrtDebugReportFilePath[MAX_PATH] = APP_CRT_DEBUG_LOG_FILE;
 #endif //_DEBUG
 
@@ -270,9 +240,7 @@ static TCHAR s_szCrtDebugReportFilePath[MAX_PATH] = APP_CRT_DEBUG_LOG_FILE;
 extern "C" PVOID __safe_se_handler_table[];
 extern "C" BYTE  __safe_se_handler_count;
 
-/// <summary>
-/// Initializes the safe seh.
-/// </summary>
+
 void InitSafeSEH()
 {
 	//// by snow start 检查 __safe_se_handler_table是否等于NULL，若是，则未启用SafeSEH
@@ -308,9 +276,6 @@ BOOL WINAPI GetProcessDEPPolicy(HANDLE hProcess, LPDWORD lpFlags, PBOOL lpPerman
 BOOL WINAPI SetProcessDEPPolicy(DWORD dwFlags);
 #endif//!PROCESS_DEP_ENABLE
 
-/// <summary>
-/// Initializes the dep.
-/// </summary>
 void InitDEP()
 {
 	BOOL (WINAPI *pfnGetProcessDEPPolicy)(HANDLE hProcess, LPDWORD lpFlags, PBOOL lpPermanent);
@@ -398,9 +363,6 @@ void InitDEP()
 WINBASEAPI BOOL WINAPI HeapSetInformation(HANDLE HeapHandle, HEAP_INFORMATION_CLASS HeapInformationClass, PVOID HeapInformation, SIZE_T HeapInformationLength);
 #endif//!HeapEnableTerminationOnCorruption
 
-/// <summary>
-/// Initializes the heap corruption detection.
-/// </summary>
 void InitHeapCorruptionDetection()
 {
 	BOOL (WINAPI *pfnHeapSetInformation)(HANDLE HeapHandle, HEAP_INFORMATION_CLASS HeapInformationClass, PVOID HeapInformation, SIZE_T HeapInformationLength);
@@ -412,26 +374,15 @@ void InitHeapCorruptionDetection()
 }
 
 
-/// <summary>
-/// Struct SLogItem
-/// </summary>
+
 struct SLogItem
 {
-	/// <summary>
-	/// flags
-	/// </summary>
+
 	UINT uFlags;
-	/// <summary>
-	/// Log line
-	/// </summary>
 	CString line;
 };
 
 ///snow:下面这几个回调函数没有被调用
-/// <summary>
-/// error handler.
-/// </summary>
-/// <param name="error"> error.</param>
 void CALLBACK myErrHandler(Kademlia::CKademliaError *error)
 {
 	CString msg;
@@ -440,29 +391,20 @@ void CALLBACK myErrHandler(Kademlia::CKademliaError *error)
 		theApp.QueueDebugLogLine(false, _T("%s"), msg);
 }
 
-/// <summary>
-/// debug and log handler.
-/// </summary>
-/// <param name="lpMsg">The lp MSG.</param>
 void CALLBACK myDebugAndLogHandler(LPCSTR lpMsg)
 {
 	if(theApp.emuledlg && theApp.emuledlg->IsRunning())
 		theApp.QueueDebugLogLine(false, _T("%hs"), lpMsg);
 }
 
-/// <summary>
-/// log handler.
-/// </summary>
-/// <param name="lpMsg">lpMSG.</param>
 void CALLBACK myLogHandler(LPCSTR lpMsg)
 {
 	if(theApp.emuledlg && theApp.emuledlg->IsRunning())
 		theApp.QueueLogLine(false, _T("%hs"), lpMsg);
 }
 
-/// <summary>
-/// 注册eMule 窗口信息
-/// </summary>
+
+///snow: 注册eMule 窗口信息
 const static UINT UWM_ARE_YOU_EMULE = RegisterWindowMessage(EMULE_GUID);
 
 BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
@@ -474,10 +416,7 @@ BEGIN_MESSAGE_MAP(CemuleApp, CWinApp)
 	ON_COMMAND(ID_HELP, OnHelp)
 END_MESSAGE_MAP()
 
-/// <summary>
-/// Initializes a new instance of the <see cref="CemuleApp" /> class.
-/// </summary>
-/// <param name="lpszAppName">Name of the application.</param>
+
 CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	:CWinApp(lpszAppName)
 {
@@ -558,9 +497,7 @@ CemuleApp theApp(_T("eMule"));
 
 // Workaround for bugged 'AfxSocketTerm' (needed at least for MFC 7.0, 7.1, 8.0, 9.0)
 #if _MFC_VER==0x0700 || _MFC_VER==0x0710 || _MFC_VER==0x0800 || _MFC_VER==0x0900
-/// <summary>
-/// __s the afx socket term.
-/// </summary>
+
 void __cdecl __AfxSocketTerm()
 {
 #if defined(_AFXDLL) && (_MFC_VER==0x0700 || _MFC_VER==0x0710)
@@ -578,12 +515,6 @@ void __cdecl __AfxSocketTerm()
 #endif
 
 // CemuleApp Initialisierung
-
-/// <summary>
-/// Initializes the instance.
-/// </summary>
-/// <returns>BOOL.</returns>
-/// CemuleApp Initialisierung
 BOOL CemuleApp::InitInstance()
 {
 #ifdef _DEBUG
@@ -737,10 +668,16 @@ BOOL CemuleApp::InitInstance()
 #endif
 	VERIFY( theLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, thePrefs.GetLog2Disk()) + _T("eMule.log")) );   ///snow:日志文件名
 	VERIFY( theVerboseLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_Verbose.log")) );
+	VERIFY( theDebugLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_Debug.log")) );    ///snow:add by snow
+
 	theLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theLog.SetFileFormat(thePrefs.GetLogFileFormat());
 	theVerboseLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theVerboseLog.SetFileFormat(thePrefs.GetLogFileFormat());
+
+	theDebugLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());    ///snow:add by snow
+	theDebugLog.SetFileFormat(thePrefs.GetLogFileFormat());      ///snow:add by snow
+
 	if (thePrefs.GetLog2Disk()){    ///snow:将日志保存到磁盘，在选项Extended中设置
 		theLog.Open();
 		theLog.Log(_T("\r\n"));
@@ -748,6 +685,9 @@ BOOL CemuleApp::InitInstance()
 	if (thePrefs.GetDebug2Disk()){    ///snow:将日志保存到磁盘，在选项Extended中设置
 		theVerboseLog.Open();
 		theVerboseLog.Log(_T("\r\n"));
+		
+		theDebugLog.Open();           ///snow:add by snow
+		theDebugLog.Log(_T("\r\n"));   ///snow:add by snow
 	}
 	Log(_T("Starting eMule v%s"), m_strCurVersionLong);
 
@@ -875,10 +815,7 @@ BOOL CemuleApp::InitInstance()
 	return FALSE;
 }
 
-/// <summary>
-/// Exits the instance.
-/// </summary>
-/// <returns>int.</returns>
+
 int CemuleApp::ExitInstance()
 {
 	AddDebugLogLine(DLP_VERYLOW, _T("%hs"), __FUNCTION__);
@@ -891,13 +828,7 @@ int CemuleApp::ExitInstance()
 }
 
 #ifdef _DEBUG
-/// <summary>
-/// CRTs the debug report cb.
-/// </summary>
-/// <param name="reportType">Type of the report.</param>
-/// <param name="message">The message.</param>
-/// <param name="returnValue">The return value.</param>
-/// <returns>int.</returns>
+
 int CrtDebugReportCB(int reportType, char* message, int* returnValue)
 {
 	FILE* fp = _tfsopen(s_szCrtDebugReportFilePath, _T("a"), _SH_DENYWR);
@@ -923,17 +854,7 @@ int CrtDebugReportCB(int reportType, char* message, int* returnValue)
 ///  这样操作，这样做的目的是什么？
 ///   return的时候又调用一下自身,是什么意思？
 /// snow end
-/// <summary>
-/// Es the mule alloc hook.
-/// </summary>
-/// <param name="mode">The mode.</param>
-/// <param name="pUserData">The p user data.</param>
-/// <param name="nSize">Size of the n.</param>
-/// <param name="nBlockUse">The n block use.</param>
-/// <param name="lRequest">The l request.</param>
-/// <param name="pszFileName">Name of the PSZ file.</param>
-/// <param name="nLine">The n line.</param>
-/// <returns>int.</returns>
+
 int eMuleAllocHook(int mode, void* pUserData, size_t nSize, int nBlockUse, long lRequest, const unsigned char* pszFileName, int nLine)
 {
 	UINT count = 0;
@@ -958,10 +879,7 @@ int eMuleAllocHook(int mode, void* pUserData, size_t nSize, int nBlockUse, long 
 //    通过EnumWindows(SearchEmuleWindow, (LPARAM)&maininst)获得eMule窗口句柄，向eMule窗口发送消息
 //    SendMessage(maininst, WM_COPYDATA, (WPARAM)0, (LPARAM)(PCOPYDATASTRUCT)&sendstruct);
 *******************************/
-/// <summary>
-/// Processes the commandline.
-/// </summary>
-/// <returns>bool.</returns>
+
 bool CemuleApp::ProcessCommandline()
 {
 	bool bIgnoreRunningInstances = (GetProfileInt(_T("eMule"), _T("IgnoreInstances"), 0) != 0);
@@ -1059,12 +977,7 @@ bool CemuleApp::ProcessCommandline()
 //              if (bAlreadyRunning) EnumWindows(SearchEmuleWindow, (LPARAM)&maininst);
 //    寻找emule窗口，赋值给（HWND）maininst
 
-/// <summary>
-/// Searches the emule window.
-/// </summary>
-/// <param name="hWnd">The h WND.</param>
-/// <param name="lParam">The l parameter.</param>
-/// <returns>BOOL.</returns>
+
 BOOL CALLBACK CemuleApp::SearchEmuleWindow(HWND hWnd, LPARAM lParam){
 	DWORD dwMsgResult;
 	LRESULT res = ::SendMessageTimeout(hWnd,UWM_ARE_YOU_EMULE,0, 0,SMTO_BLOCK |SMTO_ABORTIFHUNG,10000,&dwMsgResult);
@@ -1091,11 +1004,7 @@ void CemuleApp::UpdateReceivedBytes(uint32 bytesToAdd) {
 }
 
 
-/// <summary>
-/// Updates the sent bytes.
-/// </summary>
-/// <param name="bytesToAdd">The bytes to add.</param>
-/// <param name="sentToFriend">The sent to friend.</param>
+
 /// snow : 更新发送字节数
 void CemuleApp::UpdateSentBytes(uint32 bytesToAdd, bool sentToFriend) {
 	SetTimeOnTransfer();
@@ -1107,9 +1016,7 @@ void CemuleApp::UpdateSentBytes(uint32 bytesToAdd, bool sentToFriend) {
 }
 
 
-/// <summary>
-/// Sets the time on transfer.
-/// </summary>
+
 /// snow : 更新传送时间
 void CemuleApp::SetTimeOnTransfer() {
 	if (theStats.transferStarttime>0) return;
@@ -1118,11 +1025,7 @@ void CemuleApp::SetTimeOnTransfer() {
 }
 
 
-/// <summary>
-/// Creates the kad source link.
-/// </summary>
-/// <param name="f">The f.</param>
-/// <returns>CString.</returns>
+
 /// snow : 建立KADSource链接
 CString CemuleApp::CreateKadSourceLink(const CAbstractFile* f)
 {
@@ -1142,13 +1045,7 @@ CString CemuleApp::CreateKadSourceLink(const CAbstractFile* f)
 
 
 //TODO: Move to emule-window
-/// <summary>
-/// Copies the text to clipboard.
-/// </summary>
-/// <param name="strText">The string text.</param>
-/// <returns>bool.</returns>
 /// snow : 从剪贴板拷贝复制
-/// TODO: Move to emule-window
 bool CemuleApp::CopyTextToClipboard(CString strText)
 {
 	if (strText.IsEmpty())
@@ -1235,10 +1132,7 @@ bool CemuleApp::CopyTextToClipboard(CString strText)
 }
 
 
-/// <summary>
-/// Copies the text from clipboard.
-/// </summary>
-/// <returns>CString.</returns>
+
 /// TODO: Move to emule-window
 CString CemuleApp::CopyTextFromClipboard()
 {
@@ -1298,12 +1192,7 @@ CString CemuleApp::CopyTextFromClipboard()
 //       "download data rate|upload data rate|waitusercount for upload";
 //snow end
 
-/// <summary>
-/// Called when [sig].
-/// </summary>
-/// <summary>
-/// Called when [sig].
-/// </summary>
+
 void CemuleApp::OnlineSig() // Added By Bouc7 
 { 
 	if (!thePrefs.IsOnlineSignatureEnabled())
@@ -1403,11 +1292,7 @@ void CemuleApp::OnlineSig() // Added By Bouc7
 } //End Added By Bouc7
 
 
-/// <summary>
-/// Gets the language help file path.
-/// </summary>
-/// <param name="strResult">The string result.</param>
-/// <returns>bool.</returns>
+
 /// snow: 帮助文件处理
 bool CemuleApp::GetLangHelpFilePath(CString& strResult)
 {
@@ -1448,19 +1333,14 @@ bool CemuleApp::GetLangHelpFilePath(CString& strResult)
 	return bFound;
 }
 
-/// <summary>
-/// Sets the help file path.
-/// </summary>
-/// <param name="pszHelpFilePath">The PSZ help file path.</param>
+
 void CemuleApp::SetHelpFilePath(LPCTSTR pszHelpFilePath)
 {
 	free((void*)m_pszHelpFilePath);
 	m_pszHelpFilePath = _tcsdup(pszHelpFilePath);
 }
 
-/// <summary>
-/// Called when [help].
-/// </summary>
+
 void CemuleApp::OnHelp()
 {
 	if (m_dwPromptContext != 0)
@@ -1473,11 +1353,7 @@ void CemuleApp::OnHelp()
 	ShowHelp(0, HELP_CONTENTS);
 }
 
-/// <summary>
-/// Shows the help.
-/// </summary>
-/// <param name="uTopic">The u topic.</param>
-/// <param name="uCmd">The u command.</param>
+
 void CemuleApp::ShowHelp(UINT uTopic, UINT uCmd)
 {
 	CString strHelpFilePath;
@@ -1490,11 +1366,7 @@ void CemuleApp::ShowHelp(UINT uTopic, UINT uCmd)
 	WinHelpInternal(uTopic, uCmd);
 }
 
-/// <summary>
-/// Shows the web help.
-/// </summary>
-/// <param name="uTopic">The u topic.</param>
-/// <returns>bool.</returns>
+
 bool CemuleApp::ShowWebHelp(UINT uTopic)
 {
 	CString strHelpURL;
@@ -1503,13 +1375,7 @@ bool CemuleApp::ShowWebHelp(UINT uTopic)
 	return true;
 }
 
-/// <summary>
-/// Gets the index of the file type system image.
-/// </summary>
-/// <param name="pszFilePath">The PSZ file path.</param>
-/// <param name="iLength">Length of the i.</param>
-/// <param name="bNormalsSize">Size of the b normals.</param>
-/// <returns>int.</returns>
+
 int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -1 */, bool bNormalsSize)
 {
 	DWORD dwFileAttributes;
@@ -1577,28 +1443,19 @@ int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -
 }
 
 
-/// <summary>
-/// Determines whether the specified b ignore ed2k is connected.
-/// </summary>
-/// <param name="bIgnoreEd2k">The b ignore ed2k.</param>
-/// <param name="bIgnoreKad">The b ignore kad.</param>
+
 /// snow : 处理跟连接有关的相关事务
 bool CemuleApp::IsConnected(bool bIgnoreEd2k, bool bIgnoreKad)
 {
 	return ( (theApp.serverconnect->IsConnected() && !bIgnoreEd2k) || (Kademlia::CKademlia::IsConnected() && !bIgnoreKad));
 }
 
-/// <summary>
-/// Determines whether [is portchange allowed].
-/// </summary>
+
 bool CemuleApp::IsPortchangeAllowed() {
 	return ( theApp.clientlist->GetClientCount()==0 && !IsConnected() );
 }
 
-/// <summary>
-/// Gets the identifier.
-/// </summary>
-/// <returns>uint32.</returns>
+
 uint32 CemuleApp::GetID(){
 	uint32 ID;
 	if( Kademlia::CKademlia::IsConnected() && !Kademlia::CKademlia::IsFirewalled() )
@@ -1612,21 +1469,14 @@ uint32 CemuleApp::GetID(){
 	return ID;
 }
 
-/// <summary>
-/// Gets the public ip.
-/// </summary>
-/// <param name="bIgnoreKadIP">The b ignore kad ip.</param>
-/// <returns>uint32.</returns>
+
 uint32 CemuleApp::GetPublicIP(bool bIgnoreKadIP) const {
 	if (m_dwPublicIP == 0 && Kademlia::CKademlia::IsConnected() && Kademlia::CKademlia::GetIPAddress() && !bIgnoreKadIP)
 		return ntohl(Kademlia::CKademlia::GetIPAddress());
 	return m_dwPublicIP;
 }
 
-/// <summary>
-/// Sets the public ip.
-/// </summary>
-/// <param name="dwIP">The dw ip.</param>
+
 void CemuleApp::SetPublicIP(const uint32 dwIP){
 	if (dwIP != 0){
 		ASSERT ( !IsLowID(dwIP));
@@ -1651,9 +1501,7 @@ void CemuleApp::SetPublicIP(const uint32 dwIP){
 }
 
 
-/// <summary>
-/// Determines whether this instance is firewalled.
-/// </summary>
+
 bool CemuleApp::IsFirewalled()
 {
 	if (theApp.serverconnect->IsConnected() && !theApp.serverconnect->IsLowID())
@@ -1666,10 +1514,7 @@ bool CemuleApp::IsFirewalled()
 }
 
 
-/// <summary>
-/// Determines whether this instance [can do callback] the specified client.
-/// </summary>
-/// <param name="client">The client.</param>
+
 /// snow :判断是否可以回叫，根据serverconnect是否LowID和KAD是否OPEN来分别讨论
 bool CemuleApp::CanDoCallback( CUpDownClient *client )
 {
@@ -1744,11 +1589,7 @@ bool CemuleApp::CanDoCallback( CUpDownClient *client )
 
 
 
-/// <summary>
-/// Loads the icon w.
-/// </summary>
-/// <param name="nIDResource">The n identifier resource.</param>
-/// <returns>HICON.</returns>
+
 /// snow : GUI处理--Icon ,image,skin
 HICON CemuleApp::LoadIcon(UINT nIDResource) const
 {
@@ -1756,14 +1597,7 @@ HICON CemuleApp::LoadIcon(UINT nIDResource) const
 	return CWinApp::LoadIcon(nIDResource);
 }
 
-/// <summary>
-/// Loads the icon w.
-/// </summary>
-/// <param name="lpszResourceName">Name of the LPSZ resource.</param>
-/// <param name="cx">The cx.</param>
-/// <param name="cy">The cy.</param>
-/// <param name="uFlags">The u flags.</param>
-/// <returns>HICON.</returns>
+
 HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags) const
 {
 	// Test using of 16 color icons. If 'LR_VGACOLOR' is specified _and_ the icon resource
@@ -1913,12 +1747,7 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 	return hIcon;
 }
 
-/// <summary>
-/// Loads the image w.
-/// </summary>
-/// <param name="lpszResourceName">Name of the LPSZ resource.</param>
-/// <param name="pszResourceType">Type of the PSZ resource.</param>
-/// <returns>HBITMAP.</returns>
+
 HBITMAP CemuleApp::LoadImage(LPCTSTR lpszResourceName, LPCTSTR pszResourceType) const
 {
 	LPCTSTR pszSkinProfile = thePrefs.GetSkinProfile();
@@ -1965,12 +1794,7 @@ HBITMAP CemuleApp::LoadImage(LPCTSTR lpszResourceName, LPCTSTR pszResourceType) 
 	return NULL;
 }
 
-/// <summary>
-/// Gets the skin file item.
-/// </summary>
-/// <param name="lpszResourceName">Name of the LPSZ resource.</param>
-/// <param name="pszResourceType">Type of the PSZ resource.</param>
-/// <returns>CString.</returns>
+
 CString CemuleApp::GetSkinFileItem(LPCTSTR lpszResourceName, LPCTSTR pszResourceType) const
 {
 	LPCTSTR pszSkinProfile = thePrefs.GetSkinProfile();
@@ -2011,12 +1835,7 @@ CString CemuleApp::GetSkinFileItem(LPCTSTR lpszResourceName, LPCTSTR pszResource
 	return _T("");
 }
 
-/// <summary>
-/// Loads the color of the skin.
-/// </summary>
-/// <param name="pszKey">The PSZ key.</param>
-/// <param name="crColor">Color of the cr.</param>
-/// <returns>bool.</returns>
+
 bool CemuleApp::LoadSkinColor(LPCTSTR pszKey, COLORREF& crColor) const
 {
 	LPCTSTR pszSkinProfile = thePrefs.GetSkinProfile();
@@ -2038,13 +1857,7 @@ bool CemuleApp::LoadSkinColor(LPCTSTR pszKey, COLORREF& crColor) const
 	return false;
 }
 
-/// <summary>
-/// Loads the skin color alt.
-/// </summary>
-/// <param name="pszKey">The PSZ key.</param>
-/// <param name="pszAlternateKey">The PSZ alternate key.</param>
-/// <param name="crColor">Color of the cr.</param>
-/// <returns>bool.</returns>
+
 bool CemuleApp::LoadSkinColorAlt(LPCTSTR pszKey, LPCTSTR pszAlternateKey, COLORREF& crColor) const
 {
 	if (LoadSkinColor(pszKey, crColor))
@@ -2052,35 +1865,18 @@ bool CemuleApp::LoadSkinColorAlt(LPCTSTR pszKey, LPCTSTR pszAlternateKey, COLORR
 	return LoadSkinColor(pszAlternateKey, crColor);
 }
 
-/// <summary>
-/// Applies the skin.
-/// </summary>
-/// <param name="pszSkinProfile">The PSZ skin profile.</param>
+
 void CemuleApp::ApplySkin(LPCTSTR pszSkinProfile)
 {
 	thePrefs.SetSkinProfile(pszSkinProfile);
 	AfxGetMainWnd()->SendMessage(WM_SYSCOLORCHANGE);
 }
 
-/// <summary>
-/// Initializes a new instance of the <see cref="CTempIconLoader" /> class.
-/// </summary>
-/// <param name="pszResourceID">The PSZ resource identifier.</param>
-/// <param name="cx">The cx.</param>
-/// <param name="cy">The cy.</param>
-/// <param name="uFlags">The u flags.</param>
 CTempIconLoader::CTempIconLoader(LPCTSTR pszResourceID, int cx, int cy, UINT uFlags)
 {
 	m_hIcon = theApp.LoadIcon(pszResourceID, cx, cy, uFlags);
 }
 
-/// <summary>
-/// Initializes a new instance of the <see cref="CTempIconLoader" /> class.
-/// </summary>
-/// <param name="uResourceID">The u resource identifier.</param>
-/// <param name="cx">The cx.</param>
-/// <param name="cy">The cy.</param>
-/// <param name="uFlags">The u flags.</param>
 CTempIconLoader::CTempIconLoader(UINT uResourceID, int /*cx*/, int /*cy*/, UINT uFlags)
 {
 	UNREFERENCED_PARAMETER(uFlags);
@@ -2088,9 +1884,7 @@ CTempIconLoader::CTempIconLoader(UINT uResourceID, int /*cx*/, int /*cy*/, UINT 
 	m_hIcon = theApp.LoadIcon(uResourceID);
 }
 
-/// <summary>
-/// Finalizes an instance of the <see cref="CTempIconLoader" /> class.
-/// </summary>
+
 CTempIconLoader::~CTempIconLoader()
 {
 	if (m_hIcon)
@@ -2098,11 +1892,7 @@ CTempIconLoader::~CTempIconLoader()
 }
 
 
-/// <summary>
-/// Adds the ed2k links to download.
-/// </summary>
-/// <param name="strLinks">The string links.</param>
-/// <param name="cat">The cat.</param>
+
 /// snow : 添加ed2k链接到下载列表
 void CemuleApp::AddEd2kLinksToDownload(CString strLinks, int cat)
 {
@@ -2141,9 +1931,7 @@ void CemuleApp::AddEd2kLinksToDownload(CString strLinks, int cat)
 }
 
 
-/// <summary>
-/// Searches the clipboard.
-/// </summary>
+
 /// snow : 剪贴板处理，是否存在ed2k链接
 void CemuleApp::SearchClipboard()
 {
@@ -2179,10 +1967,7 @@ void CemuleApp::SearchClipboard()
 	m_bGuardClipboardPrompt = false;
 }
 
-/// <summary>
-/// Pastes the clipboard.
-/// </summary>
-/// <param name="cat">The cat.</param>
+
 void CemuleApp::PasteClipboard(int cat)
 {
 	CString strLinks = CopyTextFromClipboard();
@@ -2193,11 +1978,6 @@ void CemuleApp::PasteClipboard(int cat)
 	AddEd2kLinksToDownload(strLinks, cat);
 }
 
-/// <summary>
-/// Determines whether [is ed2k link in clipboard] [the specified PSZ link type].
-/// </summary>
-/// <param name="pszLinkType">Type of the PSZ link.</param>
-/// <param name="iLinkTypeLen">Length of the i link type.</param>
 bool CemuleApp::IsEd2kLinkInClipboard(LPCSTR pszLinkType, int iLinkTypeLen)
 {
 	bool bFoundLink = false;
@@ -2226,9 +2006,6 @@ bool CemuleApp::IsEd2kLinkInClipboard(LPCSTR pszLinkType, int iLinkTypeLen)
 }
 
 
-/// <summary>
-/// Determines whether [is ed2k file link in clipboard].
-/// </summary>
 /// snow : downloadlistctrl中调用
 bool CemuleApp::IsEd2kFileLinkInClipboard()
 {
@@ -2236,9 +2013,7 @@ bool CemuleApp::IsEd2kFileLinkInClipboard()
 	return IsEd2kLinkInClipboard(_szEd2kFileLink, _countof(_szEd2kFileLink)-1);
 }
 
-/// <summary>
-/// Determines whether [is ed2k server link in clipboard].
-/// </summary>
+
 bool CemuleApp::IsEd2kServerLinkInClipboard()
 {
 	static const CHAR _szEd2kServerLink[] = "ed2k://|server|"; // Use the ANSI string
@@ -2247,13 +2022,6 @@ bool CemuleApp::IsEd2kServerLinkInClipboard()
 
 //snow : 线程安全的日志处理
 // Elandal:ThreadSafeLogging -->
-/// <summary>
-/// Queues the debug log line.
-/// </summary>
-/// <param name="bAddToStatusBar">The b add to status bar.</param>
-/// <param name="line">The line.</param>
-/// <param name="">The .</param>
-
 void CemuleApp::QueueDebugLogLine(bool bAddToStatusbar, LPCTSTR line, ...)
 {
 	if (!thePrefs.GetVerbose())
@@ -2277,12 +2045,6 @@ void CemuleApp::QueueDebugLogLine(bool bAddToStatusbar, LPCTSTR line, ...)
 	m_queueLock.Unlock();
 }
 
-/// <summary>
-/// Queues the log line.
-/// </summary>
-/// <param name="bAddToStatusBar">The b add to status bar.</param>
-/// <param name="line">The line.</param>
-/// <param name="">The .</param>
 void CemuleApp::QueueLogLine(bool bAddToStatusbar, LPCTSTR line, ...)
 {
 	m_queueLock.Lock();
@@ -2303,12 +2065,6 @@ void CemuleApp::QueueLogLine(bool bAddToStatusbar, LPCTSTR line, ...)
 	m_queueLock.Unlock();
 }
 
-/// <summary>
-/// Queues the debug log line ex.
-/// </summary>
-/// <param name="uFlags">The u flags.</param>
-/// <param name="line">The line.</param>
-/// <param name="">The .</param>
 void CemuleApp::QueueDebugLogLineEx(UINT uFlags, LPCTSTR line, ...)
 {
 	if (!thePrefs.GetVerbose())
@@ -2332,12 +2088,6 @@ void CemuleApp::QueueDebugLogLineEx(UINT uFlags, LPCTSTR line, ...)
 	m_queueLock.Unlock();
 }
 
-/// <summary>
-/// Queues the log line ex.
-/// </summary>
-/// <param name="uFlags">The u flags.</param>
-/// <param name="line">The line.</param>
-/// <param name="">The .</param>
 void CemuleApp::QueueLogLineEx(UINT uFlags, LPCTSTR line, ...)
 {
 	m_queueLock.Lock();
@@ -2358,9 +2108,6 @@ void CemuleApp::QueueLogLineEx(UINT uFlags, LPCTSTR line, ...)
 	m_queueLock.Unlock();
 }
 
-/// <summary>
-/// Handles the debug log queue.
-/// </summary>
 void CemuleApp::HandleDebugLogQueue()
 {
 	m_queueLock.Lock();
@@ -2374,9 +2121,6 @@ void CemuleApp::HandleDebugLogQueue()
 	m_queueLock.Unlock();
 }
 
-/// <summary>
-/// Handles the log queue.
-/// </summary>
 void CemuleApp::HandleLogQueue()
 {
 	m_queueLock.Lock();
@@ -2389,10 +2133,6 @@ void CemuleApp::HandleLogQueue()
 	m_queueLock.Unlock();
 }
 
-/// <summary>
-/// Clears the debug log queue.
-/// </summary>
-/// <param name="bDebugPendingMsgs">The b debug pending MSGS.</param>
 void CemuleApp::ClearDebugLogQueue(bool bDebugPendingMsgs)
 {
 	m_queueLock.Lock();
@@ -2405,10 +2145,6 @@ void CemuleApp::ClearDebugLogQueue(bool bDebugPendingMsgs)
 	m_queueLock.Unlock();
 }
 
-/// <summary>
-/// Clears the log queue.
-/// </summary>
-/// <param name="bDebugPendingMsgs">The b debug pending MSGS.</param>
 void CemuleApp::ClearLogQueue(bool bDebugPendingMsgs)
 {
 	m_queueLock.Lock();
@@ -2422,10 +2158,76 @@ void CemuleApp::ClearLogQueue(bool bDebugPendingMsgs)
 }
 // Elandal:ThreadSafeLogging <--
 
+
+///<--------------------------------------------
+//   snow:add by snow for debug info
+bool CemuleApp::IsTraceLog(LPCTSTR keyword)
+{
+    LPCTSTR keywords[]=
+	{
+		_T("PacketData")
+	};
+	bool bRecord = false;
+	for (int i = 0; i < _countof(keywords); i++)
+	{
+			if (_tcsncmp(keyword, keywords[i], sizeof(keywords[i])) == 0)
+			{
+				bRecord = true;
+				break;
+			}
+	}
+	return bRecord;
+
+}
+
+void CemuleApp::QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line, ...)
+{
+	if(!IsTraceLog(keyword)) return;
+
+	m_queueLock.Lock();
+
+	TCHAR bufferline[200000];
+	va_list argptr;
+	va_start(argptr, line);
+	int iLen = _vsntprintf(bufferline, _countof(bufferline), line, argptr);
+	va_end(argptr);
+	if (iLen > 0)
+	{
+		SLogItem* newItem = new SLogItem;
+		newItem->uFlags = LOG_DEBUG;
+		newItem->line.SetString(bufferline, iLen);
+		m_QueueTraceLog.AddTail(newItem);
+	}
+
+	m_queueLock.Unlock();
+}
+void CemuleApp::HandleTraceLogQueue()
+{
+	m_queueLock.Lock();
+	while (!m_QueueTraceLog.IsEmpty())
+	{
+		const SLogItem* newItem = m_QueueTraceLog.RemoveHead();
+		if (thePrefs.GetVerbose())
+			LogT(newItem->uFlags, _T("%s"), newItem->line);
+		delete newItem;
+	}
+	m_queueLock.Unlock();
+}
+void CemuleApp::ClearTraceLogQueue(bool bDebugPendingMsgs)
+{
+	m_queueLock.Lock();
+	while(!m_QueueTraceLog.IsEmpty())
+	{
+		if (bDebugPendingMsgs)
+			TRACE(_T("Queued dbg log msg: %s\n"), m_QueueTraceLog.GetHead()->line);
+		delete m_QueueTraceLog.RemoveHead();
+	}
+	m_queueLock.Unlock();
+}
+///------------------------------------------>by snow
+
 // snow : 字体处理
-/// <summary>
-/// Creates all fonts.
-/// </summary>
+
 void CemuleApp::CreateAllFonts()
 {
 	///////////////////////////////////////////////////////////////////////////
@@ -2551,9 +2353,7 @@ const CString &CemuleApp::GetDefaultFontFaceName()
 }
 
 
-/// <summary>
-/// Creates the backward diagonal brush.
-/// </summary>
+
 /// snow : 创建后退诊断刷子，做什么用呢？
 void CemuleApp::CreateBackwardDiagonalBrush()
 {
@@ -2570,9 +2370,7 @@ void CemuleApp::CreateBackwardDiagonalBrush()
 }
 
 
-/// <summary>
-/// Updates the desktop color depth.
-/// </summary>
+
 /// snow : 处理图片颜色深度，起什么作用呢？
 void CemuleApp::UpdateDesktopColorDepth()
 {
@@ -2615,11 +2413,7 @@ void CemuleApp::UpdateDesktopColorDepth()
 }
 
 
-/// <summary>
-/// Consoles the control handler.
-/// </summary>
-/// <param name="dwCtrlType">Type of the dw control.</param>
-/// <returns>BOOL.</returns>
+
 /// snow : 采用向主线程SendMessage()的方法，阻止系统终止掉本线程
 BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType)
 {
@@ -2693,9 +2487,7 @@ BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType)
 }
 
 
-/// <summary>
-/// Updates the size of the large icon.
-/// </summary>
+
 /// snow : 从注册表提取大图标尺寸，为m_sizBigSystemIcon赋值
 void CemuleApp::UpdateLargeIconSize()
 {
@@ -2723,9 +2515,7 @@ void CemuleApp::UpdateLargeIconSize()
 }
 
 
-/// <summary>
-/// Resets the stand by idle timer.
-/// </summary>
+
 /// snow : 重置备用闲时定时器，判断eMule是否已连接，或存在上传或下载，如果是，则调用WinApi函数SetThreadExecutionState，通知操作系统不要休眠或待机
 void CemuleApp::ResetStandByIdleTimer()
 {
@@ -2743,9 +2533,7 @@ void CemuleApp::ResetStandByIdleTimer()
 }
 
 
-/// <summary>
-/// Determines whether [is xp theme active].
-/// </summary>
+
 /// snow : 判断界面主题
 bool CemuleApp::IsXPThemeActive() const
 {
@@ -2753,9 +2541,7 @@ bool CemuleApp::IsXPThemeActive() const
 	return theApp.m_ullComCtrlVer < MAKEDLLVERULL(6,16,0,0) && g_xpStyle.IsThemeActive() && g_xpStyle.IsAppThemed();
 }
 
-/// <summary>
-/// Determines whether [is vista theme active].
-/// </summary>
+
 bool CemuleApp::IsVistaThemeActive() const
 {
 	// TRUE: If a Vista (or better) style is active

@@ -164,7 +164,15 @@ void CEncryptedStreamSocket::CryptPrepareSendData(uchar* pBuffer, uint32 nLen){
 	}
 	///snow:要发送数据，状态必须是ECS_ENCRYPTING，错了，是状态如果是ECS_ENCRYPTING，则加密数据，否则，啥也不干
 	if (m_StreamCryptState == ECS_ENCRYPTING)
+	{
+		///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CEncryptedStreamSocket|Function:CryptPrepareSendData before Crypt|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nLen,ByteToHexStr(pBuffer,nLen).GetBuffer(0));
+
 		RC4Crypt(pBuffer, pBuffer, nLen, m_pRC4SendKey);
+
+		///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CEncryptedStreamSocket|Function:CryptPrepareSendData after Crypt|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nLen,ByteToHexStr(pBuffer,nLen).GetBuffer(0));
+	}
 }
 
 // unfortunatly sending cannot be made transparent for the derived class, because of WSA_WOULDBLOCK
@@ -286,6 +294,10 @@ int CEncryptedStreamSocket::Receive(void* lpBuf, int nBufLen, int nFlags){
 		case ECS_ENCRYPTING:   ///snow:已加密协商完成，直接解密
 			// basic obfuscation enabled and set, so decrypt and pass along
 			RC4Crypt((uchar*)lpBuf, (uchar*)lpBuf, m_nObfuscationBytesReceived, m_pRC4ReceiveKey);
+
+			///snow:add by snow
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CEncryptedStreamSocket|Function:Receive after DeCrypt|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),m_nObfuscationBytesReceived,ByteToHexStr((uchar*)lpBuf,m_nObfuscationBytesReceived).GetBuffer(0));
+
 			return m_nObfuscationBytesReceived;
 		case ECS_NEGOTIATING:{   ///snow:还在协商阶段
 			const uint32 nRead = Negotiate((uchar*)lpBuf, m_nObfuscationBytesReceived);   ///snow:返回值有三种情况：0，表示m_nReceiveBytesWanted > 512
@@ -765,7 +777,15 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 		///snow:在StartNegotiation()中，ECS_PENDING_SERVER时，nBufLen == nStartCryptFromByte==lpBuf.length；ECS_PENDING时nStartCryptFromByte=5，表示从第6次开始进行加密处理
 		///snow:在Negotiate()中，nStartCryptFromByte=0，所以进行加密处理
 		if (nBufLen - nStartCryptFromByte > 0)
+		{
+			///snow:add by snow
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CEncryptedStreamSocket|Function:SendNegotiatingData before crypt|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)lpBuf + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
+
 			RC4Crypt((uchar*)lpBuf + nStartCryptFromByte, pBuffer + nStartCryptFromByte, nBufLen - nStartCryptFromByte, m_pRC4SendKey);
+
+			///snow:add by snow
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CEncryptedStreamSocket|Function:SendNegotiatingData after crypt|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen - nStartCryptFromByte,ByteToHexStr((uchar*)pBuffer + nStartCryptFromByte,nBufLen - nStartCryptFromByte).GetBuffer(0));
+		}
 
 		///snow:下面的语句在Send()中调用SendNegotiatingData()时发生
 		if (m_pfiSendBuffer != NULL){  ///snow:存在延迟发送的信息包，在后面的语句块中赋值  if (result == (uint32)SOCKET_ERROR || bDelaySend)时

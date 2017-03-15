@@ -289,3 +289,9 @@ inline BOOL afxIsWin95()
 	return afxData.bWin95;
 #endif
 }
+
+
+///<-----------------------------by snow for trace
+#define CAsyncSocketEx_workflow _T("CAsyncSocketEx_Workflow")
+#define TRACE_PACKET_DATA _T("PacketData")
+///----------------------------------->by snow

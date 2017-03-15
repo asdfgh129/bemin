@@ -2216,6 +2216,10 @@ bool CClientReqSocket::PacketReceivedCppEH(Packet* packet)
 	UINT uRawSize = packet->size;
 	switch (packet->prot){
 		case OP_EDONKEYPROT:     ///snow:eDonkey协议的包，由ProcessPacket处理
+
+			///snow:add by snow
+			theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientReqSocket|Function:PacketReceivedCppEH|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2CLIENT).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0),TrimZero((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
 			bResult = ProcessPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode);
 			break;
 		case OP_PACKEDPROT:
@@ -2226,6 +2230,10 @@ bool CClientReqSocket::PacketReceivedCppEH(Packet* packet)
 				break;
 			}
 		case OP_EMULEPROT:     ///snow:eMule协议的包，由ProcessExtPacket处理
+
+			///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientReqSocket|Function:PacketReceivedCppEH|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2CLIENTEx).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0),TrimZero((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
 			bResult = ProcessExtPacket((const BYTE*)packet->pBuffer, packet->size, packet->opcode, uRawSize);
 			break;
 		default:{
@@ -2349,6 +2357,10 @@ SocketSentBytes CClientReqSocket::SendFileAndControlData(uint32 maxNumberOfBytes
 void CClientReqSocket::SendPacket(Packet* packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize, bool bForceImmediateSend)
 {
 	ResetTimeOutTimer();
+
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Class:CClientReqSocket|Function:SendPacket|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),packet->size,GetOpcodeStr(packet->opcode,CLIENT2SERVER).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)packet->pBuffer,packet->size).GetBuffer(0),TrimZero((uchar*)packet->pBuffer,packet->size).GetBuffer(0));
+
 	CEMSocket::SendPacket(packet, delpacket, controlpacket, actualPayloadSize, bForceImmediateSend);
 }
 
@@ -2548,8 +2560,7 @@ void CListenSocket::OnAccept(int nErrorCode)
 			if (thePrefs.GetConditionalTCPAccept() && !thePrefs.GetProxySettings().UseProxy)   ///snow:未使用代理，建立TCP接入使用了条件许可
 			{
 				s_iAcceptConnectionCondRejected = 0;
-				SOCKET sNew = WSAAccept(m_SocketData.hSocket, (SOCKADDR*)&SockAddr, &iSockAddrLen, AcceptConnectionCond, 0);   ///snow:调用WSAAccept，accept多两个参数，lpfnCondition：（可选的）用户提供的条件函数的进程实例地址。该函数根据参数传入的调用者信息作出接受或拒绝的决定，并通过给结果参数赋予特定的值来（可选地）创建和/或加入一个套接口组。
-dwCallbackData：作为条件函数参数返回给应用程序的回调数据。WinSock不分析该参数。
+				SOCKET sNew = WSAAccept(m_SocketData.hSocket, (SOCKADDR*)&SockAddr, &iSockAddrLen, AcceptConnectionCond, 0);   ///snow:调用WSAAccept，accept多两个参数，lpfnCondition：（可选的）用户提供的条件函数的进程实例地址。该函数根据参数传入的调用者信息作出接受或拒绝的决定，并通过给结果参数赋予特定的值来（可选地）创建和/或加入一个套接口组。dwCallbackData：作为条件函数参数返回给应用程序的回调数据。WinSock不分析该参数。
 
 				if (sNew == INVALID_SOCKET){
 				    DWORD nError = GetLastError();

@@ -885,6 +885,8 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
         theApp.HandleDebugLogQueue();
         theApp.HandleLogQueue();
         // Elandal: ThreadSafeLogging <--
+		
+		theApp.HandleTraceLogQueue();  ///snow:by snow
 
 		// ZZ:UploadSpeedSense -->
 		theApp.lastCommonRouteFinder->SetPrefs(thePrefs.IsDynUpEnabled(), 

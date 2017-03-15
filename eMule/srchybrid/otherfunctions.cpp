@@ -4023,3 +4023,731 @@ bool AddIconGrayscaledToImageList(CImageList& rList, HICON hIcon)
 	}
 	return bResult;
 }
+///<-------------------------------------------add by snow
+CString formatTime(DWORD ms) {  
+   // USE_CONVERSION;
+	uint32 ss = 1000;  
+    uint32 mi = ss * 60;  
+    uint32 hh = mi * 60;  
+    uint32 dd = hh * 24;  
+  
+    DWORD day = ms / dd;  
+    DWORD hour = (ms - day * dd) / hh;  
+    DWORD minute = (ms - day * dd - hour * hh) / mi;  
+    DWORD second = (ms - day * dd - hour * hh - minute * mi) / ss;  
+    DWORD milliSecond = ms - day * dd - hour * hh - minute * mi - second * ss;  
+      
+    CString sb(_T("d")); 
+	//sb = day + sb ;
+	//	sb += hour +_T("h")+minute+_T("m")+second+_T("s")+milliSecond+_T("ms");
+	sb.Format(_T("%u:%u:%u:%u"),hour,minute,second,milliSecond);
+    /*if(day > 0) {  
+        sb += day+_T("天");  
+    }  
+    if(hour > 0) {  
+        sb += hour+_T("小时");  
+    }  
+    if(minute > 0) {  
+        sb.Append(minute+_T("分"));  
+    }  
+    if(second > 0) {  
+        sb.Append(second+_T("秒"));  
+    }  
+    if(milliSecond > 0) {  
+        sb.Append(milliSecond+_T("毫秒"));  
+    } */
+	//TCHAR * p =sb.GetBuffer(0);  
+	//sb.ReleaseBuffer();
+
+	return sb;
+}  
+
+//字节流转换为十六进制字符串
+void ByteToHexStr(const unsigned char* source, char* dest, int sourceLen)
+{
+    int i;
+    unsigned char highByte, lowByte;
+
+    for (i = 0; i < sourceLen; i++)
+    {
+        highByte = source[i] >> 4;
+        lowByte = source[i] & 0x0f ;
+
+        highByte += 0x30;
+
+        if (highByte > 0x39)
+                dest[i * 2] = highByte + 0x07;
+        else
+			dest[i * 2] = highByte;   ///snow:char * dest = new char[sourceLen*2];时就会出错
+
+        lowByte += 0x30;
+        if (lowByte > 0x39)
+            dest[i * 2 + 1] = lowByte + 0x07;
+        else
+            dest[i * 2 + 1] = lowByte;
+    }
+    return ;
+}
+
+CString ByteToHexStr(const unsigned char* source, int sourceLen)
+{ 
+	  
+	char * dest = new char[sourceLen*2+1];   ///snow:之前没有+1，上面的转换就会出错
+	memset(dest,0,sourceLen*2+1);
+	ByteToHexStr(source, dest, sourceLen);
+	dest[sourceLen*2]='\0';    ///snow:也是上面定义没有+1的错
+	CString sb(dest);
+	delete[] dest;
+	return sb;
+}
+	
+
+//字节流转换为十六进制字符串的另一种实现方式
+void Byte2HexStr( const char *sSrc,  char *sDest, int nSrcLen )
+{
+    int  i;
+    char szTmp[3];
+
+    for( i = 0; i < nSrcLen; i++ )
+    {
+        sprintf( szTmp, "%02X", (unsigned char) sSrc[i] );
+        memcpy( &sDest[i * 2], szTmp, 2 );
+    }
+    return ;
+}
+
+//十六进制字符串转换为字节流
+void HexStrToByte(const char* source, unsigned char* dest, int sourceLen)
+{
+    short i;
+    unsigned char highByte, lowByte;
+    
+    for (i = 0; i < sourceLen; i += 2)
+    {
+        highByte = toupper(source[i]);
+        lowByte  = toupper(source[i + 1]);
+
+        if (highByte > 0x39)
+            highByte -= 0x37;
+        else
+            highByte -= 0x30;
+
+        if (lowByte > 0x39)
+            lowByte -= 0x37;
+        else
+            lowByte -= 0x30;
+
+        dest[i / 2] = (highByte << 4) | lowByte;
+    }
+    return ;
+}
+
+CString TrimZero(const unsigned char* source,int sourceLen)
+{
+
+	int i,len=0;
+	char * dest = new char[sourceLen+1];   ///snow:之前没有+1，上面的转换就会出错
+	memset(dest,0,sourceLen+1);
+
+    for (i = 0; i < sourceLen; i++)
+    {
+        if(source[i]!='\0')
+		{
+			dest[len]=source[i];
+			len++;
+		}
+	}
+	dest[len]='\0';	
+		CString sb(dest);
+	delete[] dest;
+		return sb;
+		
+}
+
+CString GetProtocolStr(int protocol)
+	{
+	CString strProtocol;
+	switch(protocol)
+		{
+
+		//case EMBLOCKSIZE://				184320
+
+		case OP_EDONKEYHEADER://		0xE3
+			//case OP_EDONKEYPROT		://	OP_EDONKEYHEADER
+			strProtocol=_T("OP_EDONKEYPROT");
+			break;
+		case OP_KADEMLIAHEADER		://0xE4
+			strProtocol=_T("OP_KADEMLIAHEADER");
+			break;
+		case OP_KADEMLIAPACKEDPROT	://0xE5
+			strProtocol=_T("OP_KADEMLIAPACKEDPROT");
+			break;
+
+		case OP_PACKEDPROT			://0xD4
+			strProtocol=_T("OP_PACKEDPROT");
+			break;
+		case OP_EMULEPROT			://0xC5
+			strProtocol=_T("OP_EMULEPROT");
+			break;
+		case OP_UDPRESERVEDPROT1		://0xA3	// reserved for later UDP headers (important for EncryptedDatagramSocket)
+			strProtocol=_T("OP_UDPRESERVEDPROT1");
+			break;
+		case OP_UDPRESERVEDPROT2		://0xB2	// reserved for later UDP headers (important for EncryptedDatagramSocket)
+			strProtocol=_T("OP_UDPRESERVEDPROT2");
+			break;
+		case OP_MLDONKEYPROT			://0x00
+			strProtocol=_T("OP_MLDONKEYPROT");
+			break;
+		case	MET_HEADER				://0x0E
+			strProtocol=_T("MET_HEADER");
+			break;
+		case	MET_HEADER_I64TAGS		://0x0F
+			strProtocol=_T("MET_HEADER_I64TAGS");
+			break;
+		default:
+			strProtocol=_T("UnKnown Protocol");
+
+		}
+	return strProtocol;
+	}
+
+
+CString GetOpcodeStr(int opcode,int type)
+	{
+	CString strOpcode;
+	switch(opcode)
+		{
+		case OP_ACCEPTUPLOADREQ  : //0x55  //(null)
+			strOpcode=_T("OP_ACCEPTUPLOADREQ");break;  
+
+		case OP_AICHANSWER  : //0x9C  //*DEPRECATED* <HASH 16><uint16><HASH aichhashlen> <data>
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_AICHANSWER");break; 
+				case CLIENT2SERVERUDP:
+					//case OP_GLOBCALLBACKREQ  : //0x9C  //<IP 4><PORT 2><client_ID 4>
+					strOpcode=_T("OP_GLOBCALLBACKREQ");break;
+				}
+			break;
+		case OP_AICHFILEHASHANS  : //0x9D  
+			strOpcode=_T("OP_AICHFILEHASHANS");break;  
+		case OP_AICHFILEHASHREQ  : //0x9E 
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_AICHFILEHASHREQ");break; 
+				case CLIENT2SERVERUDP:
+					//case OP_INVALID_LOWID  : //0x9E  //<ID 4>
+					strOpcode=_T("OP_INVALID_LOWID");break; 
+				}
+			break;
+
+		case OP_AICHREQUEST  : //0x9B  //*DEPRECATED* <HASH 16><uint16><HASH aichhashlen>
+
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_AICHREQUEST");break; 
+				case CLIENT2SERVERUDP:
+					//case OP_GLOBFOUNDSOURCES  : //0x9B  //
+					strOpcode=_T("OP_GLOBFOUNDSOURCES");break;
+				}
+			break;
+			//strOpcode=_T("OP_GLOBFOUNDSOURCES");break; 
+			//strOpcode=_T("OP_AICHREQUEST");break;  
+		case OP_ANSWERSOURCES  : //0x82  //*DEPRECATED*
+			strOpcode=_T("OP_ANSWERSOURCES");break;  
+		case OP_ANSWERSOURCES2  : //0x84  //<Version 1>[content]
+			strOpcode=_T("OP_ANSWERSOURCES2");break;  
+		case OP_ASKSHAREDDENIEDANS  : //0x61  //(null)
+			switch(type)
+				{
+				case CLIENT2CLIENT:
+					strOpcode=_T("OP_ASKSHAREDDENIEDANS");break;  
+				case CLIENT2CLIENTEx  : 
+					//case : OP_FILEDESC	//0x61  //<len 2><NAME len>
+					strOpcode=_T("OP_FILEDESC");break; 
+				}
+			break;
+		case OP_ASKSHAREDDIRS  : //0x5D  //(null)
+			strOpcode=_T("OP_ASKSHAREDDIRS");break;  
+		case OP_ASKSHAREDDIRSANS  : //0x5F  //<count 4>(<len 2><Directory len>)[count]
+			strOpcode=_T("OP_ASKSHAREDDIRSANS");break;  
+		case OP_ASKSHAREDFILES  : //0x4A  //(null)
+			strOpcode=_T("OP_ASKSHAREDFILES");break;  
+		case OP_ASKSHAREDFILESANSWER  : //0x4B  //<count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+			strOpcode=_T("OP_ASKSHAREDFILESANSWER");break;  
+		case OP_ASKSHAREDFILESDIR  : //0x5E  //<len 2><Directory len>
+			strOpcode=_T("OP_ASKSHAREDFILESDIR");break;  
+
+		case OP_ASKSHAREDFILESDIRANS  : //0x60  //<len 2><Directory len><count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+			switch(type)
+				{
+				case CLIENT2CLIENT:
+					strOpcode=_T("OP_ASKSHAREDFILESDIRANS");break;  
+				case CLIENT2CLIENTEx:
+					//case OP_QUEUERANKING  : //0x60  //<RANG 2>
+					strOpcode=_T("OP_QUEUERANKING");break;  
+				}
+			break;
+
+		case OP_BUDDYPING  : //0x9F 
+			strOpcode=_T("OP_BUDDYPING");break;  
+		case OP_BUDDYPONG  : //0xA0 
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_BUDDYPONG");break;  
+				case CLIENT2SERVERUDP:	
+					//	case OP_SERVER_LIST_REQ  : //0xA0  //<IP 4><PORT 2>
+					strOpcode=_T("OP_SERVER_LIST_REQ");break;
+				}
+			break;
+
+		case OP_CALLBACK  : //0x99  //<HASH 16><HASH 16><uint 16>
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_CALLBACK");break;  
+				case CLIENT2SERVERUDP  : //0x99  //
+					strOpcode=_T("OP_GLOBSEARCHRES");break; 
+				}
+			break;
+
+		case OP_CALLBACK_FAIL  : //0x36  //(null notverified)
+			strOpcode=_T("OP_CALLBACK_FAIL");break;  
+		case OP_CALLBACKREQUEST  : //0x1C  //<ID 4>
+			strOpcode=_T("OP_CALLBACKREQUEST");break;  
+		case OP_CALLBACKREQUESTED  : //0x35  //<IP 4><PORT 2>
+			strOpcode=_T("OP_CALLBACKREQUESTED");break;  
+		case OP_CANCELTRANSFER  : //0x56  //(null) 
+			strOpcode=_T("OP_CANCELTRANSFER");break;  
+		case OP_CHANGE_CLIENT_ID  : //0x4D  //<ID_old 4><ID_new 4>
+			strOpcode=_T("OP_CHANGE_CLIENT_ID");break;  
+		case OP_CHANGE_SLOT  : //0x5B  //<HASH 16>
+			strOpcode=_T("OP_CHANGE_SLOT");break;  
+		case OP_CHAT_BROADCAST  : //0x3A  //(deprecated not supported by server any longer)
+			strOpcode=_T("OP_CHAT_BROADCAST");break;  
+		case OP_CHAT_MESSAGE  : //0x1E  //(deprecated not supported by server any longer)
+			strOpcode=_T("OP_CHAT_MESSAGE");break;  
+		case OP_CHAT_ROOM_REQUEST  : //0x39  //(deprecated not supported by server any longer)
+			strOpcode=_T("OP_CHAT_ROOM_REQUEST");break;  
+		case OP_CHAT_USER  : //0x3D  //(deprecated not supported by server any longer)
+			strOpcode=_T("OP_CHAT_USER");break;  
+		case OP_CHAT_USER_JOIN  : //0x3B  //(deprecated not supported by server any longer)
+			strOpcode=_T("OP_CHAT_USER_JOIN");break;  
+		case OP_CHAT_USER_LEAVE  : //0x3C  //(deprecated not supported by server any longer)
+			strOpcode=_T("OP_CHAT_USER_LEAVE");break;  
+		case OP_CHATCAPTCHAREQ  : //0xA5  //<tags 1>[tags]<Captcha BITMAP>
+			strOpcode=_T("OP_CHATCAPTCHAREQ");break;  
+		case OP_CHATCAPTCHARES  : //0xA6  //<status 1>
+			strOpcode=_T("OP_CHATCAPTCHARES");break;  
+
+		case OP_COMPRESSEDPART  : //0x40  //<HASH 16><von 4><size 4><Daten len:size>
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_COMPRESSEDPART");break;  
+				case CLIENT2SERVER:
+					//case OP_IDCHANGE  : //0x40  //<NEW_ID 4><server_flags 4><primary_tcp_port 4 (unused)><client_IP_address 4>
+					strOpcode=_T("OP_IDCHANGE");break;
+				}
+			break;
+		case OP_COMPRESSEDPART_I64  : //0xA1  //<HASH 16><von 8><size 4><Daten len:size>
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_COMPRESSEDPART_I64");break;  
+				case CLIENT2SERVERUDP:
+					//case OP_SERVER_LIST_RES  : //0xA1  //<count 1> (<ip 4><port 2>)[count]
+					strOpcode=_T("OP_SERVER_LIST_RES");break;
+				}
+			break;
+
+		case OP_DIRECTCALLBACKREQ  : //0x95  //<TCPPort 2><Userhash 16><ConnectionOptions 1>
+			switch(type)
+				{
+				case CLIENT2CLIENTExUDP:
+					strOpcode=_T("OP_DIRECTCALLBACKREQ");break;  
+				case CLIENT2CLIENTEx:
+					//case OP_PEERCACHE_ANSWER  : //0x95  //*DEPRECATED*
+					strOpcode=_T("OP_PEERCACHE_ANSWER");break; 
+				}
+			break;
+
+		case OP_DISCONNECT  : //0x18  //(not verified)
+			strOpcode=_T("OP_DISCONNECT");break;  
+
+		case OP_EMULEINFO  : //0x01  //
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_EMULEINFO");break;  
+				case CLIENT2CLIENT:
+					//case OP_HELLO  : //0x01  //0x10<HASH 16><ID 4><PORT 2><1 Tag_set>
+					strOpcode=_T("OP_HELLO");break; 
+				case CLIENT2SERVER:
+					//case OP_LOGINREQUEST  : //0x01  //<HASH 16><ID 4><PORT 2><1 Tag_set>
+					strOpcode=_T("OP_LOGINREQUEST");break; 
+				}
+			break;
+
+		case OP_EMULEINFOANSWER  : //0x02  //
+			strOpcode=_T("OP_EMULEINFOANSWER");break;  
+		case OP_END_OF_DOWNLOAD  : //0x49  //<HASH 16>
+			strOpcode=_T("OP_END_OF_DOWNLOAD");break;  
+
+		case OP_FILENOTFOUND  : //0x92  //(null)
+			switch(type)
+				{
+				case CLIENT2CLIENTExUDP:
+					strOpcode=_T("OP_FILENOTFOUND");break;  
+				case CLIENT2SERVERUDP  : //0x92  //<search_tree>
+					strOpcode=_T("OP_GLOBSEARCHREQ2");break;
+				case CLIENT2CLIENTEx:
+					//case OP_MULTIPACKET  : //0x92  //*DEPRECATED*
+					strOpcode=_T("OP_MULTIPACKET");break; 
+				}
+			break;
+
+		case OP_FILEREQANSNOFIL  : //0x48  //<HASH 16>
+			strOpcode=_T("OP_FILEREQANSNOFIL");break;  
+		case OP_FILESTATUS  : //0x50  //<HASH 16><count 2><status(bit array) len:((count+7)/8)>
+			strOpcode=_T("OP_FILESTATUS");break;  
+		case OP_FOUNDSOURCES  : //0x42  //<HASH 16><count 1>(<ID 4><PORT 2>)[count]
+			strOpcode=_T("OP_FOUNDSOURCES");break;  
+		case OP_FOUNDSOURCES_OBFU  : //0x44  //<HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
+			strOpcode=_T("OP_FOUNDSOURCES_OBFU");break;  
+		case OP_FWCHECKUDPREQ  : //0xA7  //<Inter_Port 2><Extern_Port 2><KadUDPKey 4> *Support required for Kadversion >= 6
+			strOpcode=_T("OP_FWCHECKUDPREQ");break;  
+		case OP_GETSERVERLIST  : //0x14  //(null)client->server
+			strOpcode=_T("OP_GETSERVERLIST");break;  
+		case OP_GETSOURCES  : //0x19  //<HASH 16>
+			strOpcode=_T("OP_GETSOURCES");break;  
+		case OP_GETSOURCES_OBFU  : //0x23 
+			strOpcode=_T("OP_GETSOURCES_OBFU");break;  
+
+
+		case OP_GLOBGETSOURCES  : //0x9A  //<HASH 16>
+			switch(type)
+				{
+				case CLIENT2SERVERUDP:
+					strOpcode=_T("OP_GLOBGETSOURCES");break;  
+				case CLIENT2CLIENTEx:
+					//	case OP_REASKCALLBACKTCP  : //0x9A 
+					strOpcode=_T("OP_REASKCALLBACKTCP");break;
+				}
+			break;
+
+
+		case OP_GLOBGETSOURCES2  : //0x94  //<HASH 16><FILESIZE 4>
+			switch(type)
+				{
+				case CLIENT2SERVERUDP:
+					strOpcode=_T("OP_GLOBGETSOURCES2");break;  
+				case CLIENT2CLIENTEx:
+					//case OP_PEERCACHE_QUERY  : //0x94  //*DEPRECATED*
+					strOpcode=_T("OP_PEERCACHE_QUERY");break;
+				case CLIENT2CLIENTExUDP:
+					//			case OP_REASKCALLBACKUDP  : //0x94 
+					strOpcode=_T("OP_REASKCALLBACKUDP");break;
+				}
+			break;
+
+		case OP_GLOBSEARCHREQ  : //0x98  //<search_tree>
+			switch(type)
+				{
+				case CLIENT2SERVERUDP:
+					strOpcode=_T("OP_GLOBSEARCHREQ");break;  
+
+				case CLIENT2CLIENTEx:
+					//case OP_PUBLICIP_ANSWER  : //0x98 
+					strOpcode=_T("OP_PUBLICIP_ANSWER");break;
+				}
+			break;
+
+		case OP_GLOBSEARCHREQ3  : //0x90  //<1 tag set><search_tree>
+			switch(type)
+				{
+				case CLIENT2SERVERUDP:
+					strOpcode=_T("OP_GLOBSEARCHREQ3");break;  
+				case CLIENT2CLIENTExUDP:
+					//case OP_REASKFILEPING  : //0x90  //<HASH 16>
+					strOpcode=_T("OP_REASKFILEPING");break;
+				case CLIENT2CLIENTEx:
+					//case OP_REQUESTPREVIEW  : //0x90  //<HASH 16>
+					strOpcode=_T("OP_REQUESTPREVIEW");break;
+
+				}
+			break;
+		case OP_GLOBSERVSTATREQ  : //0x96  //(null)
+			switch(type)
+				{
+				case CLIENT2SERVERUDP:
+					strOpcode=_T("OP_GLOBSERVSTATREQ");break;  
+				case CLIENT2CLIENTEx:
+					//case OP_PEERCACHE_ACK  : //0x96  //*DEPRECATED*
+					strOpcode=_T("OP_PEERCACHE_ACK");break;
+				}
+			break;
+
+		case OP_GLOBSERVSTATRES  : //0x97  //<USER 4><FILES 4>
+			switch(type)
+				{
+				case CLIENT2SERVERUDP:
+					strOpcode=_T("OP_GLOBSERVSTATRES");break;  
+				case CLIENT2CLIENTEx:	
+					//	case OP_PUBLICIP_REQ  : //0x97 
+					strOpcode=_T("OP_PUBLICIP_REQ");break;  
+
+				}
+			break;
+		case OP_HASHSETANSWER  : //0x52  //*DEPRECATED* <count 2><HASH[count] 16*count>
+			strOpcode=_T("OP_HASHSETANSWER");break;  
+		case OP_HASHSETANSWER2  : //0xB2  //<FileIdentifier><Options 1>[<HashSets>OPtions]
+			strOpcode=_T("OP_HASHSETANSWER2");break;  
+		case OP_HASHSETREQUEST  : //0x51  //*DEPRECATED* <HASH 16>
+			strOpcode=_T("OP_HASHSETREQUEST");break;  
+		case OP_HASHSETREQUEST2  : //0xB1  //<FileIdentifier><Options 1>
+			strOpcode=_T("OP_HASHSETREQUEST2");break;  
+
+		case OP_HELLOANSWER  : //0x4C  //<HASH 16><ID 4><PORT 2><1 Tag_set><SERVER_IP 4><SERVER_PORT 2>
+			strOpcode=_T("OP_HELLOANSWER");break;  
+
+  
+		case OP_JOIN_ROOM  : //0x1F  //(deprecated not supported by server any longer)
+			strOpcode=_T("OP_JOIN_ROOM");break;  
+		case OP_KAD_FWTCPCHECK_ACK  : //0xA8  //(null/reserved), replaces KADEMLIA_FIREWALLED_ACK_RES, *Support required for Kadversion >= 7
+			strOpcode=_T("OP_KAD_FWTCPCHECK_ACK");break;  
+
+		case OP_MESSAGE  : //0x4E  //<len 2><Message len>
+			strOpcode=_T("OP_MESSAGE");break;  
+
+		case OP_MULTIPACKET_EXT  : //0xA4  //*DEPRECATED*
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_MULTIPACKET_EXT");break;  
+				case CLIENT2SERVERUDP:
+					//case OP_SERVER_LIST_REQ2  : //0xA4  //(null)
+					strOpcode=_T("OP_SERVER_LIST_REQ2");break; 
+				}
+			break;
+
+		case OP_MULTIPACKET_EXT2  : //0xA9  //<FileIdentifier> ...
+			strOpcode=_T("OP_MULTIPACKET_EXT2");break;  
+
+
+		case OP_MULTIPACKETANSWER  : //0x93  //*DEPRECATED*
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_MULTIPACKETANSWER");break;  
+				case CLIENT2CLIENTExUDP:
+					//case OP_QUEUEFULL  : //0x93  //(null)
+					strOpcode=_T("OP_QUEUEFULL");break; 
+				}
+			break;
+
+		case OP_MULTIPACKETANSWER_EXT2  : //0xB0  //<FileIdentifier> ...
+			strOpcode=_T("OP_MULTIPACKETANSWER_EXT2");break;  
+		case OP_OFFERFILES  : //0x15  //<count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+			strOpcode=_T("OP_OFFERFILES");break;  
+		case OP_OUTOFPARTREQS  : //0x57  //(null)
+			strOpcode=_T("OP_OUTOFPARTREQS");break;  
+
+
+
+		case OP_PORTTEST  : //0xFE  //Connection Test
+			strOpcode=_T("OP_PORTTEST");break;  
+
+		case OP_PREVIEWANSWER  : //0x91  //<HASH 16><frames 1>{frames * <len 4><frame len>}
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_PREVIEWANSWER");break;  
+				case CLIENT2CLIENTExUDP:
+					//case OP_REASKACK  : //0x91  //<RANG 2>
+					strOpcode=_T("OP_REASKACK");break; 
+				}
+			break;
+
+
+
+		case OP_PUBLICKEY  : //0x85  //<len 1><pubkey len>
+			strOpcode=_T("OP_PUBLICKEY");break;  
+		case OP_QUERY_CHATS  : //0x1D  //(deprecated not supported by server any longer)
+			strOpcode=_T("OP_QUERY_CHATS");break;  
+		case OP_QUERY_MORE_RESULT  : //0x21  //(null)
+			strOpcode=_T("OP_QUERY_MORE_RESULT");break;  
+
+		case OP_QUEUERANK  : //0x5C  //<wert 4> (slot index of the request)
+			strOpcode=_T("OP_QUEUERANK");break;  
+
+
+
+
+
+		case OP_REJECT  : //0x05  //(null)
+			strOpcode=_T("OP_REJECT");break;  
+		case OP_REQFILENAMEANSWER  : //0x59  //<HASH 16><len 4><NAME len>
+			strOpcode=_T("OP_REQFILENAMEANSWER");break;  
+		case OP_REQUESTFILENAME  : //0x58  //<HASH 16> (more correctly file_name_request)
+			strOpcode=_T("OP_REQUESTFILENAME");break;  
+		case OP_REQUESTPARTS  : //0x47  //<HASH 16><von[3] 4*3><bis[3] 4*3>
+			strOpcode=_T("OP_REQUESTPARTS");break;  
+
+
+		case OP_REQUESTPARTS_I64  : //0xA3  //<HASH 16><von[3] 8*3><bis[3] 8*3>
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_REQUESTPARTS_I64");break;  
+				case CLIENT2SERVERUDP:
+					//case OP_SERVER_DESC_RES  : //0xA3  //<name_len 2><name name_len><desc_len 2 desc_en>
+					strOpcode=_T("OP_SERVER_DESC_RES");break; 
+				}
+			break;
+
+		case OP_REQUESTSOURCES  : //0x81  //*DEPRECATED* <HASH 16>
+			strOpcode=_T("OP_REQUESTSOURCES");break;  
+		case OP_REQUESTSOURCES2  : //0x83  //<HASH 16><Version 1><Options 2>
+			strOpcode=_T("OP_REQUESTSOURCES2");break;  
+		case OP_SEARCH_USER  : //0x1A  //<Query_Tree>
+			strOpcode=_T("OP_SEARCH_USER");break;  
+		case OP_SEARCHREQUEST  : //0x16  //<Query_Tree>
+			strOpcode=_T("OP_SEARCHREQUEST");break;  
+		case OP_SEARCHRESULT  : //0x33  //<count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+			strOpcode=_T("OP_SEARCHRESULT");break;  
+		case OP_SECIDENTSTATE  : //0x87  //<state 1><rndchallenge 4>
+			strOpcode=_T("OP_SECIDENTSTATE");break;  
+		case OP_SENDINGPART  : //0x46  //<HASH 16><von 4><bis 4><Daten len:(von-bis)>
+			strOpcode=_T("OP_SENDINGPART");break;  
+
+		case OP_SENDINGPART_I64  : //0xA2  //<HASH 16><von 8><bis 8><Daten len:(von-bis)>
+			switch(type)
+				{
+				case CLIENT2CLIENTEx:
+					strOpcode=_T("OP_SENDINGPART_I64");break;  
+				case CLIENT2SERVERUDP:
+					//case OP_SERVER_DESC_REQ  : //0xA2  //(null)
+					strOpcode=_T("OP_SERVER_DESC_REQ");break;  
+				}
+			break;
+
+
+		case OP_SERVERIDENT  : //0x41  //<HASH 16><IP 4><PORT 2>{1 TAG_SET}
+			strOpcode=_T("OP_SERVERIDENT");break;  
+		case OP_SERVERLIST  : //0x32  //<count 1>(<IP 4><PORT 2>)[count] server->client
+			strOpcode=_T("OP_SERVERLIST");break;  
+		case OP_SERVERMESSAGE  : //0x38  //<len 2><Message len>
+			strOpcode=_T("OP_SERVERMESSAGE");break;  
+		case OP_SERVERSTATUS  : //0x34  //<USER 4><FILES 4>
+			strOpcode=_T("OP_SERVERSTATUS");break;  
+		case OP_SETREQFILEID  : //0x4F  //<HASH 16>
+			strOpcode=_T("OP_SETREQFILEID");break;  
+		case OP_SIGNATURE  : //0x86  //v1: <len 1><signature len> v2:<len 1><signature len><sigIPused 1>
+			strOpcode=_T("OP_SIGNATURE");break;  
+		case OP_STARTUPLOADREQ  : //0x54  //<HASH 16>
+			strOpcode=_T("OP_STARTUPLOADREQ");break;  
+		case OP_USERS_LIST  : //0x43  //<count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+			strOpcode=_T("OP_USERS_LIST");break; 
+		default:
+			strOpcode=_T("Unknown Opcode");
+		}
+	return strOpcode;
+	}
+
+
+
+CString GetKadOpcodeStr(int opcode)
+  {
+  CString strOpcode;
+  switch(opcode)
+   {
+   case KADEMLIA_BOOTSTRAP_REQ_DEPRECATED :// 0x00 // <PEER (sender) [25]>
+    strOpcode=_T("KADEMLIA_BOOTSTRAP_REQ_DEPRECATED");break;  
+   case KADEMLIA_BOOTSTRAP_RES_DEPRECATED :// 0x08 // <CNT [2]> <PEER [25]>*(CNT)
+    strOpcode=_T("KADEMLIA_BOOTSTRAP_RES_DEPRECATED");break;  
+   case KADEMLIA_CALLBACK_REQ :// 0x52 // <TCPPORT (sender) [2]>
+    strOpcode=_T("KADEMLIA_CALLBACK_REQ");break;  
+   case KADEMLIA_FINDBUDDY_REQ :// 0x51 // <TCPPORT (sender) [2]>
+    strOpcode=_T("KADEMLIA_FINDBUDDY_REQ");break;  
+   case KADEMLIA_FINDBUDDY_RES :// 0x5A // <TCPPORT (sender) [2]>
+    strOpcode=_T("KADEMLIA_FINDBUDDY_RES");break;  
+   case KADEMLIA_FIREWALLED_ACK_RES :// 0x59 // (null)
+    strOpcode=_T("KADEMLIA_FIREWALLED_ACK_RES");break;  
+   case KADEMLIA_FIREWALLED_REQ :// 0x50 // <TCPPORT (sender) [2]>
+    strOpcode=_T("KADEMLIA_FIREWALLED_REQ");break;  
+   case KADEMLIA_FIREWALLED_RES :// 0x58 // <IP (sender) [4]>
+    strOpcode=_T("KADEMLIA_FIREWALLED_RES");break;  
+   case KADEMLIA_FIREWALLED2_REQ :// 0x53 // <TCPPORT (sender) [2]><userhash><connectoptions 1>
+    strOpcode=_T("KADEMLIA_FIREWALLED2_REQ");break;  
+   case KADEMLIA_HELLO_REQ_DEPRECATED  :// 0x10 // <PEER (sender) [25]>
+    strOpcode=_T("KADEMLIA_HELLO_REQ_DEPRECATED ");break;  
+   case KADEMLIA_HELLO_RES_DEPRECATED      :// 0x18 // <PEER (receiver) [25]>
+    strOpcode=_T("KADEMLIA_HELLO_RES_DEPRECATED     ");break;  
+   case KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED :// 0x42 // <HASH (key) [16]> <HASH (target) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+    strOpcode=_T("KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED");break;  
+   case KADEMLIA_PUBLISH_NOTES_RES_DEPRECATED :// 0x4A // <HASH (key) [16]>
+    strOpcode=_T("KADEMLIA_PUBLISH_NOTES_RES_DEPRECATED");break;  
+   case KADEMLIA_PUBLISH_REQ :// 0x40 // <HASH (key) [16]> <CNT1 [2]> (<HASH (target) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+    strOpcode=_T("KADEMLIA_PUBLISH_REQ");break;  
+   case KADEMLIA_PUBLISH_RES :// 0x48 // <HASH (key) [16]>
+    strOpcode=_T("KADEMLIA_PUBLISH_RES");break;  
+   case KADEMLIA_REQ_DEPRECATED    :// 0x20 // <TYPE [1]> <HASH (target) [16]> <HASH (receiver) 16>
+    strOpcode=_T("KADEMLIA_REQ_DEPRECATED   ");break;  
+   case KADEMLIA_RES_DEPRECATED :// 0x28 // <HASH (target) [16]> <CNT> <PEER [25]>*(CNT)
+    strOpcode=_T("KADEMLIA_RES_DEPRECATED");break;  
+   case KADEMLIA_SEARCH_NOTES_REQ :// 0x32 // <HASH (key) [16]>
+    strOpcode=_T("KADEMLIA_SEARCH_NOTES_REQ");break;  
+   case KADEMLIA_SEARCH_NOTES_RES :// 0x3A // <HASH (key) [16]> <CNT1 [2]> (<HASH (answer) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+    strOpcode=_T("KADEMLIA_SEARCH_NOTES_RES");break;  
+   case KADEMLIA_SEARCH_REQ :// 0x30 // <HASH (key) [16]> <ext 0/1 [1]> <SEARCH_TREE>[ext]
+    strOpcode=_T("KADEMLIA_SEARCH_REQ");break;  
+   case KADEMLIA_SEARCH_RES :// 0x38 // <HASH (key) [16]> <CNT1 [2]> (<HASH (answer) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+    strOpcode=_T("KADEMLIA_SEARCH_RES");break;  
+   case KADEMLIA2_BOOTSTRAP_REQ :// 0x01 //
+    strOpcode=_T("KADEMLIA2_BOOTSTRAP_REQ");break;  
+   case KADEMLIA2_BOOTSTRAP_RES :// 0x09 //
+    strOpcode=_T("KADEMLIA2_BOOTSTRAP_RES");break;  
+   case KADEMLIA2_FIREWALLUDP :// 0x62 // <errorcode [1]><UDPPort_Used [2]>
+    strOpcode=_T("KADEMLIA2_FIREWALLUDP");break;  
+   case KADEMLIA2_HELLO_REQ :// 0x11 //
+    strOpcode=_T("KADEMLIA2_HELLO_REQ");break;  
+   case KADEMLIA2_HELLO_RES :// 0x19 //
+    strOpcode=_T("KADEMLIA2_HELLO_RES");break;  
+   case KADEMLIA2_HELLO_RES_ACK :// 0x22 // <NodeID><uint8 tags>
+    strOpcode=_T("KADEMLIA2_HELLO_RES_ACK");break;  
+   case KADEMLIA2_PING :// 0x60 // (null)
+    strOpcode=_T("KADEMLIA2_PING");break;  
+   case KADEMLIA2_PONG :// 0x61 // (null)
+    strOpcode=_T("KADEMLIA2_PONG");break;  
+   case KADEMLIA2_PUBLISH_KEY_REQ :// 0x43 //
+    strOpcode=_T("KADEMLIA2_PUBLISH_KEY_REQ");break;  
+   case KADEMLIA2_PUBLISH_NOTES_REQ :// 0x45 //
+    strOpcode=_T("KADEMLIA2_PUBLISH_NOTES_REQ");break;  
+   case KADEMLIA2_PUBLISH_RES :// 0x4B //
+    strOpcode=_T("KADEMLIA2_PUBLISH_RES");break;  
+   case KADEMLIA2_PUBLISH_RES_ACK :// 0x4C // null
+    strOpcode=_T("KADEMLIA2_PUBLISH_RES_ACK");break;  
+   case KADEMLIA2_PUBLISH_SOURCE_REQ :// 0x44 //
+    strOpcode=_T("KADEMLIA2_PUBLISH_SOURCE_REQ");break;  
+   case KADEMLIA2_REQ :// 0x21 //
+    strOpcode=_T("KADEMLIA2_REQ");break;  
+   case KADEMLIA2_RES :// 0x29 //
+    strOpcode=_T("KADEMLIA2_RES");break;  
+   case KADEMLIA2_SEARCH_KEY_REQ :// 0x33 //
+    strOpcode=_T("KADEMLIA2_SEARCH_KEY_REQ");break;  
+   case KADEMLIA2_SEARCH_NOTES_REQ :// 0x35 //
+    strOpcode=_T("KADEMLIA2_SEARCH_NOTES_REQ");break;  
+   case KADEMLIA2_SEARCH_RES :// 0x3B //
+    strOpcode=_T("KADEMLIA2_SEARCH_RES");break;  
+   case KADEMLIA2_SEARCH_SOURCE_REQ :// 0x34 //
+    strOpcode=_T("KADEMLIA2_SEARCH_SOURCE_REQ");break; 
+   default:
+    strOpcode=_T("Unknown opcode");
+   }
+  return strOpcode;
+  }

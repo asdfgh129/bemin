@@ -281,7 +281,7 @@ UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size, bool 
 
 	if (pbMoreResultsAvailable)
 		*pbMoreResultsAvailable = false;
-	int iAddData = (int)(packet.GetLength() - packet.GetPosition());
+	int iAddData = (int)(packet.GetLength() - packet.GetPosition());   ///snow:信息包的最后一个字节是0或者1，表示是否还有更多的搜索结果
 	if (iAddData == 1){
 		uint8 ucMore = packet.ReadUInt8();
 		if (ucMore == 0x00 || ucMore == 0x01){
@@ -299,7 +299,7 @@ UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size, bool 
 		if (thePrefs.GetDebugServerTCPLevel() > 0){
 			Debug(_T("*** NOTE: ProcessSearchAnswer(Server %s:%u): ***AddData: %u bytes\n"), ipstr(nServerIP), nServerPort, iAddData);
 			DebugHexDump(in_packet + packet.GetPosition(), iAddData);
-		}1
+		}
 	}
 
 	packet.Close();
@@ -309,36 +309,38 @@ UINT CSearchList::ProcessSearchAnswer(const uchar* in_packet, uint32 size, bool 
 
 ///snow:在CUDPSocket::ProcessPacket()中case OP_GLOBSEARCHRES分支调用，处理Global搜索时返回的结果
 UINT CSearchList::ProcessUDPSearchAnswer(CFileDataIO& packet, bool bOptUTF8, uint32 nServerIP, uint16 nServerPort)
-{
+{   
+	///snow:UDP包只包含一个搜索结果
 	CSearchFile* toadd = new CSearchFile(&packet, bOptUTF8, m_nCurED2KSearchID, nServerIP, nServerPort, NULL, false, true);
 	
-	bool bFound = false;
+	bool bFound = false;    ///snow:检查IP是否在发送请求的IP列表中
 	for (int i = 0; i != m_aCurED2KSentRequestsIPs.GetCount(); i++){
 		if (m_aCurED2KSentRequestsIPs[i] == nServerIP){
 			bFound = true;
 			break;
 		}
 	}
-	if (!bFound){
+	if (!bFound){   ///snow:不明来路的UDP包
 		DebugLogError(_T("Unrequested or delayed Server UDP Searchresult received from IP %s, ignoring"), ipstr(nServerIP));
 		delete toadd;
 		return 0;
 	}
 
-	bool bNewResponse = true;
+	bool bNewResponse = true;   ///snow:判断是不是新的回应，这段代码有点奇怪，bNewResponseg不就等于!bFound
 	for (int i = 0; i != m_aCurED2KSentReceivedIPs.GetCount(); i++){
 		if (m_aCurED2KSentReceivedIPs[i] == nServerIP){
 			bNewResponse = false;
 			break;
 		}
 	}
-	if (bNewResponse){
+	if (bNewResponse){    ///snow:不可能执行到这里呀？如果bNewResponse为true，那bFound肯定为false，函数早return 0了！
 		uint32 nResponses = 0;
 		VERIFY( m_ReceivedUDPAnswersCount.Lookup(m_nCurED2KSearchID, nResponses) );
 		m_ReceivedUDPAnswersCount.SetAt(m_nCurED2KSearchID, nResponses + 1);
 		m_aCurED2KSentReceivedIPs.Add(nServerIP);
 	}
 
+	///snow:更新接收到UDP的server记录
 	UDPServerRecord* pRecord = NULL;
 	m_aUDPServerRecords.Lookup(nServerIP, pRecord);
 	if (pRecord == NULL){
@@ -348,7 +350,7 @@ UINT CSearchList::ProcessUDPSearchAnswer(CFileDataIO& packet, bool bOptUTF8, uin
 		m_aUDPServerRecords.SetAt(nServerIP, pRecord);
 	}
 	else
-		pRecord->m_nResults++;
+		pRecord->m_nResults++;   ///snow:列表中已存在，记录数+1
 			
 	
 	AddToList(toadd, false, nServerIP);

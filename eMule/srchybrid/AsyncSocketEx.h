@@ -130,6 +130,14 @@ public:
 #endif
 	BOOL GetSockName(SOCKADDR* lpSockAddr, int* lpSockAddrLen);
 
+	///<---------------------------------  by snow to trace
+#ifdef _AFX
+    CString GetPeerAddress();
+#endif
+
+    int GetPeerPort();
+	///------------------------------------->by snow
+
 	//Retrieves a socket option.
 	BOOL GetSockOpt(int nOptionName, void* lpOptionValue, int* lpOptionLen, int nLevel = SOL_SOCKET);
 
@@ -229,6 +237,12 @@ protected:
 	//If using layers, only the events specified with m_lEvent will send to the event handlers.
 	long m_lEvent;
 
+	///<---------------------------------  by snow to trace
+#ifdef _AFX
+	CString m_strSocketAddress;
+#endif	
+	UINT m_iSocketPort;
+///------------------------------------->by snow
 	//AsyncGetHostByName
 	char *m_pAsyncGetHostByNameBuffer; //Buffer for hostend structure
 	HANDLE m_hAsyncGetHostByNameHandle; //TaskHandle
@@ -279,6 +293,9 @@ protected:
 #endif //NOLAYERS
 
 	friend CAsyncSocketExHelperWindow;
+
+
+
 };
 
 #ifndef NOLAYERS
