@@ -386,7 +386,7 @@ bool CServerSocket::ProcessPacket(const BYTE* packet, uint32 size, uint8 opcode)
 				theApp.downloadqueue->ResetLocalServerRequests();
 				break;
 			}
-			case OP_SEARCHRESULT:{   ///snow:使用server搜索时，返回搜索结果
+			case OP_SEARCHRESULT:{   ///snow:使用server或globalserver搜索时，返回搜索结果
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					Debug(_T("ServerMsg - OP_SearchResult\n"));
 				CServer* cur_srv = (serverconnect) ? serverconnect->GetCurrentServer() : NULL;

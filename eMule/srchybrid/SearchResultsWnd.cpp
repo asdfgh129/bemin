@@ -218,6 +218,7 @@ void CSearchResultsWnd::StartSearch(SSearchParams* pParams)
 }
 
 ///snow:竟然没有被调用！！
+///snow:在LocalEd2kSearchEnd()中，设定当返回搜索记录数大于100时，中止搜索，定时器被终止掉，所以OnTimer()未被调用
 void CSearchResultsWnd::OnTimer(UINT nIDEvent)
 {
 	CResizableFormView::OnTimer(nIDEvent);
@@ -497,7 +498,7 @@ void CSearchResultsWnd::LocalEd2kSearchEnd(UINT count, bool bMoreResultsAvailabl
 		m_uTimerLocalServer = 0;
 	}
 
-	if (!canceld && count > MAX_RESULTS)
+	if (!canceld && count > MAX_RESULTS)  ///snow:当搜索记录大于100时，中止搜索，所以global server 搜索并没开始，只有记录数小于100时，才会启动！
 		CancelEd2kSearch();
 	if (!canceld) {
 		if (!globsearch)
@@ -1014,7 +1015,7 @@ static void AddAndAttr(UINT uTag, UINT uOpr, uint64 ullVal)
 
 bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSupports64Bit, bool* pbPacketUsing64Bit)
 {
-	CStringA strFileType;
+CStringA strFileType;   ///snow:处理文件类型
 	if (pParams->strFileType == ED2KFTSTR_ARCHIVE){
 		// eDonkeyHybrid 0.48 uses type "Pro" for archives files
 		// www.filedonkey.com uses type "Pro" for archives files
@@ -1031,7 +1032,7 @@ bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSu
 	}
 
 	s_strCurKadKeywordA.Empty();
-	ASSERT( !pParams->strExpression.IsEmpty() );
+	ASSERT( !pParams->strExpression.IsEmpty() );   ///snow:搜索关键字不得为空
 	if (pParams->eType == SearchTypeKademlia)
 	{
 		ASSERT( !pParams->strKeyword.IsEmpty() );
@@ -1239,7 +1240,7 @@ bool CSearchResultsWnd::StartNewSearch(SSearchParams* pParams)
 
 		try
 		{
-			if (!DoNewEd2kSearch(pParams)) {
+			if (!DoNewEd2kSearch(pParams)) {   ///snow:启动server搜索
 				delete pParams;
 				return false;
 			}
@@ -1268,7 +1269,7 @@ bool CSearchResultsWnd::StartNewSearch(SSearchParams* pParams)
 		
 		try
 		{
-			if (!DoNewKadSearch(pParams)) {
+		if (!DoNewKadSearch(pParams)) {   ///snow:启动Kad搜索
 				delete pParams;
 				return false;
 			}
@@ -1281,7 +1282,7 @@ bool CSearchResultsWnd::StartNewSearch(SSearchParams* pParams)
 			return false;
 		}
 
-		SearchStarted();
+		SearchStarted();///snow:更新界面
 		return true;
 	}
 
@@ -1299,8 +1300,13 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams* pParams)
 								&& (theApp.serverconnect->GetCurrentServer()->GetTCPFlags() & SRV_TCPFLG_LARGEFILES);
 	bool bPacketUsing64Bit = false;
 	CSafeMemFile data(100);
+	///snow:根据搜索参数构造searchpacket包体
 	if (!GetSearchPacket(&data, pParams, bServerSupports64Bit, &bPacketUsing64Bit) || data.GetLength() == 0)
 		return false;
+
+	///snow:searchpacket示例(包体部分，不包括包头)：
+	///       0000 01 12 00               76697375616C 20    73747564696F 20    32303038  03 FFFFFF 3101010002  
+	///               关键字长度          visual       空格  studio       空格  2008
 
 	CancelEd2kSearch();
 
