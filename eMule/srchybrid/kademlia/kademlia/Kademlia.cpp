@@ -78,6 +78,8 @@ _ContactList CKademlia::s_liBootstapList;
 CKademlia::CKademlia()
 {}
 
+
+///snow:CemuleDlg::StartConnection()、OnWebGUIInteraction()和CKademliaWnd::OnBnConnect()、OnBnClickedBootstrapbutton()、UpdateNodesDatFromURL()中调用，启动Kad网络
 void CKademlia::Start()
 {
 	// Create a new default pref object.
