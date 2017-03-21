@@ -434,7 +434,7 @@ bool CIndexed::AddKeyword(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 		return false;
 
 	KeyHash* pCurrKeyHash;
-	if(!m_mapKeyword.Lookup(CCKey(uKeyID.GetData()), pCurrKeyHash))
+	if(!m_mapKeyword.Lookup(CCKey(uKeyID.GetData()), pCurrKeyHash))   ///snow:map÷–Œ¥∑¢œ÷œ‡Õ¨keyµƒÃıƒø
 	{
 		Source* pCurrSource = new Source;
 		pCurrSource->uSourceID.SetValue(uSourceID);
@@ -458,7 +458,7 @@ bool CIndexed::AddKeyword(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 			return false;
 		}
 		Source* pCurrSource;
-		if(pCurrKeyHash->mapSource.Lookup(CCKey(uSourceID.GetData()), pCurrSource))
+		if(pCurrKeyHash->mapSource.Lookup(CCKey(uSourceID.GetData()), pCurrSource))  ///snow:key÷– «∑Ò¥Ê‘⁄Õ¨“ªSourceIDµƒÃıƒø
 		{
 			if (pCurrSource->ptrlEntryList.GetCount() > 0)
 			{
@@ -497,7 +497,7 @@ bool CIndexed::AddKeyword(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 			pCurrSource->ptrlEntryList.AddHead(pEntry);
 			return true;
 		}
-		else
+		else   ///snow:≤ª¥Ê‘⁄”ÎSourceIDœ‡Õ¨µƒÃıƒø
 		{
 			pCurrSource = new Source;
 			pCurrSource->uSourceID.SetValue(uSourceID);
@@ -1100,10 +1100,15 @@ int CIndexed::CLoadDataThread::Run()
 
 		if (!m_pOwner->m_bAbortLoading)
 		{
-			///snow:º”‘ÿkey_index.dat£¨ æ¿˝£∫
-			/*              00000000h: 04 00 00 00 89 86 CB 58 C6 FD 41 06 70 7F E5 80 ; ....âÜÀX∆˝A.pÂÄ
-			//				00000010h: B1 33 64 6D F2 73 50 F2 A9 00 00 00 1F EE 40 06 ; ?dmÚsPÚ©....Ó@.
+			/**************************************snow:start**********************************************************
+			//            snow:º”‘ÿkey_index.dat£¨ æ¿˝£∫
+			//              00000000h: 04 00 00 00 89 86 CB 58 C6 FD 41 06 70 7F E5 80 ; ....âÜÀX∆˝A.pÂÄ
+			//				00000010h: B1 33 64 6D F2 73 50 F2 A9 00 00 00
+			//              Key:µ⁄1∏ˆ
+			//                                                             1F EE 40 06 ; ?dmÚsPÚ©....Ó@.
 			//				00000020h: 1E 15 A3 CD 12 0D 9A 6B 78 C8 F3 D6 2D 00 00 00 ; ..£Õ..ökx»Û?...
+			
+			//              Soure:µ⁄1∏ˆ   
 			//				00000030h: BA 33 6D D8 B5 2A D0 CE 89 91 FE BF F8 C2 38 C5 ; ?mÿµ*–Œâë˛ø¯¬8?
 			//				00000040h: 01 00 00 00 3B 65 CB 58 01 00 1E 57 5D D0 2B AB ; ....;eÀX...W]??
 			//				00000050h: 23 A0 AF CF 9C E5 7B B7 F3 8D 3B 0C 4F F7 01 00 ; #†ØœúÂ{∑Û?.O?.
@@ -1112,8 +1117,43 @@ int CIndexed::CLoadDataThread::Run()
 			//				00000080h: 73 C3 BA 73 5F 5F 4C 41 20 45 53 50 41 C3 91 41 ; s√∫s__LA ESPA√ëA
 			//				00000090h: 20 45 58 54 52 41 C3 91 41 20 5B 31 39 39 37 5D ;  EXTRA√ëA [1997]
 			//				000000a0h: 20 28 4D 69 73 74 65 72 69 6F 2C 20 53 75 73 70 ;  (Misterio, Susp
-			//				000000b0h: 65 6E 73 65 29 2B 2E 65 70 75 62                ; ense)+.epub
-							*/
+			//				000000b0h: 65 6E 73 65 29 2B 2E 65 70 75 62 01 00 00 00 01 ; ense)+.epub.....
+			//				000000c0h: 00 00 00 DC BE AF 3E BB 13 CA 58 00 00 03 02 01 ; ...‹æ?? X.....
+			//				000000d0h: 00 01 57 00 53 69 65 72 72 61 2C 20 4A 61 76 69 ; ..W.Sierra, Javi
+			//				000000e0h: 65 72 20 26 20 43 61 6C 6C 65 6A 6F 2C 20 4A 65 ; er & Callejo, Je
+			//				000000f0h: 73 C3 BA 73 5F 5F 4C 41 20 45 53 50 41 C3 91 41 ; s√∫s__LA ESPA√ëA
+			//				00000100h: 20 45 58 54 52 41 C3 91 41 20 5B 31 39 39 37 5D ;  EXTRA√ëA [1997]
+			//				00000110h: 20 28 4D 69 73 74 65 72 69 6F 2C 20 53 75 73 70 ;  (Misterio, Susp
+			//				00000120h: 65 6E 73 65 29 2B 2E 65 70 75 62 03 01 00 02 E2 ; ense)+.epub....?
+			//				00000130h: 13 2C 00 09 01 00 15 01 
+			
+			//                                                 DC 65 05 3A 3E F6 0E C4 ; .,......‹e.:>??
+			//				00000140h: FA 14 D1 BA CE 01 14 E3 01 00 00 00 F1 7C CB 58 ; ?—∫?.?...Ò|ÀX
+			//				00000150h: 01 00 28 CF D0 9A 86 6B 17 5F 3C B6 13 9F 02 C8 ; ..(œ–öÜk._<???
+			//				00000160h: 6E 99 8F 55 6F 96 01 00 00 00 7D 00 41 75 64 69 ; nôèUo?...}.Audi
+			//				00000170h: 6F 6C 69 62 72 6F 20 2D 20 52 6F 73 61 20 44 65 ; olibro - Rosa De
+			//				00000180h: 20 4C 6F 73 20 56 69 65 6E 74 6F 73 20 2D 20 4C ;  Los Vientos - L
+			//				00000190h: 6F 73 20 53 65 63 72 65 74 6F 73 20 4D 65 64 69 ; os Secretos Medi
+			//				000001a0h: 65 76 61 6C 65 73 20 28 4C 69 62 72 6F 20 44 65 ; evales (Libro De
+			//				000001b0h: 20 4A 65 73 C3 BA 73 20 43 61 6C 6C 65 6A 6F 29 ;  Jes√∫s Callejo)
+							000001c0h: 20 2D 20 4D 6F 6E 6F 67 72 C3 A1 66 69 63 6F 73 ;  - Monogr√°ficos
+							000001d0h: 20 5A 6F 6E 61 20 43 65 72 6F 20 2D 20 50 6F 72 ;  Zona Cero - Por
+							000001e0h: 20 4C 75 6B 79 2E 6D 70 33 02 00 00 00 02 00 00 ;  Luky.mp3.......
+							000001f0h: 00 DD 8B 2B 3E 0B EE C8 58 00 00 D4 45 3D A7 71 ; .›ã+>.Ó»X..‘E=ßq
+							00000200h: 2B CA 58 00 00 04 02 01 00 01 7D 00 41 75 64 69 ; + X.......}.Audi
+							00000210h: 6F 6C 69 62 72 6F 20 2D 20 52 6F 73 61 20 44 65 ; olibro - Rosa De
+							00000220h: 20 4C 6F 73 20 56 69 65 6E 74 6F 73 20 2D 20 4C ;  Los Vientos - L
+							00000230h: 6F 73 20 53 65 63 72 65 74 6F 73 20 4D 65 64 69 ; os Secretos Medi
+							00000240h: 65 76 61 6C 65 73 20 28 4C 69 62 72 6F 20 44 65 ; evales (Libro De
+							00000250h: 20 4A 65 73 C3 BA 73 20 43 61 6C 6C 65 6A 6F 29 ;  Jes√∫s Callejo)
+							00000260h: 20 2D 20 4D 6F 6E 6F 67 72 C3 A1 66 69 63 6F 73 ;  - Monogr√°ficos
+							00000270h: 20 5A 6F 6E 61 20 43 65 72 6F 20 2D 20 50 6F 72 ;  Zona Cero - Por
+							00000280h: 20 4C 75 6B 79 2E 6D 70 33 03 01 00 02 70 31 D0 ;  Luky.mp3....p1?
+							00000290h: 00 09 01 00 15 01 02 01 00 03 05 00 
+							
+							41 75 64 69 ; ............Audi
+							000002a0h: 6F 63 82 51 43 D5 80 86 21 57 CE D2 28 1E 3B 77 ; ocÇQC’Ä?WŒ“(.;w
+			****************************************snow:end********************************************************/
 			CBufferedFileIO fileKey;
 			if (fileKey.Open(m_sKeyFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite))
 			{
@@ -1122,34 +1162,43 @@ int CIndexed::CLoadDataThread::Run()
 				uint32 uVersion = fileKey.ReadUInt32();   ///snow:«∞Àƒ∏ˆ◊÷Ω⁄ «∞Ê±æ∫≈  04 00 00 00
 				if( uVersion < 5)                    ///snow:∞Ê±æ∫≈–°”⁄5
 				{
-					time_t tSaveTime = fileKey.ReadUInt32();
+				time_t tSaveTime = fileKey.ReadUInt32();   ///snow:4◊÷Ω⁄±£¥Ê ±º‰£∫89 86 CB 58
 					if( tSaveTime > time(NULL) )
 					{
-						fileKey.ReadUInt128(&uID);
+					fileKey.ReadUInt128(&uID);     ///snow:16◊÷Ω⁄ID:C6 FD 41 06 70 7F E5 80 B1 33 64 6D F2 73 50 F2
 						if( Kademlia::CKademlia::GetPrefs()->GetKadID() == uID )
 						{
-							uint32 uNumKeys = fileKey.ReadUInt32();
+						uint32 uNumKeys = fileKey.ReadUInt32();   ///snow:KeyÃıƒø A9 00 00 00 169Ãı
 							while( uNumKeys && !m_pOwner->m_bAbortLoading )
 							{
-								fileKey.ReadUInt128(&uKeyID);
-								uint32 uNumSource = fileKey.ReadUInt32();
+							fileKey.ReadUInt128(&uKeyID);     ///snow:16◊÷Ω⁄µƒKeyID£∫1F EE 40 06 1E 15 A3 CD 12 0D 9A 6B 78 C8 F3 D6
+							uint32 uNumSource = fileKey.ReadUInt32();  ///snow:4◊÷Ω⁄µƒsource ˝ƒø  2D 00 00 00  45∏ˆ
 								while( uNumSource && !m_pOwner->m_bAbortLoading )
 								{
-									fileKey.ReadUInt128(&uSourceID);
-									uint32 uNumName = fileKey.ReadUInt32();
+								fileKey.ReadUInt128(&uSourceID);   ///snow:16◊÷Ω⁄µƒSourceID: BA 33 6D D8 B5 2A D0 CE 89 91 FE BF F8 C2 38 C5
+								uint32 uNumName = fileKey.ReadUInt32();   ///snow:4◊÷Ω⁄µƒName ˝ƒø£∫01 00 00 00  Õ¨“ªhash£¨µ´≤ªÕ¨Œƒº˛√˚
 									while( uNumName && !m_pOwner->m_bAbortLoading)
 									{
 										CKeyEntry* pToAdd = new Kademlia::CKeyEntry();
 										pToAdd->m_uKeyID.SetValue(uKeyID);
 										pToAdd->m_uSourceID.SetValue(uSourceID);									
 										pToAdd->m_bSource = false;
-										pToAdd->m_tLifetime = fileKey.ReadUInt32();
-										if (uVersion >= 3)
-											pToAdd->ReadPublishTrackingDataFromFile(&fileKey, uVersion >= 4);
+										pToAdd->m_tLifetime = fileKey.ReadUInt32();   ///snow:4◊÷Ω⁄µƒ¥ÊªÓ ±º‰£∫3B 65 CB 58
+										if (uVersion >= 3)   ///snow:∞Ê±æ4∞¸∫¨¡ÀAICH–≈œ¢£¨∞Ê±æ3≤ª∞¸∫¨
+											///snow:∂¡»°AICH–≈œ¢£∫2∏ˆ◊÷Ω⁄µƒAICHÃıƒø£∫01 00  1Ãı
+											///snow:‘⁄ æ¿˝÷–◊‹π≤∂¡»°¡À110∏ˆ◊÷Ω⁄:¥”0000005eh¥¶∂¡»°µΩ000000cch¥¶ 01 00 00 00 57 00 53...(¥À¥¶ °¬‘97◊÷Ω⁄£©...BB 13 CA 58 00 00
+											pToAdd->ReadPublishTrackingDataFromFile(&fileKey, uVersion >= 4);   ///±»src_index.dat∂‡µƒ≤ø∑÷
+										///snow:1◊÷Ω⁄µƒTagÃı ˝£∫03
 										uint32 uTotalTags = fileKey.ReadByte();
+										///snow:µ⁄1∏ˆtag:∂¡»°¡À02 01 00 01 57 00 53 69 65 72 72 61 2C 20 4A 61 76 69....65 29 2B 2E 65 70 75 62
+										///snow:  02 type=TAGTYPE_STRING, 01 00 name len, 01 pcName=TAG_FILENAME ,57 00 ,filenameLen,Œƒº˛√˚...87◊÷Ω⁄
+										///snow:µ⁄2∏ˆtag:∂¡»°¡À03 01 00 02 E2 13 2C 00
+										///snow:03 type=TAGTYPE_UINT32,01 00 name len, 02 pcName=TAG_FILESIZE,value:E2 13 2C 00
+										///snow:µ⁄3∏ˆtag:∂¡»°¡À09 01 00 15 01 DC 65 05 3A 3E F6 0E C4
+										///snow:09 type=TAGTYPE_UINT8,01 00 name len, 15 pcName=TAG_SOURCES,value:01
 										while( uTotalTags )
 										{
-											CKadTag* pTag = fileKey.ReadTag();
+										CKadTag* pTag = fileKey.ReadTag();  
 											if(pTag)
 											{
 												if (!pTag->m_name.Compare(TAG_FILENAME))
@@ -1186,6 +1235,7 @@ int CIndexed::CLoadDataThread::Run()
 											uTotalTags--;
 										}
 										uint8 uLoad;
+										///snow:Ω´Key_index.dat÷–µƒÀ˘”–ÃıƒøÃÌº”µΩm_mapKeyword
 										if(m_pOwner->AddKeyword(uKeyID, uSourceID, pToAdd, uLoad, true))
 											uTotalKeyword++;
 										else
@@ -1206,33 +1256,48 @@ int CIndexed::CLoadDataThread::Run()
 		}
 
 		if (!m_pOwner->m_bAbortLoading)
-		{
+		{ 
+/***********************************************snow:start*******************************************
+		///snow:º”‘ÿsrc_index.dat
+		00000000h: 02 00 00 00 59 7B CA 58 5D 03 00 00 1B 8E 41 06 ; ....Y{ X]....éA.
+		00000010h: CD 8C 99 43 75 9B 4B 66 49 8B 1C B1 01 00 00 00 ; ÕåôCuõKfI??...
+		00000020h: 61 9E 6D 07 F4 CB 0E 6E 42 8D 72 0A 11 6F C4 02 ; aûm.ÙÀ.nBçr..o?
+		00000030h: 01 00 00 00 71 69 CA 58 06 03 01 00 02 00 C0 9A ; ....qi X......¿ö
+		00000040h: 2B 03 01 00 FE A8 3A 39 53 09 01 00 FF 01 08 01 ; +...˛®:9S...ˇ...
+		00000050h: 00 FD 9E 1B 08 01 00 FC DB 06 09 01 00 F3 03    ; .˝û....¸€....?.
+*********************************************snow:end***************************************************/
 			CBufferedFileIO fileSource;
 			if (fileSource.Open(m_sSourceFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite))
 			{
 				setvbuf(fileSource.m_pStream, NULL, _IOFBF, 32768);
 
-				uint32 uVersion = fileSource.ReadUInt32();
+				uint32 uVersion = fileSource.ReadUInt32();   ///snow:∞Ê±æ∫≈£∫02 00 00 00
 				if( uVersion < 3 )
 				{
-					time_t tSaveTime = fileSource.ReadUInt32();
+				time_t tSaveTime = fileSource.ReadUInt32();   ///snow:±£¥Ê ±º‰£∫59 7B CA 58
 					if( tSaveTime > time(NULL) )
 					{
-						uint32 uNumKeys = fileSource.ReadUInt32();
+					uint32 uNumKeys = fileSource.ReadUInt32();   ///snow:Key ˝ƒø£∫5D 03 00 00   861Ãı
 						while( uNumKeys && !m_pOwner->m_bAbortLoading )
 						{
-							fileSource.ReadUInt128(&uKeyID);
-							uint32 uNumSource = fileSource.ReadUInt32();
+						fileSource.ReadUInt128(&uKeyID);    ///snow:16◊÷Ω⁄µƒkeyid:1B 8E 41 06 CD 8C 99 43 75 9B 4B 66 49 8B 1C B1
+						uint32 uNumSource = fileSource.ReadUInt32();   ///snow:4◊÷Ω⁄µƒSourceNum £∫01 00 00 00
 							while( uNumSource && !m_pOwner->m_bAbortLoading )
 							{
-								fileSource.ReadUInt128(&uSourceID);
-								uint32 uNumName = fileSource.ReadUInt32();
+							fileSource.ReadUInt128(&uSourceID);   ///snow:16◊÷Ω⁄µƒsourceid:61 9E 6D 07 F4 CB 0E 6E 42 8D 72 0A 11 6F C4 02
+							uint32 uNumName = fileSource.ReadUInt32();   ///snow:4◊÷Ω⁄µƒNameNum: 01 00 00 00
 								while( uNumName && !m_pOwner->m_bAbortLoading )
 								{
 									CEntry* pToAdd = new Kademlia::CEntry();
 									pToAdd->m_bSource = true;
-									pToAdd->m_tLifetime = fileSource.ReadUInt32();
-									uint32 uTotalTags = fileSource.ReadByte();
+									pToAdd->m_tLifetime = fileSource.ReadUInt32();   ///snow:4◊÷Ω⁄µƒ¥ÊªÓ ±º‰£∫71 69 CA 58
+									uint32 uTotalTags = fileSource.ReadByte();    ///snow:1◊÷Ω⁄µƒtag ˝ 06
+									///snow:03 01 00 02 00 C0 9A 2B  UINT32 TAG_FILESIZE
+									///snow:03 01 00 FE A8 3A 39 53  UINT32 TAG_SOURCEIP
+									///snow:09 01 00 FF 01           UINT8  TAG_SOURCETYPE
+									///snow:08 01 00 FD 9E 1B        UINT16 TAG_SOURCEPORT
+									///snow:08 01 00 FC DB 06        UINT16 TAG_SOURCEUPORT
+									///snow:09 01 00 F3 03           UIN8   TAG_ENCRYPTION 
 									while( uTotalTags )
 									{
 										CKadTag* pTag = fileSource.ReadTag();

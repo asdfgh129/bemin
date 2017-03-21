@@ -696,16 +696,26 @@ void CKeyEntry::WritePublishTrackingDataToFile(CDataIO* pData){
 
 void CKeyEntry::ReadPublishTrackingDataFromFile(CDataIO* pData, bool bIncludesAICH){
 	// format: <AICH HashCount 2><{AICH Hash Indexed} HashCount> <Names_Count 4><{<Name string><PopularityIndex 4>} Names_Count>
-	//		   <PublisherCount 4><{<IP 4><Time 4><AICH Idx 2>} PublisherCount>	    
+	//		   <PublisherCount 4><{<IP 4><Time 4><AICH Idx 2>} PublisherCount>
+	///snow:示例：
+	//				00000050h:                                           01 00 ; #牤蠝鍆敷?.O?.
+	//				00000060h: 00 00 57 00 53 69 65 72 72 61 2C 20 4A 61 76 69 ; ..W.Sierra, Javi
+	//				00000070h: 65 72 20 26 20 43 61 6C 6C 65 6A 6F 2C 20 4A 65 ; er & Callejo, Je
+	//				00000080h: 73 C3 BA 73 5F 5F 4C 41 20 45 53 50 41 C3 91 41 ; s煤s__LA ESPA脩A
+	//				00000090h: 20 45 58 54 52 41 C3 91 41 20 5B 31 39 39 37 5D ;  EXTRA脩A [1997]
+	//				000000a0h: 20 28 4D 69 73 74 65 72 69 6F 2C 20 53 75 73 70 ;  (Misterio, Susp
+	//				000000b0h: 65 6E 73 65 29 2B 2E 65 70 75 62 01 00 00 00 01 ; ense)+.epub.....
+	//				000000c0h: 00 00 00 DC BE AF 3E BB 13 CA 58 00 00 
 	ASSERT( m_aAICHHashs.IsEmpty() );
 	ASSERT( m_anAICHHashPopularity.IsEmpty() );
 	if (bIncludesAICH)
 	{
-		uint16 nAICHHashCount = pData->ReadUInt16();
+	uint16 nAICHHashCount = pData->ReadUInt16();  ///snow:2字节的HashCount,读取了01 00
 		for (uint16 i = 0; i < nAICHHashCount; i++)
 		{
 			CAICHHash hash;
-			pData->ReadArray(hash.GetRawHash(), CAICHHash::GetHashSize());
+			///snow:读取了20字节:1E 57 5D D0 2B AB 23 A0 AF CF 9C E5 7B B7 F3 8D 3B 0C 4F F7
+			pData->ReadArray(hash.GetRawHash(), CAICHHash::GetHashSize());///snow:#define HASHSIZE 20;
 			m_aAICHHashs.Add(hash);
 			m_anAICHHashPopularity.Add(0);
 		}
@@ -713,29 +723,29 @@ void CKeyEntry::ReadPublishTrackingDataFromFile(CDataIO* pData, bool bIncludesAI
 
 
 	ASSERT( m_listFileNames.IsEmpty() );
-	uint32 nNameCount = pData->ReadUInt32();
+	uint32 nNameCount = pData->ReadUInt32();  ///snow:4字节的NameCount，读取了 01 00 00 00
 	for (uint32 i = 0; i < nNameCount; i++){
 		structFileNameEntry sToAdd;
-		sToAdd.m_fileName = pData->ReadStringUTF8();
-		sToAdd.m_uPopularityIndex = pData->ReadUInt32();
+		sToAdd.m_fileName = pData->ReadStringUTF8(); ///snow:2字节的文件名长度(57 00 0x57=87字节），及文件名:57 00 53 69 65 72 72 61 2C ...（此处省略80字节）
+		sToAdd.m_uPopularityIndex = pData->ReadUInt32();  ///snow:4字节的受欢迎程度： 01 00 00 00
 		m_listFileNames.AddTail(sToAdd);
 	}
 
 	ASSERT( m_pliPublishingIPs == NULL );
 	m_pliPublishingIPs = new CList<structPublishingIP>();
-	uint32 nIPCount = pData->ReadUInt32();
+	uint32 nIPCount = pData->ReadUInt32();  ///snow：4字节的Publisher数： 01 00 00 00
 	uint32 nDbgLastTime = 0;
-	for (uint32 i = 0; i < nIPCount; i++){
+	for (uint32 i = 0; i < nIPCount; i++){   ///snow:一个条目10个字节
 		structPublishingIP sToAdd;
-		sToAdd.m_uIP = pData->ReadUInt32();
+		sToAdd.m_uIP = pData->ReadUInt32();   ///snow:4字节的IP地址：DC BE AF 3E
 		ASSERT( sToAdd.m_uIP != 0 );
-		sToAdd.m_tLastPublish = pData->ReadUInt32();
+		sToAdd.m_tLastPublish = pData->ReadUInt32(); ///snow:4字节的LastPublish Time:72 61 2C 20
 		ASSERT( nDbgLastTime <= (uint32)sToAdd.m_tLastPublish ); // shoudl always be sorted oldest first
 		nDbgLastTime = sToAdd.m_tLastPublish;
 		// read hash index and update popularity index
 		if (bIncludesAICH)
 		{
-			sToAdd.m_byAICHHashIdx = pData->ReadUInt16();
+		sToAdd.m_byAICHHashIdx = pData->ReadUInt16();  ///snow:2字节的AICH IDx:00 00
 			if (sToAdd.m_byAICHHashIdx != _UI16_MAX)
 			{
 				if (sToAdd.m_byAICHHashIdx >= m_aAICHHashs.GetCount())
