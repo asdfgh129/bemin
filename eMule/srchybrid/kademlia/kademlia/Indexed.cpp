@@ -69,7 +69,7 @@ CIndexed::CIndexed()
 	m_uTotalIndexLoad = 0;
 	m_bAbortLoading = false;
 	m_bDataLoaded = false;
-	ReadFile();
+	ReadFile();   ///snow:开启一个新线程，读取配置文件
 }
 
 void CIndexed::ReadFile(void)
@@ -1073,20 +1073,21 @@ int CIndexed::CLoadDataThread::Run()
 		CUInt128 uKeyID, uID, uSourceID;
 		
 		if (!m_pOwner->m_bAbortLoading)
-		{
+		{ 
+			///snow:加载load_index.dat，示例：01 00 00 00 09 35 CA 58 01 00 00 00 17 7E D7 1A 51 A4 6C 77 CB 28 15 65 F9 B8 89 EA 2E 41 CB 58
 			CBufferedFileIO fileLoad;
 			if(fileLoad.Open(m_sLoadFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite))
 			{
 				setvbuf(fileLoad.m_pStream, NULL, _IOFBF, 32768);
-				uint32 uVersion = fileLoad.ReadUInt32();
-				if(uVersion<2)
+				uint32 uVersion = fileLoad.ReadUInt32();    ///snow:前四个字节是版本号  01 00 00 00
+				if(uVersion<2)                              ///snow:版本号小于2，只能是1
 				{
-					/*time_t tSaveTime = */fileLoad.ReadUInt32();
-					uint32 uNumLoad = fileLoad.ReadUInt32();
+					/*time_t tSaveTime = */fileLoad.ReadUInt32();  ///snow:保存时间 09 35 CA 58
+					uint32 uNumLoad = fileLoad.ReadUInt32();      ///snow:条目数  01 00 00 00
 					while(uNumLoad && !m_pOwner->m_bAbortLoading)
 					{
-						fileLoad.ReadUInt128(&uKeyID);
-						if(m_pOwner->AddLoad(uKeyID, fileLoad.ReadUInt32(), true))
+						fileLoad.ReadUInt128(&uKeyID);           ///snow:16个字节uKeyID:17 7E D7 1A 51 A4 6C 77 CB 28 15 65 F9 B8 89 EA
+						if(m_pOwner->AddLoad(uKeyID, fileLoad.ReadUInt32(), true))   ///snow:4字节的加入时间  2E 41 CB 58
 							uTotalLoad++;
 						uNumLoad--;
 					}
@@ -1099,13 +1100,27 @@ int CIndexed::CLoadDataThread::Run()
 
 		if (!m_pOwner->m_bAbortLoading)
 		{
+			///snow:加载key_index.dat，示例：
+			/*              00000000h: 04 00 00 00 89 86 CB 58 C6 FD 41 06 70 7F E5 80 ; ....墕薠讫A.p鍊
+			//				00000010h: B1 33 64 6D F2 73 50 F2 A9 00 00 00 1F EE 40 06 ; ?dm騭P颟....頏.
+			//				00000020h: 1E 15 A3 CD 12 0D 9A 6B 78 C8 F3 D6 2D 00 00 00 ; ..Ｍ..歬x润?...
+			//				00000030h: BA 33 6D D8 B5 2A D0 CE 89 91 FE BF F8 C2 38 C5 ; ?m氐*形墤8?
+			//				00000040h: 01 00 00 00 3B 65 CB 58 01 00 1E 57 5D D0 2B AB ; ....;e薠...W]??
+			//				00000050h: 23 A0 AF CF 9C E5 7B B7 F3 8D 3B 0C 4F F7 01 00 ; #牤蠝鍆敷?.O?.
+			//				00000060h: 00 00 57 00 53 69 65 72 72 61 2C 20 4A 61 76 69 ; ..W.Sierra, Javi
+			//				00000070h: 65 72 20 26 20 43 61 6C 6C 65 6A 6F 2C 20 4A 65 ; er & Callejo, Je
+			//				00000080h: 73 C3 BA 73 5F 5F 4C 41 20 45 53 50 41 C3 91 41 ; s煤s__LA ESPA脩A
+			//				00000090h: 20 45 58 54 52 41 C3 91 41 20 5B 31 39 39 37 5D ;  EXTRA脩A [1997]
+			//				000000a0h: 20 28 4D 69 73 74 65 72 69 6F 2C 20 53 75 73 70 ;  (Misterio, Susp
+			//				000000b0h: 65 6E 73 65 29 2B 2E 65 70 75 62                ; ense)+.epub
+							*/
 			CBufferedFileIO fileKey;
 			if (fileKey.Open(m_sKeyFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite))
 			{
 				setvbuf(fileKey.m_pStream, NULL, _IOFBF, 32768);
 
-				uint32 uVersion = fileKey.ReadUInt32();
-				if( uVersion < 5)
+				uint32 uVersion = fileKey.ReadUInt32();   ///snow:前四个字节是版本号  04 00 00 00
+				if( uVersion < 5)                    ///snow:版本号小于5
 				{
 					time_t tSaveTime = fileKey.ReadUInt32();
 					if( tSaveTime > time(NULL) )
