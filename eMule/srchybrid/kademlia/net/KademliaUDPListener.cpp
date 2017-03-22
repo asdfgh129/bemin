@@ -1116,6 +1116,7 @@ SSearchTerm* CKademliaUDPListener::CreateSearchExpressionTree(CSafeMemFile& file
 }
 
 // Used in Kad2.0 only
+///snow:CKademliaUDPListener::ProcessPacket()ÖÐµ÷ÓÃ
 void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey)
 {
 	CSafeMemFile fileIO( pbyPacketData, uLenPacket);

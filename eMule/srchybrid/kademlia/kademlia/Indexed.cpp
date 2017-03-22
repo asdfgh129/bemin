@@ -448,7 +448,7 @@ bool CIndexed::AddKeyword(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 		m_uTotalIndexKeyword++;
 		return true;
 	}
-	else
+	else   ///snow:已存在同一ID的Key条目
 	{
 		uint32 uIndexTotal = pCurrKeyHash->mapSource.GetCount();
 		if ( uIndexTotal > KADEMLIAMAXINDEX )
@@ -526,7 +526,7 @@ bool CIndexed::AddSources(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 		return false;
 
 	SrcHash* pCurrSrcHash;
-	if(!m_mapSources.Lookup(CCKey(uKeyID.GetData()), pCurrSrcHash))
+	if(!m_mapSources.Lookup(CCKey(uKeyID.GetData()), pCurrSrcHash))   ///snow:不存在同ID的Source条目
 	{
 		Source* pCurrSource = new Source;
 		pCurrSource->uSourceID.SetValue(uSourceID);
@@ -539,7 +539,7 @@ bool CIndexed::AddSources(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 		uLoad = 1;
 		return true;
 	}
-	else
+	else   ///snow:已存在同ID的Source条目
 	{
 		uint32 uSize = pCurrSrcHash->ptrlistSource.GetSize();
 		for(POSITION pos1 = pCurrSrcHash->ptrlistSource.GetHeadPosition(); pos1 != NULL; )
@@ -693,6 +693,7 @@ bool CIndexed::AddLoad(const CUInt128& uKeyID, uint32 uTime, bool bIgnoreThreadL
 	return true;
 }
 
+///snow: CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ()中调用
 void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm* pSearchTerms, uint32 uIP, uint16 uPort, bool bOldClient, uint16 uStartPosition, CKadUDPKey senderUDPKey)
 {
 	// do not access any data while the loading thread is busy;
@@ -702,16 +703,16 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 	}
 
 	KeyHash* pCurrKeyHash;
-	if(m_mapKeyword.Lookup(CCKey(uKeyID.GetData()), pCurrKeyHash))
+	if(m_mapKeyword.Lookup(CCKey(uKeyID.GetData()), pCurrKeyHash))  ///snow:存在对应的Key条目
 	{
-		byte byPacket[1024*5];
-		byte bySmallBuffer[2048];
+		byte byPacket[1024*5];   ///snow:5K
+		byte bySmallBuffer[2048];///snow:2K
 
-		CByteIO byIO(byPacket,sizeof(byPacket));
-		byIO.WriteByte(OP_KADEMLIAHEADER);
-		byIO.WriteByte(KADEMLIA2_SEARCH_RES);
-		byIO.WriteUInt128(Kademlia::CKademlia::GetPrefs()->GetKadID());
-		byIO.WriteUInt128(uKeyID);
+		CByteIO byIO(byPacket,sizeof(byPacket));///snow:5K
+		byIO.WriteByte(OP_KADEMLIAHEADER);   ///snow:协议
+		byIO.WriteByte(KADEMLIA2_SEARCH_RES);  ///snow:指令
+		byIO.WriteUInt128(Kademlia::CKademlia::GetPrefs()->GetKadID());   ///snow:本机kadid
+		byIO.WriteUInt128(uKeyID);   ///snow:keyid
 		
 		byte* pbyCountPos = byPacket + byIO.GetUsed();
 		ASSERT( byPacket+18+16 == pbyCountPos || byPacket+18 == pbyCountPos);
@@ -720,7 +721,7 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 		const uint16 uMaxResults = 300;
 		int iCount = 0-uStartPosition;
 		int iUnsentCount = 0;
-		CByteIO byIOTmp(bySmallBuffer, sizeof(bySmallBuffer));
+		CByteIO byIOTmp(bySmallBuffer, sizeof(bySmallBuffer));///snow:2K
 		// we do 2 loops: In the first one we ignore all results which have a trustvalue below 1
 		// in the second one we then also consider those. That way we make sure our 300 max results are not full
 		// of spam entries. We could also sort by trustvalue, but we would risk to only send popular files this way
@@ -739,9 +740,11 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 				{
 					CKeyEntry* pCurrName = (CKeyEntry*)pCurrSource->ptrlEntryList.GetNext(pos2);
 					ASSERT( pCurrName->IsKeyEntry() );
-					if ( (bOnlyTrusted ^ (pCurrName->GetTrustValue() < 1.0f)) && (!pSearchTerms || pCurrName->StartSearchTermsMatch(pSearchTerms)) )
+					///snow:异或运算，bOnlyTrusted跟TrustValue<1不同时为真或不同时为假，即bOnlyTrusted != (TrustValue<1)
+					///snow:第一次循环忽略TrustValue<1的结果，如果循环结束，搜索到的结果数小于uMaxResults（300），则置bOnlyTrusted = false;开始下一轮循环
+					if ( (bOnlyTrusted ^ (pCurrName->GetTrustValue() < 1.0f)) && (!pSearchTerms || pCurrName->StartSearchTermsMatch(pSearchTerms)) )///snow:存在与关键字相关条目
 					{
-						if( iCount < 0 )
+						if( iCount < 0 )   ///snow:这个是做什么的呢？
 							iCount++;
 						else if( (uint16)iCount < uMaxResults )
 						{
@@ -753,13 +756,14 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 								else
 									dbgResultsUntrusted++;
 								byIOTmp.WriteUInt128(pCurrName->m_uSourceID);
-								pCurrName->WriteTagListWithPublishInfo(&byIOTmp);
+								pCurrName->WriteTagListWithPublishInfo(&byIOTmp); ///snow:写入TagList
 								
-								if( byIO.GetUsed() + byIOTmp.GetUsed() > UDP_KAD_MAXFRAGMENT && iUnsentCount > 0)
+								if( byIO.GetUsed() + byIOTmp.GetUsed() > UDP_KAD_MAXFRAGMENT && iUnsentCount > 0)   ///snow:byIO和byIOTmp的内容加起来超过了1420个字节（最大帧长度），调用SendPacket()发送byPacket信息包
 								{
 									uint32 uLen = sizeof(byPacket)-byIO.GetAvailable();
 									PokeUInt16(pbyCountPos, (uint16)iUnsentCount);
 									CKademlia::GetUDPListener()->SendPacket(byPacket, uLen, uIP, uPort, senderUDPKey, NULL);
+									///snow:上一个packet已经发送，准备下一个packet
 									byIO.Reset();
 									byIO.WriteByte(OP_KADEMLIAHEADER);
 									if (thePrefs.GetDebugClientKadUDPLevel() > 0)
@@ -769,12 +773,12 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 									byIO.WriteUInt128(uKeyID);
 									byIO.WriteUInt16(0);
 									DEBUG_ONLY(DebugLog(_T("Sent %u keyword search results in one packet to avoid fragmentation"), iUnsentCount)); 
-									iUnsentCount = 0;
+									iUnsentCount = 0;   ///snow:packet已全部发送
 								}
 								ASSERT( byIO.GetUsed() + byIOTmp.GetUsed() <= UDP_KAD_MAXFRAGMENT );
-								byIO.WriteArray(bySmallBuffer, byIOTmp.GetUsed());
+								byIO.WriteArray(bySmallBuffer, byIOTmp.GetUsed());   ///snow:byIO和byIOTmp的内容加起来没超过1420个字节（最大帧长度），将byIOTmp写入byIO
 								byIOTmp.Reset();
-								iUnsentCount++;
+								iUnsentCount++;  ///snow:当前byPacket没有发送，继续执行for循环，写入下一Source条目
 							}
 						}
 						else
@@ -782,10 +786,10 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 							pos1 = NULL;
 							break;
 						}
-					}
-				}
-			}
-			if (bOnlyTrusted && iCount < (int)uMaxResults)
+					}///snow:end fi(bOnlyTrusted....)
+				}///snow end of for
+			}///snow:end while(pos1!=NULL)
+			if (bOnlyTrusted && iCount < (int)uMaxResults)  ///snow:搜索结果尚未达到最大结果数
 				bOnlyTrusted = false;
 			else
 				break;
@@ -794,7 +798,7 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 		// LOGTODO: Remove Log
 		//DebugLog(_T("Kad Keyword search Result Request: Send %u trusted and %u untrusted results"), dbgResultsTrusted, dbgResultsUntrusted);
 
-		if(iUnsentCount > 0)
+		if(iUnsentCount > 0)   ///有未发送的packet，字节数还未达到最大帧字节数，但已经没有搜索结果了
 		{
 			uint32 uLen = sizeof(byPacket)-byIO.GetAvailable();
 			PokeUInt16(pbyCountPos, (uint16)iUnsentCount);
@@ -858,6 +862,7 @@ void CIndexed::SendValidSourceResult(const CUInt128& uKeyID, uint32 uIP, uint16 
 						{
 							uint32 uLen = sizeof(byPacket)-byIO.GetAvailable();
 							PokeUInt16(pbyCountPos, (uint16)iUnsentCount);
+							///snow:一条记录一个packet
 							CKademlia::GetUDPListener()->SendPacket(byPacket, uLen, uIP, uPort, senderUDPKey, NULL);
 							byIO.Reset();
 							byIO.WriteByte(OP_KADEMLIAHEADER);
@@ -991,6 +996,7 @@ void CIndexed::SendValidNoteResult(const CUInt128& uKeyID, uint32 uIP, uint16 uP
 	}
 }
 
+///snow:好奇怪的命名？在哪里Send了？
 bool CIndexed::SendStoreRequest(const CUInt128& uKeyID)
 {
 	// do not access any data while the loading thread is busy;
