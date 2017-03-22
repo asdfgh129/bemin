@@ -167,6 +167,31 @@ void CRoutingZone::ReadFile(CString strSpecialNodesdate)
 	{
 		CSafeBufferedFile file;
 		CFileException fexp;
+
+/********************************************snow:start*****************************************************************
+		00000000h: 00 00 00 00 02 00 00 00 AD 00 00 00 
+		                           µÚÒ»¸öcontact       77 BB 87 00 ; ........?..w»‡.
+		00000010h: 6A 6F 89 2B BB CF D5 66 8A 58 87 59 E2 BA 2A 79 ; jo?»ÏÕfŠX‡Yâº*y
+		00000020h: 7E 41 1B 28 04 00 00 00 00 70 05 3C 04 01 
+		                           µÚ¶þ¸öcontact             B1 9F ; ~A.(.....p.<..±Ÿ
+		00000030h: C2 00 F6 AC E8 5A C7 75 FF 59 32 A0 54 DD 46 F0 ; ?ö¬èZÇuÿY2 TÝF?
+		00000040h: 10 97 3C 53 36 12 08 C6 FF 0D F7 70 05 3C 04 01 ; .?S6..?.÷p.<..
+		                           µÚÈý¸öcontact
+		00000050h: 0E F3 75 00 A8 72 F1 79 91 54 8C 97 14 58 64 9D ; .óu.¨rñy‘TŒ—.Xd?
+		00000060h: DD 89 98 BC 80 44 B4 BC 09 EA 74 F3 1B 70 05 3C ; Ý‰˜¼€D´¼.êt?p.<
+		00000070h: 04 01 
+	   µÚËÄ¸öcontact     98 6F C6 00 75 A3 B6 14 86 DE 6C 07 7A 23 ; ..˜o?u£¶.†Þl.z#
+		00000080h: C4 79 EC 25 2D 53 84 FC 85 FC 08 C0 F2 84 EC 70 ; Äy?-S„ü…ü.Àò„ìp
+		00000090h: 05 3C 04 01 
+		µÚ172¸öcontact
+		000016c0h:       8D DE CA FF 99 E4 59 0C F2 6C 46 46 E8 2B ; ..Þ?™äY.òlFF?
+		000016d0h: 2A 0C D6 CC 2D 72 28 16 1E 16 08 C0 F2 84 EC 70 ; *.ÖÌ-r(....Àò„ìp
+		000016e0h: 05 3C 04 01
+		µÚ173¸öcontact         0C 93 4D F6 7D 4D AF 35 28 04 B8 3F ; .<...“Mö}M?(.?
+		000016f0h: E8 72 EF 15 57 3D D6 0E 36 27 BB 33 04 00 00 00 ; èr?W=?6'?....
+		00001700h: 00 70 05 3C 04 00 
+*****************************************************snow:end******************************************************/
+
 		if (file.Open(strSpecialNodesdate.IsEmpty() ? m_sFilename : strSpecialNodesdate, CFile::modeRead | CFile::osSequentialScan|CFile::typeBinary|CFile::shareDenyWrite, &fexp))
 		{
 			setvbuf(file.m_pStream, NULL, _IOFBF, 32768);
@@ -174,12 +199,12 @@ void CRoutingZone::ReadFile(CString strSpecialNodesdate)
 			// Get how many contacts in the saved list.
 			// NOTE: Older clients put the number of contacts here..
 			//       Newer clients always have 0 here to prevent older clients from reading it.
-			uint32 uNumContacts = file.ReadUInt32();
+			uint32 uNumContacts = file.ReadUInt32();   ///snow:Ç°4¸ö×Ö½Ú 00 00 00 00 
 			uint32 uVersion = 0;
 			if (uNumContacts == 0)
 			{
 				if (file.GetLength() >= 8){
-					uVersion = file.ReadUInt32();
+					uVersion = file.ReadUInt32();  ///snow:4¸ö×Ö½ÚµÄ°æ±¾ºÅ 02 00 00 00
 					if (uVersion == 3){
 						uint32 nBoostrapEdition = file.ReadUInt32();
 						if (nBoostrapEdition == 1){
@@ -190,11 +215,12 @@ void CRoutingZone::ReadFile(CString strSpecialNodesdate)
 						}
 					}	
 					if(uVersion >= 1 && uVersion <= 3) // those version we know, others we ignore
-						uNumContacts = file.ReadUInt32();
+						uNumContacts = file.ReadUInt32();   ///snow:4×Ö½ÚµÄÁªÏµÈËÊý AD 00 00 00  173ÈË
 				}
 				else
 					AddDebugLogLine( false, GetResString(IDS_ERR_KADCONTACTS));
 			}
+			///snow:2ÒÔÉÏ°æ±¾Ã¿¸öÁªÏµÈË34×Ö½Ú:16×Ö½ÚµÄID,4×Ö½ÚµÄIP,2×Ö½ÚµÄTCP Port,2×Ö½ÚµÄUDP Port,1×Ö½ÚµÄContactVersion,8×Ö½ÚµÄ kadUDPKey, 1×Ö½ÚµÄbVerified=01£»2ÒÔÏÂµÍ°æ±¾µÄÖ»Òª25×Ö½Ú£¡
 			if (uNumContacts != 0 && uNumContacts * 25 <= (file.GetLength() - file.GetPosition()))
 			{
 				// Hide contact list in the GUI
@@ -204,24 +230,24 @@ void CRoutingZone::ReadFile(CString strSpecialNodesdate)
 				CUInt128 uID;
 				while ( uNumContacts )
 				{
-					file.ReadUInt128(&uID);
-					uint32 uIP = file.ReadUInt32();
-					uint16 uUDPPort = file.ReadUInt16();
-					uint16 uTCPPort = file.ReadUInt16();
+					file.ReadUInt128(&uID);  ///snow:16×Ö½ÚµÄiD:77 BB 87 00 6A 6F 89 2B BB CF D5 66 8A 58 87 59
+					uint32 uIP = file.ReadUInt32();///snow:IP:E2 BA 2A 79
+					uint16 uUDPPort = file.ReadUInt16();///snow:7E 41 
+					uint16 uTCPPort = file.ReadUInt16();///snow:1B 28
 					byte byType = 0;
 
 					uint8 uContactVersion = 0;
 					if(uVersion >= 1)
-						uContactVersion = file.ReadUInt8();
+						uContactVersion = file.ReadUInt8();///snow:04 04°æ±¾µÄÃ»ÓÐKadUDPKEy£¬08£¬09µÄÓÐkey
 					else
 						byType = file.ReadUInt8();
 					
 					CKadUDPKey kadUDPKey;
 					bool bVerified = false;
 					if(uVersion >= 2){
-						kadUDPKey.ReadFromFile(file);
-						bVerified = file.ReadUInt8() != 0;
-						if (bVerified)
+						kadUDPKey.ReadFromFile(file);///snow:key 00 00 00 00 ip:  70 05 3C 04
+						bVerified = file.ReadUInt8() != 0;  ///snow: 01---ÒÑÑéÖ¤  00---Î´ÑéÖ¤
+						if (bVerified)    ///Ö»ÒªÓÐÒ»¸öÒÑÑéÖ¤¾Í¹»ÁË£¡
 							bDoHaveVerifiedContacts = true;
 					}
 					// IP Appears valid
@@ -230,7 +256,7 @@ void CRoutingZone::ReadFile(CString strSpecialNodesdate)
 						uint32 uhostIP = ntohl(uIP);
 						if (::IsGoodIPPort(uhostIP, uUDPPort))
 						{
-							if (::theApp.ipfilter->IsFiltered(uhostIP))
+							if (::theApp.ipfilter->IsFiltered(uhostIP))///snow:ºÚÃûµ¥
 							{
 								if (::thePrefs.GetLogFilteredIPs())
 									AddDebugLogLine(false, _T("Ignored kad contact (IP=%s:%u)--read known.dat -- - IP filter (%s)") , ipstr(uhostIP), uUDPPort, ::theApp.ipfilter->GetLastHit());
@@ -244,14 +270,14 @@ void CRoutingZone::ReadFile(CString strSpecialNodesdate)
 							{
 								// This was not a dead contact, Inc counter if add was successful
 								if (AddUnfiltered(uID, uIP, uUDPPort, uTCPPort, uContactVersion, kadUDPKey, bVerified, false, true, false))
-									uValidContacts++;
+									uValidContacts++;  ///snow:¿ÉÓÃÁªÏµÈË+1
 							}
 						}
 					}
 					uNumContacts--;
 				}
 				AddLogLine( false, GetResString(IDS_KADCONTACTSREAD), uValidContacts);
-				if (!bDoHaveVerifiedContacts){
+				if (!bDoHaveVerifiedContacts){   ///snow:Ò»¸öÒÑÑéÖ¤µÄÁªÏµÈË¶¼Ã»ÓÐ£¡
 					DebugLogWarning(_T("No verified contacts found in nodes.dat - might be an old file version. Setting all contacts verified for this time to speed up Kad bootstrapping"));
 					SetAllContactsVerified();
 				}
@@ -311,6 +337,7 @@ void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO& file){
 				else if (uContactVersion > 1) // only kad2 nodes
 				{
 					// we want the 50 nodes closest to our own ID (provides randomness between different users and gets has good chances to get a bootstrap with close Nodes which is a nice start for our routing table) 
+					///snow:È¡×î½üµÄ50¸öÁªÏµÈË£¬50¸öÁªÏµÈË°´¾àÀëÓÉ½üµ½Ô¶ÅÅÐò
 					CUInt128 uDistance = uMe;
 					uDistance.Xor(uID);
 					uValidContacts++;
@@ -319,6 +346,7 @@ void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO& file){
 						// look were to put this contact into the proper position
 						bool bInserted = false;
 						CContact* pContact = new CContact(uID, uIP, uUDPPort, uTCPPort, uMe, uContactVersion, 0, false);
+						///snow:°´¾àÀëÅÅÐò²åÈë
 						for (POSITION pos = CKademlia::s_liBootstapList.GetHeadPosition(); pos != NULL; CKademlia::s_liBootstapList.GetNext(pos)){
 							if (CKademlia::s_liBootstapList.GetAt(pos)->GetDistance() > uDistance){
 								CKademlia::s_liBootstapList.InsertBefore(pos, pContact);
@@ -326,7 +354,7 @@ void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO& file){
 								break;
 							}
 						}
-						if (!bInserted){
+						if (!bInserted){  ///snow:Ã»ÓÐ²åÈë³É¹¦£¬Ôò·ÅÔÚ¶ÓÎ²
 							ASSERT( CKademlia::s_liBootstapList.GetCount() < 50 );
 							CKademlia::s_liBootstapList.AddTail(pContact);
 						}
@@ -365,7 +393,7 @@ void CRoutingZone::WriteFile()
 			// Start file with 0 to prevent older clients from reading it.
 			file.WriteUInt32(0);
 			// Now tag it with a version which happens to be 2 (1 till 0.48a).
-			file.WriteUInt32(2);
+			file.WriteUInt32(2);  ///snow:Ð´Èë°æ±¾ºÅ
 			// file.WriteUInt32(0) // if we would use version >=3, this would mean that this is a normal nodes.dat
 			file.WriteUInt32((uint32)listContacts.size());
 			for (ContactList::const_iterator itContactList = listContacts.begin(); itContactList != listContacts.end(); ++itContactList)
@@ -414,6 +442,7 @@ void CRoutingZone::DbgWriteBootstrapFile()
 			uDistance.Xor(uMe);
 			GetClosestTo(2, uRandom, uDistance, 1200, &mapContacts, false, false);
 			// filter out Kad1 nodes
+			///snow:±éÀúMap£¬É¾µô°æ±¾ºÅÐ¡ÓÚ2µÄÁªÏµÈË
 			for (ContactMap::iterator itContactMap = mapContacts.begin(); itContactMap != mapContacts.end(); )
 			{
 				ContactMap::iterator itCurContactMap = itContactMap;
@@ -425,9 +454,10 @@ void CRoutingZone::DbgWriteBootstrapFile()
 			// Start file with 0 to prevent older clients from reading it.
 			file.WriteUInt32(0);
 			// Now tag it with a version which happens to be 2 (1 till 0.48a).
-			file.WriteUInt32(3);
+			file.WriteUInt32(3);   ///snow:°æ±¾ºÅ3£¬·ÇÕý³£nodes.dat£¬ºóÃæ¸úµÄ²»ÊÇÁªÏµÈËÊýÄ¿£¬¶øÊÇ01 00 00 00
 			file.WriteUInt32(1); // if we would use version >=3, this would mean that this is not a normal nodes.dat
 			file.WriteUInt32((uint32)mapContacts.size());
+			///snow:Ð´Èë25×Ö½Ú£¬Ã»ÓÐKadUDPKey
 			for (ContactMap::const_iterator itContactMap = mapContacts.begin(); itContactMap != mapContacts.end(); ++itContactMap)
 			{
 				CContact* pContact = itContactMap->second;
