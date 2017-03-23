@@ -92,9 +92,11 @@ bool CRoutingBin::AddContact(CContact *pContact)
 	// Check if we already have a contact with this ID in the list.
 	for (ContactList::const_iterator itContactList = m_listEntries.begin(); itContactList != m_listEntries.end(); ++itContactList)
 	{
+		///snow:已经存在同一ID
 		if (pContact->GetClientID() == (*itContactList)->m_uClientID){
 			return false;
 		}
+		///snow:判断是否同一子网
 		if ((pContact->GetIPAddress() & 0xFFFFFF00) ==  ((*itContactList)->GetIPAddress() & 0xFFFFFF00))
 			cSameSubnets++;
 	}
@@ -106,6 +108,7 @@ bool CRoutingBin::AddContact(CContact *pContact)
 		return false;
 
 	// no more than 2 IPs from the same /24 netmask in one bin, except if its a LANIP (if we don't accept LANIPs they already have been filtered before)
+	///snow:一个子网不存储超过2个IP，lanIP除外
 	if (cSameSubnets >= 2 && !::IsLANIP(ntohl(pContact->GetIPAddress()))){
 		if (::thePrefs.GetLogFilteredIPs())
 			AddDebugLogLine(false, _T("Ignored kad contact (IP=%s:%u) - too many contacts with the same subnet in RoutingBin") , ipstr(ntohl(pContact->GetIPAddress())), pContact->GetUDPPort());
@@ -113,7 +116,7 @@ bool CRoutingBin::AddContact(CContact *pContact)
 	}		
 
 	// If not full, add to end of list
-	if ( m_listEntries.size() < K)
+	if ( m_listEntries.size() < K)  ///snow:K桶还未装满，添加到队尾
 	{
 		m_listEntries.push_back(pContact);
 		AdjustGlobalTracking(pContact->GetIPAddress(), true);
@@ -229,7 +232,7 @@ CContact *CRoutingBin::GetOldest()
 
 void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 uMaxRequired, ContactMap *pmapResult, bool bEmptyFirst, bool bInUse)
 {
-	// Empty list if requested.
+	// Empty list if requested.    ///snow:是否先清空目标结果列表
 	if (bEmptyFirst)
 		pmapResult->clear();
 
@@ -239,10 +242,13 @@ void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 
 
 	// First put results in sort order for uTarget so we can insert them correctly.
 	// We don't care about max results at this time.
+	///snow:遍历联系人列表m_listEntries，
 	for (ContactList::const_iterator itContactList = m_listEntries.begin(); itContactList != m_listEntries.end(); ++itContactList)
-	{
+	{ 
+		//如果联系人type<=uMaxType且联系人IP已验证
 		if((*itContactList)->GetType() <= uMaxType && (*itContactList)->IsIpVerified())
 		{
+			///snow:计算该联系人的距离，保存了Map列表中
 			CUInt128 uTargetDistance((*itContactList)->m_uClientID);
 			uTargetDistance.Xor(uTarget);
 			(*pmapResult)[uTargetDistance] = *itContactList;
@@ -252,7 +258,7 @@ void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 
 		}
 	}
 
-	// Remove any extra results by least wanted first.
+	// Remove any extra results by least wanted first.///snow:超过要求的数目了
 	while(pmapResult->size() > uMaxRequired)
 	{
 		// Dec in use count.
@@ -265,6 +271,7 @@ void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 
 	return;
 }
 
+///snow:bIncrease指示什么？调增还是调减
 void CRoutingBin::AdjustGlobalTracking(uint32 uIP, bool bIncrease){
 	// IP
 	uint32 nSameIPCount = 0;
