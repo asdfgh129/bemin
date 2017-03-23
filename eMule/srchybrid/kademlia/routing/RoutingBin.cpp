@@ -49,8 +49,9 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 using namespace Kademlia;
-
+///snow:统计同一IP的重复数，eMule中设置最大数为1，即不允许重复
 CMap<uint32, uint32, uint32, uint32> CRoutingBin::s_mapGlobalContactIPs;
+///snow:统计同一子网的IP数，eMule中设置最大数为10
 CMap<uint32, uint32, uint32, uint32> CRoutingBin::s_mapGlobalContactSubnets;
 
 #define MAX_CONTACTS_SUBNET			10
@@ -342,6 +343,7 @@ bool CRoutingBin::ChangeContactIPAddress(CContact* pContact, uint32 uNewIP)
 
 	if ((pContact->GetIPAddress() & 0xFFFFFF00) != (uNewIP & 0xFFFFFF00)){
 		//  no more than 10 IPs from the same /24 netmask global, except if its a LANIP (if we don't accept LANIPs they already have been filtered before)
+		///snow:同一个子网不超过10个IP
 		uint32 nSameSubnetGlobalCount = 0;
 		s_mapGlobalContactSubnets.Lookup(uNewIP & 0xFFFFFF00, nSameSubnetGlobalCount);
 		if (nSameSubnetGlobalCount >= MAX_CONTACTS_SUBNET && !::IsLANIP(ntohl(uNewIP))){
@@ -368,9 +370,9 @@ bool CRoutingBin::ChangeContactIPAddress(CContact* pContact, uint32 uNewIP)
 	// everything fine
 	// LOGTODO REMOVE
 	DEBUG_ONLY( DebugLog(_T("Index contact IP change allowed %s -> %s"), ipstr(ntohl(pContact->GetIPAddress())), ipstr(ntohl(uNewIP))) );
-	AdjustGlobalTracking(pContact->GetIPAddress(), false);
+	AdjustGlobalTracking(pContact->GetIPAddress(), false);///snow:原IP的减1
 	pContact->SetIPAddress(uNewIP);
-	AdjustGlobalTracking(pContact->GetIPAddress(), true);
+	AdjustGlobalTracking(pContact->GetIPAddress(), true);///snow:新IP的加1
 	return true;
 }
 
@@ -387,16 +389,18 @@ CContact* CRoutingBin::GetRandomContact(uint32 nMaxType, uint32 nMinKadVersion)
 		return NULL;
 	// Find contact with IP/Port
 	CContact* pLastFit = NULL;
+	///snow:搜索从随机一个位置开始
 	uint32 nRandomStartPos = GetRandomUInt16() % m_listEntries.size();
 	uint32 nIndex = 0;
 	for (ContactList::iterator itContactList = m_listEntries.begin(); itContactList != m_listEntries.end(); ++itContactList)
 	{
 		CContact* pContact = *itContactList;
+		///snow:type<=nMaxType,version>=nMinKadVersion
 		if (pContact->GetType() <= nMaxType && pContact->GetVersion() >= nMinKadVersion)
 		{
-			if (nIndex >= nRandomStartPos)
+			if (nIndex >= nRandomStartPos)///snow:在随机位置之后，返回当前满足条件的联系人
 				return pContact;
-			else
+			else                         ///snow:否则，暂存当前满足条件的联系人，如果之后再找到满足条件的，则替换当前存储的
 				pLastFit = pContact;
 		}
 		nIndex++;
