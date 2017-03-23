@@ -98,6 +98,9 @@ void CPrefs::Init(LPCTSTR szFilename)
 
 void CPrefs::ReadFile()
 {
+
+///snow:示例：00000000h: 04 3C 05 70 00 00 C6 FD 41 06 70 7F E5 80 B1 33 ; .<.p..讫A.p鍊?
+///snow:      00000010h: 64 6D F2 73 50 F2 00                            ; dm騭P?
 	try
 	{
 		CSafeBufferedFile file;
@@ -105,9 +108,10 @@ void CPrefs::ReadFile()
 		if (file.Open(m_sFilename, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, &fexp))
 		{
 			setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
-			m_uIP = file.ReadUInt32();
-			file.ReadUInt16();
-			file.ReadUInt128(&m_uClientID);
+			m_uIP = file.ReadUInt32();  ///snow:ip:04 3C 05 70
+			file.ReadUInt16();  ///snow:00 00 没有使用
+			file.ReadUInt128(&m_uClientID); ///snow:C6 FD 41 06 70 7F E5 80 B1 33 64 6D F2 73 50 F2 
+			///snow:最后还有一个字节00，表示没有tags
 			// get rid of invalid kad IDs which may have been stored by older versions
 			if (m_uClientID == 0)
 				m_uClientID.SetValueRandom();

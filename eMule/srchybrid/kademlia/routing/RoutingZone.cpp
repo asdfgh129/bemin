@@ -95,13 +95,14 @@ CRoutingZone::CRoutingZone(LPCSTR szFilename)
 	// Set our KadID for creating the contact tree
 	CKademlia::GetPrefs()->GetKadID(&uMe);
 	m_sFilename = szFilename;
+	///snow:父结点为NULL，表示为根结点，zoneindex为0
 	// Init our root node.
 	Init(NULL, 0, CUInt128((ULONG)0));
 }
 
 CRoutingZone::CRoutingZone(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &uZone_index)
 {
-	// Create a new leaf.
+	// Create a new leaf.  ///snow:建立一个没有子树的叶子结点
 	Init(pSuper_zone, iLevel, uZone_index);
 }
 
@@ -114,6 +115,7 @@ void CRoutingZone::Init(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &u
 	m_uLevel = iLevel;
 	// Set this zones CUInt128 Index
 	m_uZoneIndex = uZone_index;
+	///snow:初始化时左右子树均为空，为叶子结点
 	// Mark this zone has having now leafs.
 	m_pSubZones[0] = NULL;
 	m_pSubZones[1] = NULL;
@@ -126,6 +128,7 @@ void CRoutingZone::Init(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &u
 	// Start this zone.
 	StartTimer();
 
+	///snow:初始化根结点时，读取nodes.dat
 	// If we are initializing the root node, read in our saved contact list.
 	if ((m_pSuperZone == NULL) && (m_sFilename.GetLength() > 0))
 		ReadFile();
@@ -489,7 +492,7 @@ void CRoutingZone::DbgWriteBootstrapFile() {}
 bool CRoutingZone::CanSplit() const
 {
 	// Max levels allowed.
-	if (m_uLevel >= 127)
+if (m_uLevel >= 127)   ///snow:最大层数127，不能再分割了
 		return false;
 
 	// Check if this zone is allowed to split.
@@ -521,7 +524,7 @@ bool CRoutingZone::Add(const CUInt128 &uID, uint32 uIP, uint16 uUDPPort, uint16 
 // Returns true if a contact was added or updated, false if the routing table was not touched
 bool CRoutingZone::AddUnfiltered(const CUInt128 &uID, uint32 uIP, uint16 uUDPPort, uint16 uTCPPort, uint8 uVersion, CKadUDPKey cUDPKey, bool& bIPVerified, bool bUpdate, bool /*bFromNodesDat*/, bool bFromHello)
 {
-	if (uID != uMe && uVersion > 1)
+if (uID != uMe && uVersion > 1)   ///snow:uMe在构造函数中赋值：GetPrefs()->GetKadID(&uMe)
 	{
 		CContact* pContact = new CContact(uID, uIP, uUDPPort, uTCPPort, uVersion, cUDPKey, bIPVerified);
 		if (bFromHello)
@@ -746,39 +749,50 @@ void CRoutingZone::Split()
 {
 	StopTimer();
 
+	///snow:构造左右子树
 	m_pSubZones[0] = GenSubZone(0);
 	m_pSubZones[1] = GenSubZone(1);
 
+	///snow:删除叶子结点
 	ContactList listEntries;
-	m_pBin->GetEntries(&listEntries);
-	m_pBin->m_bDontDeleteContacts = true;
+	m_pBin->GetEntries(&listEntries); ///snow:将原先存储在m_pBin->m_listEntries中的对象的指针复制到listEntries中
+	m_pBin->m_bDontDeleteContacts = true;  ///snow:这个参数应该是给CRouteingBin的析构函数用的
 	delete m_pBin;
 	m_pBin = NULL;	
+
+	///snow:原先存储在m_listEntries中的每个ContactList对象都分配有自己的一段内存，有一个指针指向这个内存，而这个指针就存储在m_listEntries中，
+	///snow:实际的ContactList对象是不存储在m_listEntries中的，也就是说m_listEntries实际是个指针集合，所以可以把这些指针拷出来，再删除掉m_pBin对象
+	///snow:而不影响ContactList对象，当然，也可以在析构函数中删除掉实际的ContactList对象
 	
+	///snow:将原先结点中的联系人分配到左右子树中，根据的是m_uDistance中m_uLevel对应的位的值，0则左子树，1则右子树
 	for (ContactList::const_iterator itContactList = listEntries.begin(); itContactList != listEntries.end(); ++itContactList)
 	{
 		int iSuperZone = (*itContactList)->m_uDistance.GetBitNumber(m_uLevel);
-		if (!m_pSubZones[iSuperZone]->m_pBin->AddContact(*itContactList))
+		if (!m_pSubZones[iSuperZone]->m_pBin->AddContact(*itContactList))  ///snow:AddContact()中添加的也是指针
 			delete *itContactList;
 	}
 }
 
+///snow:合并两个子树
 uint32 CRoutingZone::Consolidate()
 {
 	uint32 uMergeCount = 0;
 	if( IsLeaf() )
 		return uMergeCount;
 	ASSERT(m_pBin==NULL);
+	///snow:递归调用Consolidate()，合并子树中的非叶结点
 	if( !m_pSubZones[0]->IsLeaf() )
-		uMergeCount += m_pSubZones[0]->Consolidate();
+		uMergeCount += m_pSubZones[0]->Consolidate();  
 	if( !m_pSubZones[1]->IsLeaf() )
 		uMergeCount += m_pSubZones[1]->Consolidate();
+	///snow:左右子树都是叶子结点，而且联系人不到1半
 	if( m_pSubZones[0]->IsLeaf() && m_pSubZones[1]->IsLeaf() && GetNumContacts() < K/2 )
 	{
 		m_pBin = new CRoutingBin();
 		m_pSubZones[0]->StopTimer();
 		m_pSubZones[1]->StopTimer();
 
+		///snow:拷贝到原左右子树中的联系人指针
 		ContactList list0;
 		ContactList list1;
 		m_pSubZones[0]->m_pBin->GetEntries(&list0);
@@ -791,6 +805,7 @@ uint32 CRoutingZone::Consolidate()
 		m_pSubZones[0] = NULL;
 		m_pSubZones[1] = NULL;
 
+		///snow:将原左右子树的联系人指针添加到新叶子结点的联系人列表中
 		for (ContactList::const_iterator itContactList = list0.begin(); itContactList != list0.end(); ++itContactList){
 			if (!m_pBin->AddContact(*itContactList))
 				delete *itContactList;
@@ -809,16 +824,16 @@ uint32 CRoutingZone::Consolidate()
 
 bool CRoutingZone::IsLeaf() const
 {
-	return (m_pBin != NULL);
+	return (m_pBin != NULL);   ///snowL:在split()中，delete m_pBin;m_pBin = NULL;
 }
 
 CRoutingZone *CRoutingZone::GenSubZone(int iSide)
 {
-	CUInt128 uNewIndex(m_uZoneIndex);
+CUInt128 uNewIndex(m_uZoneIndex);   ///snow:假设父结点的m_uZoneIndex为0，则新建的叶子结点，左叶子结点m_uZoneIndex=00，右叶子结点m_uZoneIndex为01，依此类推，为010，011，100，101，1000，1001，有点问题呀？不是很对，那0的那支，再怎么左移都是0
 	uNewIndex.ShiftLeft(1);
 	if (iSide != 0)
 		uNewIndex.Add(1);
-	return new CRoutingZone(this, m_uLevel+1, uNewIndex);
+	return new CRoutingZone(this, m_uLevel+1, uNewIndex); ///snow:this表示新的zone为本zone的子zone
 }
 
 void CRoutingZone::StartTimer()

@@ -106,7 +106,7 @@ namespace Kademlia
 			void SetAllContactsVerified();
 			/**
 			* Generates a new TokenBin for this zone. Used when the current zone is becoming a leaf zone.
-			* Must be deleted by caller
+			* Must be deleted by caller  ///snow:调用者要负责删除
 			*/
 			CRoutingZone *GenSubZone(int iSide);
 			/**
@@ -115,8 +115,8 @@ namespace Kademlia
 			* that *this* has been split into equally sized finer zones.
 			* The zone with index 0 is the one closer to our *self* token.
 			*/
-			CRoutingZone*		m_pSubZones[2];
-			CRoutingZone*		m_pSuperZone;
+			CRoutingZone*		m_pSubZones[2];   ///snow:左右子树，
+			CRoutingZone*		m_pSuperZone;     ///snow:父结点
 			static CString		m_sFilename;
 			static CUInt128		uMe;
 			/**
@@ -124,13 +124,13 @@ namespace Kademlia
 			* this zone is representing. Level 0 is the whole space,
 			* level 1 is 1/2 of the space, level 2 is 1/4, etc.
 			*/
-			UINT m_uLevel;
+			UINT m_uLevel; ///snow:二叉树的深度
 			/**
 			* This is the distance in number of zones from the zone at this level
 			* that contains the center of the system; distance is wrt the XOR metric.
 			*/
 			CUInt128 m_uZoneIndex;
 			/** List of contacts, if this zone is a leaf zone. */
-			CRoutingBin *m_pBin;
+			CRoutingBin *m_pBin; ///snow:叶子结点，终端结点
 	};
 }

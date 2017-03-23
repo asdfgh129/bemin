@@ -71,14 +71,14 @@ CRoutingBin::~CRoutingBin()
 		// Delete all contacts
 		for (ContactList::const_iterator itContactList = m_listEntries.begin(); itContactList != m_listEntries.end(); ++itContactList)
 		{
-			AdjustGlobalTracking((*itContactList)->GetIPAddress(), false);
-			if (!m_bDontDeleteContacts)
+			AdjustGlobalTracking((*itContactList)->GetIPAddress(), false); ///调减两个GolbalMap的samecount
+			if (!m_bDontDeleteContacts)  ///snow:这个成员变量在Split()和Consolidate()函数中设置为true，表示不删除对象中的联系人列表
 			{
 				delete *itContactList;
 			}
 		}
 		// Remove all contact entries.
-		m_listEntries.clear();
+		m_listEntries.clear();  ///snow:clear()只是将m_listEntries的内容清空，但并没有清空原先存储在m_listEntries中的指针所指向的内容
 	}
 	catch (...)
 	{
@@ -119,8 +119,8 @@ bool CRoutingBin::AddContact(CContact *pContact)
 	// If not full, add to end of list
 	if ( m_listEntries.size() < K)  ///snow:K桶还未装满，添加到队尾
 	{
-		m_listEntries.push_back(pContact);
-		AdjustGlobalTracking(pContact->GetIPAddress(), true);
+	m_listEntries.push_back(pContact);  ///snow:添加到K桶m_listEntries中
+	AdjustGlobalTracking(pContact->GetIPAddress(), true);///snow:添加到两个globalMap中
 		return true;
 	}
 	return false;
@@ -249,7 +249,7 @@ void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 
 		//如果联系人type<=uMaxType且联系人IP已验证
 		if((*itContactList)->GetType() <= uMaxType && (*itContactList)->IsIpVerified())
 		{
-			///snow:计算该联系人的距离，保存了Map列表中
+			///snow:计算该联系人的距离，保存在Map列表中
 			CUInt128 uTargetDistance((*itContactList)->m_uClientID);
 			uTargetDistance.Xor(uTarget);
 			(*pmapResult)[uTargetDistance] = *itContactList;
@@ -272,20 +272,20 @@ void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 
 	return;
 }
 
-///snow:bIncrease指示什么？调增还是调减
+///snow:bIncrease指示什么？调增还是调减，对IP和子网两项的重复程序进行调整
 void CRoutingBin::AdjustGlobalTracking(uint32 uIP, bool bIncrease){
 	// IP
 	uint32 nSameIPCount = 0;
 	s_mapGlobalContactIPs.Lookup(uIP, nSameIPCount);
 	if (bIncrease){
-		if (nSameIPCount >= MAX_CONTACTS_IP){
+		if (nSameIPCount >= MAX_CONTACTS_IP){  ///snow:map已有相同IP了,还调增
 			ASSERT( false );
 			DebugLogError(_T("RoutingBin Global IP Tracking inconsitency on increase (%s)"), ipstr(ntohl(uIP)));
 		}
 		nSameIPCount++;
 	}
 	else if (!bIncrease){
-		if (nSameIPCount == 0){
+		if (nSameIPCount == 0){   ///snow:map中不存在uIP，还调减
 			ASSERT( false );
 			DebugLogError(_T("RoutingBin Global IP Tracking inconsitency on decrease (%s)"), ipstr(ntohl(uIP)));
 		}
@@ -293,22 +293,22 @@ void CRoutingBin::AdjustGlobalTracking(uint32 uIP, bool bIncrease){
 			nSameIPCount--;
 	}
 	if (nSameIPCount != 0)
-		s_mapGlobalContactIPs.SetAt(uIP, nSameIPCount);
+		s_mapGlobalContactIPs.SetAt(uIP, nSameIPCount);  ///snow:存储该IP条目
 	else
 		s_mapGlobalContactIPs.RemoveKey(uIP);
 
 	// Subnet
 	uint32 nSameSubnetCount = 0;
 	s_mapGlobalContactSubnets.Lookup(uIP & 0xFFFFFF00, nSameSubnetCount);
-	if (bIncrease){
-		if (nSameSubnetCount >= MAX_CONTACTS_SUBNET && !::IsLANIP(ntohl(uIP))){
+	if (bIncrease){  
+		if (nSameSubnetCount >= MAX_CONTACTS_SUBNET && !::IsLANIP(ntohl(uIP))){  ///snow:同一子网IP数已超10个，不可调增
 			ASSERT( false );
 			DebugLogError(_T("RoutingBin Global Subnet Tracking inconsitency on increase (%s)"), ipstr(ntohl(uIP)));
 		}
 		nSameSubnetCount++;
 	}
 	else if (!bIncrease){
-		if (nSameSubnetCount == 0){
+		if (nSameSubnetCount == 0){  ///snow:该子网中一个IP都没有，还调减
 			ASSERT( false );
 			DebugLogError(_T("RoutingBin Global IP Subnet inconsitency on decrease (%s)"), ipstr(ntohl(uIP)));
 		}
@@ -316,9 +316,9 @@ void CRoutingBin::AdjustGlobalTracking(uint32 uIP, bool bIncrease){
 			nSameSubnetCount--;
 	}
 	if (nSameSubnetCount != 0)
-		s_mapGlobalContactSubnets.SetAt(uIP & 0xFFFFFF00, nSameSubnetCount);
+		s_mapGlobalContactSubnets.SetAt(uIP & 0xFFFFFF00, nSameSubnetCount);///snow:存储该子网IP数
 	else
-		s_mapGlobalContactSubnets.RemoveKey(uIP & 0xFFFFFF00);	
+		s_mapGlobalContactSubnets.RemoveKey(uIP & 0xFFFFFF00);	///snow:删除该子网相应条目
 }
 
 bool CRoutingBin::ChangeContactIPAddress(CContact* pContact, uint32 uNewIP)
@@ -335,7 +335,7 @@ bool CRoutingBin::ChangeContactIPAddress(CContact* pContact, uint32 uNewIP)
 	// no more than 1 KadID per IP
 	uint32 nSameIPCount = 0;
 	s_mapGlobalContactIPs.Lookup(uNewIP, nSameIPCount);
-	if (nSameIPCount >= MAX_CONTACTS_IP){
+	if (nSameIPCount >= MAX_CONTACTS_IP){   ///snow:已存在与uNewIP一致的联系人了，不能将该IP再赋予新的联系人
 		if (::thePrefs.GetLogFilteredIPs())
 			AddDebugLogLine(false, _T("Rejected kad contact ip change on update (old IP=%s, requested IP=%s) - too many contacts with the same IP (global)") , ipstr(ntohl(pContact->GetIPAddress())), ipstr(ntohl(uNewIP)));
 		return false;
@@ -346,12 +346,13 @@ bool CRoutingBin::ChangeContactIPAddress(CContact* pContact, uint32 uNewIP)
 		///snow:同一个子网不超过10个IP
 		uint32 nSameSubnetGlobalCount = 0;
 		s_mapGlobalContactSubnets.Lookup(uNewIP & 0xFFFFFF00, nSameSubnetGlobalCount);
-		if (nSameSubnetGlobalCount >= MAX_CONTACTS_SUBNET && !::IsLANIP(ntohl(uNewIP))){
+		if (nSameSubnetGlobalCount >= MAX_CONTACTS_SUBNET && !::IsLANIP(ntohl(uNewIP))){   ///snow:同一子网的IP已有10个，不再接受新的IP加入
 			if (::thePrefs.GetLogFilteredIPs())
 				AddDebugLogLine(false, _T("Rejected kad contact ip change on update (old IP=%s, requested IP=%s) - too many contacts with the same Subnet (global)") , ipstr(ntohl(pContact->GetIPAddress())), ipstr(ntohl(uNewIP)));
 			return false;	
 		}
 
+		///snow:上段代码检查的是s_mapGlobalContactSubnets中的子网IP统计数，不准超过10个；下段代码检查的是m_listEntries中的子网IP统计数，不准超过2个
 		// no more than 2 IPs from the same /24 netmask in one bin, except if its a LANIP (if we don't accept LANIPs they already have been filtered before)
 		uint32 cSameSubnets = 0;
 		// Check if we already have a contact with this ID in the list.
@@ -370,9 +371,9 @@ bool CRoutingBin::ChangeContactIPAddress(CContact* pContact, uint32 uNewIP)
 	// everything fine
 	// LOGTODO REMOVE
 	DEBUG_ONLY( DebugLog(_T("Index contact IP change allowed %s -> %s"), ipstr(ntohl(pContact->GetIPAddress())), ipstr(ntohl(uNewIP))) );
-	AdjustGlobalTracking(pContact->GetIPAddress(), false);///snow:原IP的减1
+	AdjustGlobalTracking(pContact->GetIPAddress(), false);///snow:原IP的IP数及子网数减1
 	pContact->SetIPAddress(uNewIP);
-	AdjustGlobalTracking(pContact->GetIPAddress(), true);///snow:新IP的加1
+	AdjustGlobalTracking(pContact->GetIPAddress(), true);///snow:新IP的IP数及子网数加1
 	return true;
 }
 
