@@ -498,7 +498,7 @@ if (m_uLevel >= 127)   ///snow:最大层数127，不能再分割了
 		return false;
 
 	// Check if this zone is allowed to split.
-if ( (m_uZoneIndex < KK || m_uLevel < KBASE) && m_pBin->GetSize() == K)///snow:后面的条件K桶满了好理解，前面的是条件是什么意思？
+if ( (m_uZoneIndex < KK || m_uLevel < KBASE) && m_pBin->GetSize() == K)///snow:后面的条件K桶满了好理解，前面的是条件是什么意思？表示Index为000，001，010，011，110的K桶的分裂不受限制，可以一直分裂到Level=127，而index>5的K桶只能分裂到第4层
 		return true;
 	return false;
 }
