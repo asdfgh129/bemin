@@ -83,6 +83,7 @@ CRoutingZone::CRoutingZone()
 	// Can only create routing zone after prefs
 	// Set our KadID for creating the contact tree
 	CKademlia::GetPrefs()->GetKadID(&uMe);
+	//theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("My KadID:%s",uMe.ToBinaryString()));
 	// Set the preference file name.
 	m_sFilename = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("nodes.dat");
 	// Init our root node.
@@ -104,6 +105,7 @@ CRoutingZone::CRoutingZone(CRoutingZone *pSuper_zone, int iLevel, const CUInt128
 {
 	// Create a new leaf.  ///snow:建立一个没有子树的叶子结点
 	Init(pSuper_zone, iLevel, uZone_index);
+	//theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Parent Index:%s|Parent level:%i|Current Index:%s|Current Level:%i",pSuper_zone->m_uZoneIndex.ToBinaryString(),pSuper_zone->m_uLevel,uZone_index.ToBinaryString(),iLevel));
 }
 
 void CRoutingZone::Init(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &uZone_index)
@@ -144,7 +146,7 @@ CRoutingZone::~CRoutingZone()
 		WriteFile();
 	}
 	// If this zone is a leaf, delete our contact bin.
-	if (IsLeaf())
+	if (IsLeaf())   ///snow:叶子结点，删除m_pBin，非叶结点，删除左右子树
 		delete m_pBin;
 	else
 	{
@@ -496,7 +498,7 @@ if (m_uLevel >= 127)   ///snow:最大层数127，不能再分割了
 		return false;
 
 	// Check if this zone is allowed to split.
-	if ( (m_uZoneIndex < KK || m_uLevel < KBASE) && m_pBin->GetSize() == K)
+if ( (m_uZoneIndex < KK || m_uLevel < KBASE) && m_pBin->GetSize() == K)///snow:后面的条件K桶满了好理解，前面的是条件是什么意思？
 		return true;
 	return false;
 }
@@ -505,6 +507,7 @@ if (m_uLevel >= 127)   ///snow:最大层数127，不能再分割了
 bool CRoutingZone::Add(const CUInt128 &uID, uint32 uIP, uint16 uUDPPort, uint16 uTCPPort, uint8 uVersion, CKadUDPKey cUDPKey, bool& bIPVerified, bool bUpdate, bool bFromNodesDat, bool bFromHello)
 {
 	uint32 uhostIP = ntohl(uIP);
+	///snow:对IP进行匹配过滤
 	if (::IsGoodIPPort(uhostIP, uUDPPort))
 	{
 		if (!::theApp.ipfilter->IsFiltered(uhostIP) && !(uUDPPort == 53 && uVersion <= KADEMLIA_VERSION5_48a)  /*No DNS Port without encryption*/) {
@@ -524,11 +527,11 @@ bool CRoutingZone::Add(const CUInt128 &uID, uint32 uIP, uint16 uUDPPort, uint16 
 // Returns true if a contact was added or updated, false if the routing table was not touched
 bool CRoutingZone::AddUnfiltered(const CUInt128 &uID, uint32 uIP, uint16 uUDPPort, uint16 uTCPPort, uint8 uVersion, CKadUDPKey cUDPKey, bool& bIPVerified, bool bUpdate, bool /*bFromNodesDat*/, bool bFromHello)
 {
-if (uID != uMe && uVersion > 1)   ///snow:uMe在构造函数中赋值：GetPrefs()->GetKadID(&uMe)
+	if (uID != uMe && uVersion > 1)   ///snow:uMe在构造函数中赋值：GetPrefs()->GetKadID(&uMe)，不是自身，且版本为2以上版本
 	{
 		CContact* pContact = new CContact(uID, uIP, uUDPPort, uTCPPort, uVersion, cUDPKey, bIPVerified);
 		if (bFromHello)
-			pContact->SetReceivedHelloPacket();
+			pContact->SetReceivedHelloPacket();  ///snow:这里设置的值在Add()中取值判断
 
 		if (Add(pContact, bUpdate, bIPVerified)){
 			ASSERT( !bUpdate );
@@ -547,17 +550,18 @@ bool CRoutingZone::Add(CContact* pContact, bool& bUpdate, bool& bOutIPVerified)
 	// If we are not a leaf, call add on the correct branch.
 	if (!IsLeaf())
 		return m_pSubZones[pContact->GetDistance().GetBitNumber(m_uLevel)]->Add(pContact, bUpdate, bOutIPVerified);
-	else
+	else  ///snow:当前是叶子结点
 	{
 		// Do we already have a contact with this KadID?
 		CContact* pContactUpdate = m_pBin->GetContact(pContact->GetClientID());
-		if (pContactUpdate)
+		if (pContactUpdate)   ///snow:已经存在相同KadID的联系人
 		{
 			if(bUpdate)
 			{
 				if (pContactUpdate->GetUDPKey().GetKeyValue(theApp.GetPublicIP(false)) != 0
 					&& pContactUpdate->GetUDPKey().GetKeyValue(theApp.GetPublicIP(false)) != pContact->GetUDPKey().GetKeyValue(theApp.GetPublicIP(false)))
 				{
+					///snow:UDPKey!=00(version 4的UDPKey是00）且新要求增加的联系人的UDPKey!=当前已存在的联系人的UDPKey
 					// if our existing contact has a UDPSender-Key (which should be the case for all > = 0.49a clients)
 					// except if our IP has changed recently, we demand that the key is the same as the key we received
 					// from the packet which wants to update this contact in order to make sure this is not a try to
@@ -567,6 +571,7 @@ bool CRoutingZone::Add(CContact* pContact, bool& bUpdate, bool& bOutIPVerified)
 						, ipstr(ntohl(pContactUpdate->GetIPAddress())));
 					bUpdate = false;
 				}
+				///snow:版本号在0.46c--0.49abeta之间，且收到了HelloPacket
 				else if (pContactUpdate->GetVersion() >= KADEMLIA_VERSION1_46c && pContactUpdate->GetVersion() < KADEMLIA_VERSION6_49aBETA
 					&& pContactUpdate->GetReceivedHelloPacket())
 				{
@@ -608,8 +613,8 @@ bool CRoutingZone::Add(CContact* pContact, bool& bUpdate, bool& bOutIPVerified)
 					}
 #endif
 					// All other nodes (Kad1, Kad2 > 0.49a with UDPKey checked or not set, first hello updates) are allowed to do full updates
-					if (m_pBin->ChangeContactIPAddress(pContactUpdate, pContact->GetIPAddress())
-						&& pContact->GetVersion() >= pContactUpdate->GetVersion()) // do not let Kad1 responses overwrite Kad2 ones
+					if (m_pBin->ChangeContactIPAddress(pContactUpdate, pContact->GetIPAddress())   ///snow:函数名起的有点误导，不是Change，而是CanChange
+						&& pContact->GetVersion() >= pContactUpdate->GetVersion()) // do not let Kad1 responses overwrite Kad2 ones///snow:新版本的可以替换旧版本的,KAD2可以替换KAD1的，反过来不行
 					{
 						pContactUpdate->SetUDPPort(pContact->GetUDPPort());
 						pContactUpdate->SetTCPPort(pContact->GetTCPPort());
@@ -629,9 +634,13 @@ bool CRoutingZone::Add(CContact* pContact, bool& bUpdate, bool& bOutIPVerified)
 			}
 			return false;
 		}
-		else if (m_pBin->GetRemaining())
+		else if (m_pBin->GetRemaining())  ///snow:结点中还有剩余空间，联系人个数未过到K值
 		{
 			bUpdate = false;
+
+			///snow:add by snow
+			theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Add Remaining|Parent Index:%s|Parent level:%i|Current Index:%s|Current Level:%i|Contact Num:%i"),m_pSuperZone?m_pSuperZone->m_uZoneIndex.ToBinaryString():_T("0-0"),m_pSuperZone?m_pSuperZone->m_uLevel:-1,m_uZoneIndex.ToBinaryString(),m_uLevel,m_pBin->GetSize());
+
 			// This bin is not full, so add the new contact.
 			if(m_pBin->AddContact(pContact))
 			{
@@ -642,8 +651,12 @@ bool CRoutingZone::Add(CContact* pContact, bool& bUpdate, bool& bOutIPVerified)
 			}
 			return false;
 		}
-		else if (CanSplit())
+		else if (CanSplit())///snow:结点中没有空间存放新的联系人了，判断一下是否可以拆分结点
 		{
+
+			///snow:add by snow
+			theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Add CanSplit|Parent Index:%s|Parent level:%i|Current Index:%s|Current Level:%i|Contact Num:%i"),m_pSuperZone?m_pSuperZone->m_uZoneIndex.ToBinaryString():_T("0-0"),m_pSuperZone?m_pSuperZone->m_uLevel:-1,m_uZoneIndex.ToBinaryString(),m_uLevel,m_pBin->GetSize());
+
 			// This bin was full and split, call add on the correct branch.
 			Split();
 			return m_pSubZones[pContact->GetDistance().GetBitNumber(m_uLevel)]->Add(pContact, bUpdate, bOutIPVerified);
@@ -753,6 +766,11 @@ void CRoutingZone::Split()
 	m_pSubZones[0] = GenSubZone(0);
 	m_pSubZones[1] = GenSubZone(1);
 
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Split SubZone0|Parent Index:%s|Current Index:%s|Current Level:%i"),m_uZoneIndex.ToBinaryString(),m_pSubZones[0]->m_uZoneIndex.ToBinaryString(),m_pSubZones[0]->m_uLevel);
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Split SubZone1|Parent Index:%s|Current Index:%s|Current Level:%i"),m_uZoneIndex.ToBinaryString(),m_pSubZones[1]->m_uZoneIndex.ToBinaryString(),m_pSubZones[1]->m_uLevel);
+
 	///snow:删除叶子结点
 	ContactList listEntries;
 	m_pBin->GetEntries(&listEntries); ///snow:将原先存储在m_pBin->m_listEntries中的对象的指针复制到listEntries中
@@ -768,6 +786,10 @@ void CRoutingZone::Split()
 	for (ContactList::const_iterator itContactList = listEntries.begin(); itContactList != listEntries.end(); ++itContactList)
 	{
 		int iSuperZone = (*itContactList)->m_uDistance.GetBitNumber(m_uLevel);
+		
+		///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Split AddConatct|SubZone :%i|Contact ID:%s"),iSuperZone, (*itContactList)->GetClientID().ToBinaryString());
+
 		if (!m_pSubZones[iSuperZone]->m_pBin->AddContact(*itContactList))  ///snow:AddContact()中添加的也是指针
 			delete *itContactList;
 	}
@@ -829,7 +851,7 @@ bool CRoutingZone::IsLeaf() const
 
 CRoutingZone *CRoutingZone::GenSubZone(int iSide)
 {
-CUInt128 uNewIndex(m_uZoneIndex);   ///snow:假设父结点的m_uZoneIndex为0，则新建的叶子结点，左叶子结点m_uZoneIndex=00，右叶子结点m_uZoneIndex为01，依此类推，为010，011，100，101，1000，1001，有点问题呀？不是很对，那0的那支，再怎么左移都是0
+	CUInt128 uNewIndex(m_uZoneIndex);   ///snow:假设父结点的m_uZoneIndex为0，则新建的叶子结点，左叶子结点m_uZoneIndex=00，右叶子结点m_uZoneIndex为01，依此类推，为010，011，100，101，1000，1001，有点问题呀？不是很对，那0的那支，再怎么左移都是0
 	uNewIndex.ShiftLeft(1);
 	if (iSide != 0)
 		uNewIndex.Add(1);

@@ -295,4 +295,5 @@ inline BOOL afxIsWin95()
 #define CAsyncSocketEx_workflow _T("CAsyncSocketEx_Workflow")
 #define TRACE_PACKET_DATA _T("PacketData")
 #define TRACE_STREAM_DATA _T("StreamData")
+#define TRACE_KAD_BINARY_TREE _T("KadBinaryTree")
 ///----------------------------------->by snow

@@ -214,6 +214,29 @@ void CUInt128::ToBinaryString(CString *pstr, bool bTrim) const
 		pstr->SetString(_T("0"));
 }
 
+///snow:<----------------------------add by snow
+CString CUInt128::ToBinaryString() const
+{
+	CString pstr;
+	CString sElement;
+	int iBit;
+	bool bTrim = false;
+	for (int iIndex=0; iIndex<128; iIndex++)
+	{
+		iBit = GetBitNumber(iIndex);
+		if ((!bTrim) || (iBit != 0))
+		{
+			sElement.Format(_T("%d"), iBit);
+			pstr.Append(sElement);
+			bTrim = false;
+		}
+	}
+	if (pstr.GetLength() == 0)
+		pstr.SetString(_T("0"));
+	return pstr;
+}
+///snow:------------------------------>add by snow
+
 #if defined(_M_IX86) && (_MSC_FULL_VER > 13009037)
 #pragma intrinsic(_byteswap_ulong)
 #endif

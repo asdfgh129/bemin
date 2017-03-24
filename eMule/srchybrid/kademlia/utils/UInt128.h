@@ -52,6 +52,9 @@ namespace Kademlia
 			void ToHexString(CString *pstr) const;
 			CString ToHexString() const;
 			void ToBinaryString(CString *pstr, bool bTrim = false) const;
+			///snow:<----------------------------add by snow
+			CString ToBinaryString() const;
+			///snow:------------------------------>add by snow
 			void ToByteArray(byte *pby) const;
 			ULONG Get32BitChunk(int iVal) const;
 			CUInt128& SetValue(const CUInt128 &uValue);

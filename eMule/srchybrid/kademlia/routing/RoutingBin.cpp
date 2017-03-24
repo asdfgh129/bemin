@@ -38,6 +38,7 @@ there client on the eMule forum..
 #include "./RoutingBin.h"
 #include "./Contact.h"
 #include "../kademlia/Defines.h"
+#include "../../emule.h"
 #include "../../Log.h"
 #include "../../preferences.h"
 #include "../../OtherFunctions.h"
@@ -119,6 +120,9 @@ bool CRoutingBin::AddContact(CContact *pContact)
 	// If not full, add to end of list
 	if ( m_listEntries.size() < K)  ///snow:K桶还未装满，添加到队尾
 	{
+		///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingBin|Function:AddContact|Contact ID:%s|Contact IP:%s|Distance:%s|Contact Num:%i"),pContact->GetClientID().ToHexString(),ipstr(pContact->GetIPAddress()),pContact->GetDistance().ToBinaryString(),m_listEntries.size());
+
 	m_listEntries.push_back(pContact);  ///snow:添加到K桶m_listEntries中
 	AdjustGlobalTracking(pContact->GetIPAddress(), true);///snow:添加到两个globalMap中
 		return true;
