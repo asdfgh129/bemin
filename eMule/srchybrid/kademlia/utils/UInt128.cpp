@@ -145,8 +145,8 @@ UINT CUInt128::GetBitNumber(UINT uBit) const
 {
 	if (uBit > 127)
 		return 0;
-	int iLongNum = uBit / 32;
-	int iShift = 31 - (uBit % 32);
+	int iLongNum = uBit / 32;   ///snow:m_uData有12位，4个UINT32
+	int iShift = 31 - (uBit % 32);   ///snow:需要右移的位数，比如需要比较的是第7位，则需要右移24位？？？为什么是从左往右数？
 	return ((m_uData[iLongNum] >> iShift) & 1);
 }
 
@@ -454,3 +454,4 @@ bool CUInt128::operator!= (ULONG uValue) const
 {
 	return (CompareTo(uValue) != 0);
 }
+、

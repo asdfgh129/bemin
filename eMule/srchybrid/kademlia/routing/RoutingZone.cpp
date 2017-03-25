@@ -78,6 +78,8 @@ void DebugSend(LPCTSTR pszMsg, uint32 uIP, uint16 uUDPPort);
 CString CRoutingZone::m_sFilename;
 CUInt128 CRoutingZone::uMe = (ULONG)0;
 
+///snow:CUInt128的位数是从左往右数的，不是从右往左数的！！！
+
 CRoutingZone::CRoutingZone()
 {
 	// Can only create routing zone after prefs
@@ -670,12 +672,12 @@ bool CRoutingZone::Add(CContact* pContact, bool& bUpdate, bool& bOutIPVerified)
 
 CContact *CRoutingZone::GetContact(const CUInt128 &uID) const
 {
-	if (IsLeaf())
+	if (IsLeaf())   ///snow:如果是叶子结点，则调用GetContact()函数
 		return m_pBin->GetContact(uID);
-	else{
+	else{     ///snow:如果是分支结点，则根据uDistance中与本zone的m_uLevel对应的位的值，分别调用左子树或右子树，直到叶子结点，最后还是调用叶子结点的GetContact()
 		CUInt128 uDistance;
-		CKademlia::GetPrefs()->GetKadID(&uDistance);
-		uDistance.Xor(uID);
+		CKademlia::GetPrefs()->GetKadID(&uDistance); ///snow:将本机KadID赋值给uDistance
+		uDistance.Xor(uID);   ///snow:将uID与本机KADID进行异或，得到距离
 		return m_pSubZones[uDistance.GetBitNumber(m_uLevel)]->GetContact(uID);
 	}
 }
@@ -755,6 +757,7 @@ uint32 CRoutingZone::GetMaxDepth() const
 {
 	if (IsLeaf())
 		return 0;
+	///snow:每往下一级，+1
 	return 1 + max(m_pSubZones[0]->GetMaxDepth(), m_pSubZones[1]->GetMaxDepth());
 }
 
@@ -852,6 +855,7 @@ bool CRoutingZone::IsLeaf() const
 CRoutingZone *CRoutingZone::GenSubZone(int iSide)
 {
 	CUInt128 uNewIndex(m_uZoneIndex);   ///snow:假设父结点的m_uZoneIndex为0，则新建的叶子结点，左叶子结点m_uZoneIndex=00，右叶子结点m_uZoneIndex为01，依此类推，为010，011，100，101，1000，1001，有点问题呀？不是很对，那0的那支，再怎么左移都是0
+	///snow:实际0的叶子结点只有一个，PPT里有详细的分裂过程
 	uNewIndex.ShiftLeft(1);
 	if (iSide != 0)
 		uNewIndex.Add(1);
