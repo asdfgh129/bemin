@@ -235,6 +235,7 @@ CContact *CRoutingBin::GetOldest()
 	return NULL;
 }
 
+///snow:最近的联系人总是保存在最左边的子树，当到达叶子结点时，最近的联系人就是本结点中存储的联系人了
 void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 uMaxRequired, ContactMap *pmapResult, bool bEmptyFirst, bool bInUse)
 {
 	// Empty list if requested.    ///snow:是否先清空目标结果列表

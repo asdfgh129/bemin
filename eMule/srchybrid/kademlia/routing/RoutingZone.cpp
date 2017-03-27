@@ -303,6 +303,7 @@ void CRoutingZone::ReadFile(CString strSpecialNodesdate)
 	theApp.emuledlg->kademliawnd->StartUpdateContacts();
 }
 
+///snow:引导程序
 void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO& file){
 	// Bootstrap versions of nodes.dat files, are in the style of version 1 nodes.dats. The difference is that
 	// they will contain more contacts 500-1000 instead 50, and those contacts are not added into the routingtable
@@ -377,6 +378,7 @@ void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO& file){
 	}
 }
 
+///snow:在析构的时候将KADID写入文件
 void CRoutingZone::WriteFile()
 {
 	// don't overwrite a bootstrap nodes.dat with an empty one, if we didn't finished probing
@@ -703,8 +705,10 @@ CContact* CRoutingZone::GetRandomContact(uint32 nMaxType, uint32 nMinKadVersion)
 	}
 }
 
+///snow:最近的联系人总是与目标结点的位最大程度的一致(从高位往低位匹配(因为CUInt128定义了最高位是0位))，如果本结点是叶子结点，则就是结点中存储的联系人，如果不是，则按位索引分支结点，直到叶子结点
 void CRoutingZone::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, const CUInt128 &uDistance, uint32 uMaxRequired, ContactMap *pmapResult, bool bEmptyFirst, bool bInUse) const
 {
+	///snow:如果是叶子结点，直接搜索
 	// If leaf zone, do it here
 	if (IsLeaf())
 	{
@@ -712,6 +716,7 @@ void CRoutingZone::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, const 
 		return;
 	}
 
+	///snow:按位匹配，寻找相应的分支结点，如果当前分支把返回的结果数较少，再从另一个子树搜索
 	// otherwise, recurse in the closer-to-the-target subzone first
 	int iCloser = uDistance.GetBitNumber(m_uLevel);
 	m_pSubZones[iCloser]->GetClosestTo(uMaxType, uTarget, uDistance, uMaxRequired, pmapResult, bEmptyFirst, bInUse);
@@ -728,7 +733,7 @@ void CRoutingZone::GetAllEntries(ContactList *pmapResult, bool bEmptyFirst)
 	else
 	{
 		m_pSubZones[0]->GetAllEntries(pmapResult, bEmptyFirst);
-		m_pSubZones[1]->GetAllEntries(pmapResult, false);
+		m_pSubZones[1]->GetAllEntries(pmapResult, false);///snow:不清空列表，因为存储了左子树的结点
 	}
 }
 
@@ -817,7 +822,7 @@ uint32 CRoutingZone::Consolidate()
 		m_pSubZones[0]->StopTimer();
 		m_pSubZones[1]->StopTimer();
 
-		///snow:拷贝到原左右子树中的联系人指针
+		///snow:拷贝原左右子树中的联系人指针
 		ContactList list0;
 		ContactList list1;
 		m_pSubZones[0]->m_pBin->GetEntries(&list0);

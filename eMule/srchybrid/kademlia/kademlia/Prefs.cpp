@@ -66,7 +66,7 @@ CPrefs::~CPrefs()
 
 void CPrefs::Init(LPCTSTR szFilename)
 {
-	m_uClientID.SetValueRandom();
+	m_uClientID.SetValueRandom();   ///snow:先产生一个随机的ID，如果之后的ReadFile()有取到ID，则覆盖此随机ID
 	m_tLastContact = 0;
 	m_uRecheckip = 0;
 	m_uFirewalled = 0;
@@ -113,7 +113,7 @@ void CPrefs::ReadFile()
 			file.ReadUInt128(&m_uClientID); ///snow:C6 FD 41 06 70 7F E5 80 B1 33 64 6D F2 73 50 F2 
 			///snow:最后还有一个字节00，表示没有tags
 			// get rid of invalid kad IDs which may have been stored by older versions
-			if (m_uClientID == 0)
+			if (m_uClientID == 0)   ///snow:如果没取到ID，就随机产生一个
 				m_uClientID.SetValueRandom();
 			file.Close();
 		}
