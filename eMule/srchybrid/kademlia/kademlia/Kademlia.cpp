@@ -191,6 +191,7 @@ void CKademlia::Stop()
 	m_mapEvents.clear();
 }
 
+///snow:在CUploadQueue::UploadTimer()中调用，定时处理Kad网的更新等事务
 void CKademlia::Process()
 {
 	if( m_pInstance == NULL || !m_bRunning)
@@ -310,7 +311,7 @@ void CKademlia::Process()
 	if(!IsConnected() && !s_liBootstapList.IsEmpty() 
 		&& (tNow - m_tBootstrap > 15 || (GetRoutingZone()->GetNumContacts() == 0 && tNow - m_tBootstrap >= 2)))
 	{
-		CContact* pContact = s_liBootstapList.RemoveHead();
+		CContact* pContact = s_liBootstapList.RemoveHead();///snow: CRoutingZone::ReadBootstrapNodesDat()中存入节点信息
 		m_tBootstrap = tNow;
 		DebugLog(_T("Trying to Bootstrap Kad from %s, Distance: %s, Version: %u, %u Contacts left"), ipstr(ntohl(pContact->GetIPAddress())), pContact->GetDistance().ToHexString(),  pContact->GetVersion(), s_liBootstapList.GetCount());
 		m_pInstance->m_pUDPListener->Bootstrap(pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetVersion(), &pContact->GetClientID());
@@ -349,7 +350,7 @@ uint32 CKademlia::GetKademliaUsers(bool bNewMethod)
 {
 	if( m_pInstance && m_pInstance->m_pPrefs ){
 		if (bNewMethod)
-			return CalculateKadUsersNew();
+			return CalculateKadUsersNew();///snow:没有被调用，bNewMethod参数没有值为true的调用
 		else
 			return m_pInstance->m_pPrefs->GetKademliaUsers();
 	}
@@ -398,6 +399,8 @@ uint32 CKademlia::GetIPAddress()
 	return 0;
 }
 
+
+///snow:在CClientUDPSocket::OnReceive()中调用
 void CKademlia::ProcessPacket(const byte *pbyData, uint32 uLenData, uint32 uIP, uint16 uPort, bool bValidReceiverKey, CKadUDPKey senderUDPKey)
 {
 	if( m_pInstance && m_pInstance->m_pUDPListener )
@@ -563,6 +566,7 @@ void CKademlia::StatsAddClosestDistance(CUInt128 uDist){
 		m_liStatsEstUsersProbes.RemoveTail();
 }
 
+///snow:此函数保留，未被调用
 uint32 CKademlia::CalculateKadUsersNew(){
 	// the idea of calculating the user count with this method is simple:
 	// whenever we do search for any NodeID (except in certain cases were the result is not usable),
@@ -628,6 +632,7 @@ uint32 CKademlia::CalculateKadUsersNew(){
 	return (uint32)((float)nMedian*fFirewalledModifyTotal);
 }
 
+///snow:这个是做什么用的呢？什么情况下会用LanMode？
 bool CKademlia::IsRunningInLANMode()
 {
 	if (thePrefs.FilterLANIPs() || !IsRunning())
