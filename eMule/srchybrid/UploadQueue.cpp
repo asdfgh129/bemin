@@ -923,7 +923,7 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 			theApp.sharedfiles->Process();
 			if( Kademlia::CKademlia::IsRunning() )
 			{
-				Kademlia::CKademlia::Process();
+				Kademlia::CKademlia::Process();  ///snow:Kademlia的定时处理函数
 				if(Kademlia::CKademlia::GetPrefs()->HasLostConnection())
 				{
 					Kademlia::CKademlia::Stop();
