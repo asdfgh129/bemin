@@ -191,7 +191,7 @@ void CKademlia::Stop()
 	m_mapEvents.clear();
 }
 
-///snow:在CUploadQueue::UploadTimer()中调用，定时处理Kad网的更新等事务
+-///snow:在CUploadQueue::UploadTimer()中调用，定时处理Kad网的更新等事务
 void CKademlia::Process()
 {
 	if( m_pInstance == NULL || !m_bRunning)
@@ -270,7 +270,7 @@ void CKademlia::Process()
 					{
 						pZone->m_tNextBigTimer = HR2S(1) + tNow;
 						m_tBigTimer = SEC(10) + tNow;
-					}
+					} 
 				}
 			}
 		}
@@ -399,8 +399,7 @@ uint32 CKademlia::GetIPAddress()
 	return 0;
 }
 
-
-///snow:在CClientUDPSocket::OnReceive()中调用
+-///snow:在CClientUDPSocket::OnReceive()中调用
 void CKademlia::ProcessPacket(const byte *pbyData, uint32 uLenData, uint32 uIP, uint16 uPort, bool bValidReceiverKey, CKadUDPKey senderUDPKey)
 {
 	if( m_pInstance && m_pInstance->m_pUDPListener )
@@ -566,7 +565,7 @@ void CKademlia::StatsAddClosestDistance(CUInt128 uDist){
 		m_liStatsEstUsersProbes.RemoveTail();
 }
 
-///snow:此函数保留，未被调用
+-///snow:此函数保留，未被调用
 uint32 CKademlia::CalculateKadUsersNew(){
 	// the idea of calculating the user count with this method is simple:
 	// whenever we do search for any NodeID (except in certain cases were the result is not usable),
@@ -632,7 +631,7 @@ uint32 CKademlia::CalculateKadUsersNew(){
 	return (uint32)((float)nMedian*fFirewalledModifyTotal);
 }
 
-///snow:这个是做什么用的呢？什么情况下会用LanMode？
+-///snow:这个是做什么用的呢？什么情况下会用LanMode？
 bool CKademlia::IsRunningInLANMode()
 {
 	if (thePrefs.FilterLANIPs() || !IsRunning())
