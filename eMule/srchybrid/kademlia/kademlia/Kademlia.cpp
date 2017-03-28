@@ -251,20 +251,20 @@ void CKademlia::Process()
 			if( uMaxUsers < uTempUsers )
 				uMaxUsers = uTempUsers;
 		}
-		if (m_tBigTimer <= tNow)
+		if (m_tBigTimer <= tNow)   ///snow:每10秒执行代码一次
 		{
-			if( pZone->m_tNextBigTimer <= tNow )
+			if( pZone->m_tNextBigTimer <= tNow )   ///snow:距离上次执行OnBigTimer()还不到1小时
 			{
-				if(pZone->OnBigTimer())
+				if(pZone->OnBigTimer())   ///snow:随机查找节点成功，如果不成功，则不重置m_tNextBigTimer和m_tBigTimer
 				{
 					pZone->m_tNextBigTimer = HR2S(1) + tNow;
 					m_tBigTimer = SEC(10) + tNow;
 				}
 			}
-			else
+			else   ///snow:距离上次执行OnBigTimer()已超过1小时
 			{
 				if( uLastContact && ( (tNow - uLastContact) > (KADEMLIADISCONNECTDELAY-MIN2S(5))))
-				{
+				{   ///snow: 上次随机查找节点时发现了新的联系人，且距离现在超过15分钟
 					if(pZone->OnBigTimer())
 					{
 						pZone->m_tNextBigTimer = HR2S(1) + tNow;

@@ -867,6 +867,7 @@ CRoutingZone *CRoutingZone::GenSubZone(int iSide)
 	return new CRoutingZone(this, m_uLevel+1, uNewIndex); ///snow:this表示新的zone为本zone的子zone
 }
 
+///snow:将当前ZOne加入m_mapEvent，在CKademlia::Process()中进行更新处理。在Init()和Consolidate()中调用
 void CRoutingZone::StartTimer()
 {
 	time_t tNow = time(NULL);
@@ -875,6 +876,7 @@ void CRoutingZone::StartTimer()
 	CKademlia::AddEvent(this);
 }
 
+///snow:在Split()和Consolidate()中调用
 void CRoutingZone::StopTimer()
 {
 	CKademlia::RemoveEvent(this);
@@ -884,7 +886,7 @@ bool CRoutingZone::OnBigTimer()
 {
 	if ( IsLeaf() && (m_uZoneIndex < KK || m_uLevel < KBASE || m_pBin->GetRemaining() >= (K*.8)))
 	{
-		RandomLookup();
+		RandomLookup();   ///snow:随机查找节点
 		return true;
 	}
 
