@@ -200,7 +200,7 @@ void CSearch::Go()
 		if(m_uType == NODE)
 			iCount = 1;
 		else
-			iCount = min(ALPHA_QUERY, (int)m_mapPossible.size());
+			iCount = min(ALPHA_QUERY, (int)m_mapPossible.size());  ///snow:对最多3个节点进行搜索
 
 		ContactMap::iterator itContactMap2 = m_mapPossible.begin();
 		// Send initial packets to start the search.
@@ -278,7 +278,7 @@ void CSearch::PrepareToStop()
 void CSearch::JumpStart()
 {
 	// If we had a response within the last 3 seconds, no need to jumpstart the search.
-	if (m_uLastResponse + SEC(3) > (uint32)time(NULL))
+	if (m_uLastResponse + SEC(3) > (uint32)time(NULL))   ///snow:离上次回应未超3秒
 		return;
 
 	// If we ran out of contacts, stop search.
