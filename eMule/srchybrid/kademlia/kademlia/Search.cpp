@@ -176,21 +176,22 @@ CSearch::~CSearch()
 void CSearch::Go()
 {
 	// Start with a lot of possible contacts, this is a fallback in case search stalls due to dead contacts
-	if (m_mapPossible.empty())
+	if (m_mapPossible.empty())  ///snow:如果m_mapPossible为空，根据m_uTarget取最近的50个节点，存入m_mapPossible
 	{
 		CUInt128 uDistance(CKademlia::GetPrefs()->GetKadID());
 		uDistance.Xor(m_uTarget);
 		CKademlia::GetRoutingZone()->GetClosestTo(3, m_uTarget, uDistance, 50, &m_mapPossible, true, true);
 
 		for (ContactMap::iterator itContactMap = m_mapPossible.begin(); itContactMap != m_mapPossible.end(); ++itContactMap)
+			///snow:将这些准备对其发起搜索的联系人添加到历史列表m_aHistoryEntries
 			m_pLookupHistory->ContactReceived(itContactMap->second, NULL, itContactMap->first, false);
 		theApp.emuledlg->kademliawnd->UpdateSearchGraph(m_pLookupHistory);
 	}
-	if (!m_mapPossible.empty())
+	if (!m_mapPossible.empty())  ///snow:存在最接近的联系人
 	{
 		//Lets keep our contact list entries in mind to dec the inUse flag.
 		for (ContactMap::iterator itContactMap = m_mapPossible.begin(); itContactMap != m_mapPossible.end(); ++itContactMap)
-			m_mapInUse[itContactMap->first] = itContactMap->second;
+			m_mapInUse[itContactMap->first] = itContactMap->second;   ///snow:添加到使用中联系人列表
 
 		ASSERT(m_mapPossible.size() == m_mapInUse.size());
 

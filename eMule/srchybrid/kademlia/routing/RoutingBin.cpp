@@ -251,7 +251,7 @@ void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 
 	///snow:遍历联系人列表m_listEntries，
 	for (ContactList::const_iterator itContactList = m_listEntries.begin(); itContactList != m_listEntries.end(); ++itContactList)
 	{ 
-		//如果联系人type<=uMaxType且联系人IP已验证
+		//如果联系人type<=uMaxType且联系人IP已验证，type值在0-4之间，在线时间越长，值越小
 		if((*itContactList)->GetType() <= uMaxType && (*itContactList)->IsIpVerified())
 		{
 			///snow:计算该联系人的距离，保存在Map列表中

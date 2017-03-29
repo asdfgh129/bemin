@@ -719,6 +719,7 @@ void CRoutingZone::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, const 
 		return;
 	}
 
+	///snow:uDistancce的作用是按位匹配寻找分支节点
 	///snow:按位匹配，寻找相应的分支结点，如果当前分支把返回的结果数较少，再从另一个子树搜索
 	// otherwise, recurse in the closer-to-the-target subzone first
 	int iCloser = uDistance.GetBitNumber(m_uLevel);

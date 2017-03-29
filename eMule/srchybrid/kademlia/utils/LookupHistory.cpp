@@ -83,6 +83,8 @@ void CLookupHistory::ContactReceived(CContact* pRecContact, CContact* pFromConta
 			return;
 		}
 	}
+
+	///snow:如果m_aHistoryEntries中没有这个联系人的信息，添加进历史map中
 	SLookupHistoryEntry* pstructNewEntry = new SLookupHistoryEntry;
 	pstructNewEntry->m_uRespondedContact = 0;
 	pstructNewEntry->m_uRespondedSearchItem = 0;
@@ -107,7 +109,7 @@ void CLookupHistory::ContactReceived(CContact* pRecContact, CContact* pFromConta
 	pstructNewEntry->m_uPort = pRecContact->GetUDPPort();
 	pstructNewEntry->m_bForcedInteresting = bForceInteresting;
 	m_aHistoryEntries.Add(pstructNewEntry);
-	if (bForceInteresting)
+	if (bForceInteresting)  ///snow:添加进感兴趣列表
 		m_aIntrestingHistoryEntries.Add(pstructNewEntry);
 }
 
