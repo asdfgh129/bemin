@@ -173,6 +173,7 @@ CSearch::~CSearch()
 	m_pSearchTerm = NULL;
 }
 
+///snow:三个地方发起调用：CSearchManager::StartSearch、PrepareFindKeywords、PrepareLookup
 void CSearch::Go()
 {
 	// Start with a lot of possible contacts, this is a fallback in case search stalls due to dead contacts
@@ -198,7 +199,7 @@ void CSearch::Go()
 		// Take top ALPHA_QUERY to start search with.
 		int iCount;
 		
-		if(m_uType == NODE)
+		if(m_uType == NODE)   ///snow:通过SetSearchTypes()设置
 			iCount = 1;
 		else
 			iCount = min(ALPHA_QUERY, (int)m_mapPossible.size());  ///snow:对最多3个节点进行搜索
@@ -209,10 +210,11 @@ void CSearch::Go()
 		{
 			CContact* pContact = itContactMap2->second;
 			// Move to tried
-			m_mapTried[itContactMap2->first] = pContact;
+			m_mapTried[itContactMap2->first] = pContact;    ///snow:添加到尝试联系人列表
 			// Send the KadID so other side can check if I think it has the right KadID. (Saftey net)
+			///snow:发送对方的KadID是为了让对方验证我们是否拥有正确的对方ID
 			// Send request
-			SendFindValue(pContact);
+			SendFindValue(pContact);   ///snow:向该联系人发送数据包
 			++itContactMap2;
 		}
 	}
@@ -267,19 +269,19 @@ void CSearch::PrepareToStop()
 
 	// Adjust created time so that search will delete within 15 seconds.
 	// This gives late results time to be processed.
-	m_tCreated = time(NULL) - uBaseTime + SEC(15);
+	m_tCreated = time(NULL) - uBaseTime + SEC(15);   ///snow:建立时间为当前时间后15秒，在CSearchManager::JumpStart()中取值判断
 	m_bStoping = true;
 
 	//Update search within GUI.
 	theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
-	m_pLookupHistory->SetSearchStopped();
+	m_pLookupHistory->SetSearchStopped();   ///snow:设置停止标志 m_bSearchStopped = true;
 	theApp.emuledlg->kademliawnd->UpdateSearchGraph(m_pLookupHistory);
 }
 
 void CSearch::JumpStart()
 {
 	// If we had a response within the last 3 seconds, no need to jumpstart the search.
-	if (m_uLastResponse + SEC(3) > (uint32)time(NULL))   ///snow:离上次回应未超3秒
+	if (m_uLastResponse + SEC(3) > (uint32)time(NULL))   ///snow:离上次回应未超3秒，ProcessResponse()中赋值
 		return;
 
 	// If we ran out of contacts, stop search.
@@ -294,22 +296,26 @@ void CSearch::JumpStart()
 	// The reason for this is that we may not have found the closest node alive due to results beeing limited to 2 contacts,
 	// which could very well have been the duplicates of our dead closest nodes [link paper]
 	bool bLookupCloserNodes = false;
+
+	///snow:m_mapTried在三个地方添加值：Go()、JumpStart()、ProcessResponse()，
+	///snow:pRequestedMoreNodesContact在SendFindValue()参数bReAskMore=true时被赋值
 	if (pRequestedMoreNodesContact == NULL && GetRequestContactCount() == KADEMLIA_FIND_VALUE && m_mapTried.size() >= 3*KADEMLIA_FIND_VALUE)
 	{
+		///snow:对m_mapTried中的前两个联系人进行判断，他们是否有回应过请求
 		ContactMap::const_iterator itContactMap = m_mapTried.begin();
 		bLookupCloserNodes = true;
 		for (uint32 i = 0; i < KADEMLIA_FIND_VALUE; i++)
 		{
-			if (m_mapResponded.count(itContactMap->first) > 0)
+			if (m_mapResponded.count(itContactMap->first) > 0)   ///snow:m_mapResponded在ProcessResponse()中被赋值，表示有联系人回应了
 			{
 				bLookupCloserNodes = false;
 				break;
 			}
 			itContactMap++;
 		}
-		if (bLookupCloserNodes)
+		if (bLookupCloserNodes)  ///snow：在前两个联系人没有回应的情况下
 		{
-			while (itContactMap != m_mapTried.end())
+			while (itContactMap != m_mapTried.end())   ///snow:从第三个联系人开始，直到最后一个联系人，发送搜索请求，bReAskMore=true
 			{
 				if (m_mapResponded.count(itContactMap->first) > 0)
 				{
@@ -320,26 +326,27 @@ void CSearch::JumpStart()
 				itContactMap++;
 			}
 		}
-	}
+	}   ///snow:endif
 
 	// Search for contacts that can be used to jumpstart a stalled search.
-	while(!m_mapPossible.empty())
+	while(!m_mapPossible.empty())   ///snow:在两个地方被赋值，Go()中GetClosestTo()和ProcessResponse()中回应的联系人 m_mapPossible[uDistance] = pContact;
+
 	{
 		// Get a contact closest to our target.
-		CContact* pContact = m_mapPossible.begin()->second;
+		CContact* pContact = m_mapPossible.begin()->second;  ///snow:从m_mapPossible中取出第一个联系人
 
 		// Have we already tried to contact this node.
-		if (m_mapTried.count(m_mapPossible.begin()->first) > 0)
+		if (m_mapTried.count(m_mapPossible.begin()->first) > 0)  ///snow:m_mapTried中已存在该联系人
 		{
 			// Did we get a response from this node, if so, try to store or get info.
-			if(m_mapResponded.count(m_mapPossible.begin()->first) > 0)
+			if(m_mapResponded.count(m_mapPossible.begin()->first) > 0)  ///snow:该联系人也已经回应了
 			{
-				StorePacket();
+				StorePacket();   ///snow:将Packet存储起来
 			}
 			// Remove from possible list.
-			m_mapPossible.erase(m_mapPossible.begin());
+			m_mapPossible.erase(m_mapPossible.begin());///snow:将m_mapPossible中的第一个联系人删除
 		}
-		else
+		else  ///snow:如果m_mapTried中没有该联系人，则添加到m_mapTried中，发送数据包请求搜索
 		{
 			// Add to tried list.
 			m_mapTried[m_mapPossible.begin()->first] = pContact;
@@ -355,13 +362,14 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 {
 	// Remember the contacts to be deleted when finished
 	for (ContactList::iterator itContactList = plistResults->begin(); itContactList != plistResults->end(); ++itContactList)
-		m_listDelete.push_back(*itContactList);
+		m_listDelete.push_back(*itContactList);   ///snow:回应的联系人列表在处理完成后进行删除
 
-	m_uLastResponse = time(NULL);
+	m_uLastResponse = time(NULL);  ///snow:记录下回应时间，在JumpStart中取值判断
 
 	//Find contact that is responding.
 	CUInt128 uFromDistance((ULONG)0);
 	CContact* pFromContact = NULL;
+	///snow:判断回应的联系人是否是我们发出搜索请求的联系人
 	for (ContactMap::const_iterator itContactMap = m_mapTried.begin(); itContactMap != m_mapTried.end(); ++itContactMap)
 	{
 		CContact* pTmpContact = itContactMap->second;
@@ -375,6 +383,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 	
 	// Make sure the node is not sending more results than we requested, which is not only a protocol vialoation
 	// but most likely a malicous answer
+	///snow:防止骚扰信息
 	if (plistResults->size() > GetRequestContactCount() && !(pRequestedMoreNodesContact == pFromContact && plistResults->size() <= KADEMLIA_FIND_VALUE_MORE) )
 	{
 		DebugLogWarning(_T("Node %s sent more contacts than requested on a routing query, ignoring response"), ipstr(ntohl(uFromIP)));
@@ -384,7 +393,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 	if (m_uType == NODEFWCHECKUDP){
 		m_uAnswers++;
 		// Results are not passed to the search and not much point in changing this, but make sure we show on the graph that the contact responded
-		m_pLookupHistory->ContactReceived(NULL, pFromContact, (ULONG)0, true);
+		m_pLookupHistory->ContactReceived(NULL, pFromContact, (ULONG)0, true);   ///snow:检查回应的联系人是否已在m_aIntrestingHistoryEntries中，如果已存在，则m_uRespondedContact+1
 		theApp.emuledlg->kademliawnd->UpdateSearchGraph(m_pLookupHistory);
 		delete plistResults;
 		// Update search on the GUI.
@@ -433,7 +442,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 				CUInt128 uDistance(pContact->GetClientID());
 				uDistance.Xor(m_uTarget);
 
-				if (uDistance < uFromDistance)
+				if (uDistance < uFromDistance)   ///snow:找到更接近目标的联系人
 					bProvidedCloserContacts = true;
 
 				m_pLookupHistory->ContactReceived(pContact, pFromContact, uDistance, bProvidedCloserContacts);
@@ -1425,15 +1434,16 @@ void CSearch::ProcessResultKeyword(const CUInt128 &uAnswer, TagList *plistInfo, 
 void CSearch::SendFindValue(CContact* pContact, bool bReAskMore)
 {
 	// Found a Node that we think has contacts closer to our target.
+	///snow:寻找一个接近拟搜索目标的疑似联系人节点
 	try
 	{
 		// Make sure we are not in the process of stopping.
 		if(m_bStoping)
 			return;
-		CSafeMemFile fileIO(33);
+		CSafeMemFile fileIO(33);  ///snow:33个字节：第一个字节是希望返回的联系人数目，第2-17个字节是拟搜索目标hash，第18-33个字节是对方KadID
 		// The number of returned contacts is based on the type of search.
 		uint8 byContactCount = GetRequestContactCount();
-		if (bReAskMore)
+		if (bReAskMore)   ///snow:默认false
 		{
 			if (pRequestedMoreNodesContact == NULL)
 			{
@@ -1453,25 +1463,26 @@ void CSearch::SendFindValue(CContact* pContact, bool bReAskMore)
 		// Add the ID of the contact we are contacting for sanity checks on the other end.
 		fileIO.WriteUInt128(&pContact->GetClientID());
 		// Inc the number of packets sent.
-		m_uKadPacketSent++;
+		m_uKadPacketSent++;  ///snow:拟发送的KAd包数目+1
 		// Update the search for the GUI.
 		theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 
+		///snow:发送数据包，联系人版本低于2的不发送
 		if (pContact->GetVersion() >= 2/*47a*/)
 		{
 			m_pLookupHistory->ContactAskedKad(pContact);
 			theApp.emuledlg->kademliawnd->UpdateSearchGraph(m_pLookupHistory);
-			if (pContact->GetVersion() >= 6){ /*48b*/
+			if (pContact->GetVersion() >= 6){ /*48b*/  ///snow:之后的版本支持UDPKey
 				CUInt128 uClientID = pContact->GetClientID();
 				CKademlia::GetUDPListener()->SendPacket(&fileIO, KADEMLIA2_REQ, pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetUDPKey(), &uClientID);
 			}
-			else {
+			else {    ///snow:不支持UDPKey，一般是版本4
 				CKademlia::GetUDPListener()->SendPacket(&fileIO, KADEMLIA2_REQ, pContact->GetIPAddress(), pContact->GetUDPPort(), 0, NULL);
 				ASSERT( CKadUDPKey(0) == pContact->GetUDPKey() );
 			}
 			if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 			{
-				switch(m_uType)
+				switch(m_uType)   ///snow:发送的数据不包含m_uType
 				{
 					case NODE:
 						DebugSend("KADEMLIA2_REQ(NODE)", pContact->GetIPAddress(), pContact->GetUDPPort());

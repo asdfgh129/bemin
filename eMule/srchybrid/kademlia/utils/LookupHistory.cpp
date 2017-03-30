@@ -71,7 +71,7 @@ void CLookupHistory::ContactReceived(CContact* pRecContact, CContact* pFromConta
 			if (pFromContact != NULL)
 			{
 				int iIdx = GetInterestingContactIdxByID(pFromContact->GetClientID());
-				if (iIdx >= 0)
+				if (iIdx >= 0)   ///snow:pFromContact已存在于m_aIntrestingHistoryEntries中，iIdx是在Array中的位置
 				{
 					if (pRecContact != NULL)
 						m_aHistoryEntries[i]->m_liReceivedFromIdx.Add(iIdx);

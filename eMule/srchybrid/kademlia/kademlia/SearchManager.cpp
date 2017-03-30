@@ -319,7 +319,7 @@ void CSearchManager::JumpStart()
 		{
 			case CSearch::FILE:
 				{
-					if (itSearchMap->second->m_tCreated + SEARCHFILE_LIFETIME < tNow)
+					if (itSearchMap->second->m_tCreated + SEARCHFILE_LIFETIME < tNow)   ///snow:ÔÚCSearch::PrepareToStop()ÖÐ¸³Öµ
 					{
 						delete itSearchMap->second;
 						itSearchMap = m_mapSearches.erase(itSearchMap);
