@@ -145,11 +145,11 @@ void CLookupHistory::ContactAskedKeyword(CContact* pContact)
 	// Find contact
 	for (int i = 0; i < m_aHistoryEntries.GetCount(); i++)
 	{
-		if (pContact->GetClientID() == m_aHistoryEntries[i]->m_uContactID)
+		if (pContact->GetClientID() == m_aHistoryEntries[i]->m_uContactID)   ///snow:m_aHistoryEntries中已存在此Contact
 		{
-			if (!m_aHistoryEntries[i]->IsInteresting())
+			if (!m_aHistoryEntries[i]->IsInteresting())   ///snow:m_dwAskedSearchItemTime==0
 				m_aIntrestingHistoryEntries.Add(m_aHistoryEntries[i]);
-			m_aHistoryEntries[i]->m_dwAskedSearchItemTime = ::GetTickCount();
+			m_aHistoryEntries[i]->m_dwAskedSearchItemTime = ::GetTickCount();   ///snow:更新此条目的搜索时间
 			ASSERT( m_aHistoryEntries[i]->m_uRespondedSearchItem == 0 );
 			return;
 		}

@@ -469,23 +469,24 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 				{
 					ASSERT( mapReceivedSubnets.find(pContact->GetIPAddress() & 0xFFFFFF00) != mapReceivedSubnets.end() );
 					int nSubNetCount = mapReceivedSubnets.find(pContact->GetIPAddress() & 0xFFFFFF00)->second;
-					if (nSubNetCount >= 2)
+					if (nSubNetCount >= 2)   ///snow:超过两个KadIDs在同一个子网
 					{
 						DebugLogWarning(_T("More than 2 KadIDs pointing to same Subnet (%s) in KADEMLIA(2)_RES answer - ignored, sent by %s")
 							, ipstr(ntohl(pContact->GetIPAddress() & 0xFFFFFF00)), ipstr(ntohl(pFromContact->GetIPAddress())));
 						continue;
 					}
-					else
+					else   ///snow:已经有一个，再加一个成2个
 						mapReceivedSubnets[pContact->GetIPAddress() & 0xFFFFFF00] = nSubNetCount + 1;
 
 				}
-				else
+				else ///snow:一个也没有
 					mapReceivedSubnets[pContact->GetIPAddress() & 0xFFFFFF00] = 1;
 
 				// Add to possible
 				m_mapPossible[uDistance] = pContact;
 
 				// Verify if the result is closer to the target then the one we just checked.
+				///snow:返回的联系人更接近搜索目标
 				if (uDistance < uFromDistance)
 				{
 					// The top APLPHA_QUERY of results are used to determine if we send a request.
@@ -499,7 +500,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 					{
 						ContactMap::iterator itContactMapBest = m_mapBest.end();
 						itContactMapBest--;
-						if (uDistance < itContactMapBest->first)
+						if (uDistance < itContactMapBest->first)  ///snow:如果新联系人比m_mapBest中的最后一个联系人更接近，替换掉该联系人
 						{
 							// Prevent having more then ALPHA_QUERY within the Best list.
 							m_mapBest.erase(itContactMapBest);
@@ -512,13 +513,13 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 					{
 						// We determined this contact is a canditate for a request.
 						// Add to the tried list.
-						m_mapTried[uDistance] = pContact;
+						m_mapTried[uDistance] = pContact;  ///snow:添加到m_mapTried
 						// Send the KadID so other side can check if I think it has the right KadID. (Saftey net)
 						// Send request
 						SendFindValue(pContact);
 					}
-				}
-			}
+				}///snow:end if (uDistance < uFromDistance)
+			}///snow:end for
 
 			// Add to list of people who responded
 			m_mapResponded[uFromDistance] = bProvidedCloserContacts;
@@ -529,7 +530,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 				m_uAnswers++;
 				theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 			}
-		}
+		}///snow:endif
 	}
 	catch (...)
 	{
@@ -538,6 +539,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 	delete plistResults;
 }
 
+///snow:只有JumpStart()调用
 void CSearch::StorePacket()
 {
 	ASSERT(!m_mapPossible.empty());
@@ -548,9 +550,9 @@ void CSearch::StorePacket()
 	CContact* pFromContact = itContactMap->second;
 
 	if (uFromDistance < m_uClosestDistantFound || m_uClosestDistantFound == 0)
-		m_uClosestDistantFound = uFromDistance;
+		m_uClosestDistantFound = uFromDistance;   ///snow:除了赋初值外，只在这里赋值
 	// Make sure this is a valid Node to store too.
-	if(uFromDistance.Get32BitChunk(0) > SEARCHTOLERANCE && !::IsLANIP(ntohl(pFromContact->GetIPAddress())))
+	if(uFromDistance.Get32BitChunk(0) > SEARCHTOLERANCE/*0x1 00 00 00*/ && !::IsLANIP(ntohl(pFromContact->GetIPAddress())))
 		return;
 	m_pLookupHistory->ContactAskedKeyword(pFromContact);
 	theApp.emuledlg->kademliawnd->UpdateSearchGraph(m_pLookupHistory);
