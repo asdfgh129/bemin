@@ -678,7 +678,7 @@ bool CIndexed::AddLoad(const CUInt128& uKeyID, uint32 uTime, bool bIgnoreThreadL
 	}
 
 	//This is needed for when you restart the client.
-	if((uint32)time(NULL)>uTime)
+	if((uint32)time(NULL)>uTime)   ///snow:uTime需要大于当前时间？
 		return false;
 
 	Load* pLoad;

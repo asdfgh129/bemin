@@ -59,7 +59,7 @@ LPCWSTR g_awszInvKadKeywordChars = L" ()[]{}<>,._-!?:;\\/\"";
 using namespace Kademlia;
 
 uint32 CSearchManager::m_uNextID = 0;
-SearchMap CSearchManager::m_mapSearches;
+SearchMap CSearchManager::m_mapSearches;   ///snow:在StartSearch、PrepareFindKeywords、PrepareLookup中赋值
 
 bool CSearchManager::IsSearching(uint32 uSearchID)
 {
@@ -103,6 +103,7 @@ void CSearchManager::StopAllSearches()
 	m_mapSearches.clear();
 }
 
+///snow:在FindNode()、FindNodeSpecial()、FindNodeFWCheckUDP()以及CUpDownClient::TryToConnect()、CSharedFileList::Publish()中调用
 bool CSearchManager::StartSearch(CSearch* pSearch)
 {
 	// A search object was created, now try to start the search.
@@ -126,10 +127,10 @@ CSearch* CSearchManager::PrepareFindKeywords(LPCTSTR szKeyword, UINT uSearchTerm
 	try
 	{
 		// Set search to a keyword type.
-		pSearch->SetSearchTypes(CSearch::KEYWORD);
+		pSearch->SetSearchTypes(CSearch::KEYWORD);  ///snow:CLookupHistory::m_uType=CSearch::m_uType=CSearch::KEYWORD=3
 
 		// Make sure we have a keyword list.
-		GetWords(szKeyword, &pSearch->m_listWords);
+		GetWords(szKeyword, &pSearch->m_listWords);   ///snow:用_T(" ()[]{}<>,._-!?:;\\/\"")中的字符对关键字进行分割，存入m_listWords
 		if (pSearch->m_listWords.size() == 0)
 		{
 			delete pSearch;
@@ -138,9 +139,10 @@ CSearch* CSearchManager::PrepareFindKeywords(LPCTSTR szKeyword, UINT uSearchTerm
 
 		// Get the targetID based on the primary keyword.
 		CKadTagValueString wstrKeyword = pSearch->m_listWords.front();
-		KadGetKeywordHash(wstrKeyword, &pSearch->m_uTarget);
+		KadGetKeywordHash(wstrKeyword, &pSearch->m_uTarget);  ///snow:对第一个关键字取Hash值，存入m_uTarget
 
 		// Verify that we are not already searching for this target.
+		///snow:已存在与当前m_uTarget相同的搜索
 		if (AlreadySearchingFor(pSearch->m_uTarget))
 		{
 			delete pSearch;
@@ -149,6 +151,7 @@ CSearch* CSearchManager::PrepareFindKeywords(LPCTSTR szKeyword, UINT uSearchTerm
 			throw strError;
 		}
 
+		///snow:对m_uSearchTermsDataSize、m_pucSearchTermsData进行赋值
 		pSearch->SetSearchTermData( uSearchTermsSize, pucSearchTermsData );
 		pSearch->SetGUIName(szKeyword);
 		// Inc our searchID
@@ -209,7 +212,7 @@ CSearch* CSearchManager::PrepareLookup(uint32 uType, bool bStart, const CUInt128
 	{
 		switch(pSearch->m_uType)
 		{
-			case CSearch::STOREKEYWORD:
+			case CSearch::STOREKEYWORD:   ///snow:CSharedFileList::Publish()中以此参数调用
 				if(!Kademlia::CKademlia::GetIndexed()->SendStoreRequest(uID))
 				{
 					// Keyword Store was determined to be a overloaded node, abort store.
@@ -280,7 +283,7 @@ void CSearchManager::GetWords(LPCTSTR sz, WordList *plistWords)
 	CKadTagValueString sWord;
 	while (_tcslen(szS) > 0)
 	{
-		uChars = _tcscspn(szS, g_aszInvKadKeywordChars);
+		uChars = _tcscspn(szS, g_aszInvKadKeywordChars);   ///snow:uChars=szS中包含_T(" ()[]{}<>,._-!?:;\\/\"")字符串中任一字符的位置
 		sWord = szS;
 		sWord.Truncate(uChars);
 		// TODO: We'd need a safe way to determine if a sequence which contains only 3 chars is a real word.
@@ -296,8 +299,8 @@ void CSearchManager::GetWords(LPCTSTR sz, WordList *plistWords)
 			plistWords->remove(sWord);
 			plistWords->push_back(sWord);
 		}
-		szS += uChars;
-		if (uChars < _tcslen(szS))
+		szS += uChars;   ///snow:szS字符串指针前移
+		if (uChars < _tcslen(szS))   ///snow:为什么呢？这边需要跟踪一下。
 			szS++;
 	}
 
