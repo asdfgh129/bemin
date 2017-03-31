@@ -714,11 +714,11 @@ void CSearch::StorePacket()
 				theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 				break;
 			}
-		case STOREFILE:
+		case STOREFILE:   ///snow:将自己的资源发布到网络节点上
 			{
 				// Try to store yourself as a source to a Node.
 				// As a safe guard, check to see if we already stored to the Max Nodes
-				if( m_uAnswers > SEARCHSTOREFILE_TOTAL )
+				if( m_uAnswers > SEARCHSTOREFILE_TOTAL )  ///snow:最多10个
 				{
 					PrepareToStop();
 					break;
@@ -727,7 +727,7 @@ void CSearch::StorePacket()
 				// Find the file we are trying to store as a source too.
 				uchar ucharFileid[16];
 				m_uTarget.ToByteArray(ucharFileid);
-				CKnownFile* pFile = theApp.sharedfiles->GetFileByID(ucharFileid);
+				CKnownFile* pFile = theApp.sharedfiles->GetFileByID(ucharFileid);   ///snow:共享的文件
 
 				if (pFile)
 				{
@@ -737,7 +737,7 @@ void CSearch::StorePacket()
 					// Get our clientID for the packet.
 					CUInt128 uID(CKademlia::GetPrefs()->GetClientHash());
 
-					//We can use type for different types of sources.
+					//We can use type for different types of sources.  ///snow:SOURCETYPE类别，用1-6表示(2保留）
 					//1 HighID Sources..
 					//2 cannot be used as older clients will not work.
 					//3 Firewalled Kad Source.
@@ -747,13 +747,13 @@ void CSearch::StorePacket()
 					
 					bool bDirectCallback = false;
 					TagList listTag;
-					if( theApp.IsFirewalled() )
+					if( theApp.IsFirewalled() )   ///snow:低ID用户，要求对方向自己发送回调请求连接对方
 					{
-						bDirectCallback = (Kademlia::CKademlia::IsRunning() && !Kademlia::CUDPFirewallTester::IsFirewalledUDP(true) && Kademlia::CUDPFirewallTester::IsVerified());
+						bDirectCallback = (Kademlia::CKademlia::IsRunning() && !Kademlia::CUDPFirewallTester::IsFirewalledUDP(true) && Kademlia::CUDPFirewallTester::IsVerified());   ///snow:本机UDP端口没有被墙
 						if (bDirectCallback){
 							// firewalled, but direct udp callback is possible so no need for buddies
 							// We are not firewalled..
-							listTag.push_back(new CKadTagUInt(TAG_SOURCETYPE, 6));
+							listTag.push_back(new CKadTagUInt(TAG_SOURCETYPE, 6)); ///snow:Firewalled Source with Direct Callback (supports >4GB)
 							listTag.push_back(new CKadTagUInt(TAG_SOURCEPORT, thePrefs.GetPort()));
 							if (!CKademlia::GetPrefs()->GetUseExternKadPort())
 								listTag.push_back(new CKadTagUInt16(TAG_SOURCEUPORT, CKademlia::GetPrefs()->GetInternKadPort()));
@@ -763,14 +763,14 @@ void CSearch::StorePacket()
 							}							
 						}
 						else if( theApp.clientlist->GetBuddy() ) // We are firewalled, make sure we have a buddy.
-						{
+						{   ///snow:我们被墙了，需要一个Buddy中转连接
 							// We send the ID to our buddy so they can do a callback.
 							CUInt128 uBuddyID(true);
 							uBuddyID.Xor(CKademlia::GetPrefs()->GetKadID());
-							if(pFile->GetFileSize() > OLD_MAX_EMULE_FILE_SIZE)
-								listTag.push_back(new CKadTagUInt8(TAG_SOURCETYPE, 5));
+							if(pFile->GetFileSize() > OLD_MAX_EMULE_FILE_SIZE)   ///snow:大于4GB
+								listTag.push_back(new CKadTagUInt8(TAG_SOURCETYPE, 5)); ///snow:>4GB file Firewalled Kad source.
 							else
-								listTag.push_back(new CKadTagUInt8(TAG_SOURCETYPE, 3));
+								listTag.push_back(new CKadTagUInt8(TAG_SOURCETYPE, 3));///snow:Firewalled Kad Source.
 							listTag.push_back(new CKadTagUInt(TAG_SERVERIP, theApp.clientlist->GetBuddy()->GetIP()));
 							listTag.push_back(new CKadTagUInt(TAG_SERVERPORT, theApp.clientlist->GetBuddy()->GetUDPPort()));
 							listTag.push_back(new CKadTagStr(TAG_BUDDYHASH, CStringW(md4str(uBuddyID.GetData()))));
@@ -790,13 +790,13 @@ void CSearch::StorePacket()
 							break;
 						}
 					}
-					else
+					else   ///snow:我们是高ID用户
 					{
 						// We are not firewalled..
 						if(pFile->GetFileSize() > OLD_MAX_EMULE_FILE_SIZE)
-							listTag.push_back(new CKadTagUInt(TAG_SOURCETYPE, 4));
+							listTag.push_back(new CKadTagUInt(TAG_SOURCETYPE, 4));  ///snow:>4GB file HighID Source.
 						else
-							listTag.push_back(new CKadTagUInt(TAG_SOURCETYPE, 1));
+							listTag.push_back(new CKadTagUInt(TAG_SOURCETYPE, 1));  ///snow:HighID Sources.
 						listTag.push_back(new CKadTagUInt(TAG_SOURCEPORT, thePrefs.GetPort()));
 						if (!CKademlia::GetPrefs()->GetUseExternKadPort())
 							listTag.push_back(new CKadTagUInt16(TAG_SOURCEUPORT, CKademlia::GetPrefs()->GetInternKadPort()));
@@ -811,6 +811,7 @@ void CSearch::StorePacket()
 					
 
 					// Send packet
+					///snow:向回应的联系人发布源信息包
 					CKademlia::GetUDPListener()->SendPublishSourcePacket(pFromContact, m_uTarget, uID, listTag);
 					// Inc total request answers
 					m_uTotalRequestAnswers++;
@@ -828,33 +829,33 @@ void CSearch::StorePacket()
 			{
 				// Try to store keywords to a Node.
 				// As a safe guard, check to see if we already stored to the Max Nodes
-				if( m_uAnswers > SEARCHSTOREKEYWORD_TOTAL )
+				if( m_uAnswers > SEARCHSTOREKEYWORD_TOTAL )   ///snow:最多10个
 				{
 					PrepareToStop();
 					break;
 				}
 
-				uint16 iCount = (uint16)m_listFileIDs.size();
+				uint16 iCount = (uint16)m_listFileIDs.size();   ///snow:AddFileID()中赋值
 
 				if(iCount == 0)
 				{
 					PrepareToStop();
 					break;
 				}
-				else if(iCount > 150)
+				else if(iCount > 150)   ///snow:最多150个文件
 					iCount = 150;
 
 				UIntList::const_iterator itListFileID = m_listFileIDs.begin();
 				uchar ucharFileid[16];
 
-				while(iCount && (itListFileID != m_listFileIDs.end()))
+				while(iCount && (itListFileID != m_listFileIDs.end()))  ///snow:遍历m_listFileIDs，每50个文件一个信息包
 				{
 					uint16 iPacketCount = 0;
 					byte byPacket[1024*50];
 					CByteIO byIO(byPacket,sizeof(byPacket));
 					byIO.WriteUInt128(m_uTarget);
-					byIO.WriteUInt16(0); // Will be corrected before sending.
-					while((iPacketCount < 50) && (itListFileID != m_listFileIDs.end()))
+					byIO.WriteUInt16(0); // Will be corrected before sending. ///snow:文件ID数，在后面更新
+					while((iPacketCount < 50) && (itListFileID != m_listFileIDs.end()))   ///snow:添加50个文件ID及Tags
 					{
 						CUInt128 iID = *itListFileID;
 						iID.ToByteArray(ucharFileid);
@@ -864,7 +865,7 @@ void CSearch::StorePacket()
 							iCount--;
 							iPacketCount++;
 							byIO.WriteUInt128(iID);
-							PreparePacketForTags( &byIO, pFile, pFromContact->GetVersion() );
+							PreparePacketForTags( &byIO, pFile, pFromContact->GetVersion() );  ///snow:给每个文件添加Tags
 						}
 						++itListFileID;
 					}
@@ -872,7 +873,7 @@ void CSearch::StorePacket()
 					// Correct file count.
 					uint32 current_pos = byIO.GetUsed();
 					byIO.Seek(16);
-					byIO.WriteUInt16(iPacketCount);
+					byIO.WriteUInt16(iPacketCount);  ///snow:以实际文件ID数更新之前写入的0
 					byIO.Seek(current_pos);
 					
 					// Send packet
@@ -1041,6 +1042,7 @@ void CSearch::StorePacket()
 	}
 }
 
+///snow: CSearchManager::ProcessResult()中调用，处理三种类型的结果：FILE、KEYWORD、NOTES
 void CSearch::ProcessResult(const CUInt128 &uAnswer, TagList *plistInfo, uint32 uFromIP, uint16 uFromPort)
 {
 	// We received a result, process it based on type.

@@ -571,7 +571,7 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &uTarget, const uint8 u
 	theApp.emuledlg->kademliawnd->searchList->SearchRef(pSearch);
 }
 
-
+///snow:CKademliaUDPListener::Process_KADEMLIA2_RES中调用
 void CSearchManager::ProcessResponse(const CUInt128 &uTarget, uint32 uFromIP, uint16 uFromPort, ContactList *plistResults)
 {
 	// We got a response to a kad lookup.
@@ -592,6 +592,8 @@ void CSearchManager::ProcessResponse(const CUInt128 &uTarget, uint32 uFromIP, ui
 		pSearch->ProcessResponse(uFromIP, uFromPort, plistResults);
 }
 
+
+///snow:CKademliaUDPListener::Process_KADEMLIA_SEARCH_RES、Process_KADEMLIA2_SEARCH_RES、Process_KADEMLIA_SEARCH_NOTES_RES中调用
 void CSearchManager::ProcessResult(const CUInt128 &uTarget, const CUInt128 &uAnswer, TagList *plistInfo, uint32 uFromIP, uint16 uFromPort)
 {
 	// We have results for a request for info.
@@ -607,7 +609,7 @@ void CSearchManager::ProcessResult(const CUInt128 &uTarget, const CUInt128 &uAns
 			delete *itTagList;
 		delete plistInfo;
 	}
-	else
+	else   ///snow:调用CSearch::ProcessResult()
 		pSearch->ProcessResult(uAnswer, plistInfo, uFromIP, uFromPort);
 }
 
