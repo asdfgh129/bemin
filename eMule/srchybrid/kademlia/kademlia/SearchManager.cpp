@@ -194,6 +194,7 @@ CSearch* CSearchManager::PrepareFindKeywords(LPCTSTR szKeyword, UINT uSearchTerm
 	return pSearch;
 }
 
+///snow:检查是否已存在相同搜索，当searchtype==STOREKEYWORD检查是否已存在相同节点，增加searchid，如果bStart为true，将uID添加到搜索列表m_mapSearches，开始搜索
 CSearch* CSearchManager::PrepareLookup(uint32 uType, bool bStart, const CUInt128 &uID)
 {
 	// Prepare a kad lookup.
@@ -213,10 +214,10 @@ CSearch* CSearchManager::PrepareLookup(uint32 uType, bool bStart, const CUInt128
 		switch(pSearch->m_uType)
 		{
 			case CSearch::STOREKEYWORD:   ///snow:CSharedFileList::Publish()中以此参数调用
-				if(!Kademlia::CKademlia::GetIndexed()->SendStoreRequest(uID))
+				if(!Kademlia::CKademlia::GetIndexed()->SendStoreRequest(uID))  ///m_mapLoad中已存在这个节点，且没有过期
 				{
 					// Keyword Store was determined to be a overloaded node, abort store.
-					delete pSearch;
+					delete pSearch;  ///snow:不再需要重复搜索，删除掉搜索节点，函数返回
 					return NULL;
 				}
 				break;
@@ -226,7 +227,7 @@ CSearch* CSearchManager::PrepareLookup(uint32 uType, bool bStart, const CUInt128
 		pSearch->m_uSearchID = ++m_uNextID;
 		if( bStart )
 		{
-			// Auto start this search.
+			// Auto start this search.  ///snow:加上if(AlreadySearchingFor(uID))就是StartSearch
 			m_mapSearches[pSearch->m_uTarget] = pSearch;
 			pSearch->Go();
 		}
@@ -247,6 +248,7 @@ CSearch* CSearchManager::PrepareLookup(uint32 uType, bool bStart, const CUInt128
 	return pSearch;
 }
 
+///snow:根据参数bComplete决定是开始NODECOMPLETE还是NODE搜索
 void CSearchManager::FindNode(const CUInt128 &uID, bool bComplete)
 {
 	// Do a node lookup.
@@ -309,7 +311,8 @@ void CSearchManager::GetWords(LPCTSTR sz, WordList *plistWords)
 		plistWords->pop_back();
 }
 
-void CSearchManager::JumpStart()
+///snow:在CKademlia::Process()中调用，遍历m_mapSearches，针对其中的每个CSearch对象，根据其SearchType，分别作预处理，主要是进行是否还在存活期判断，然后调用CSearch::JumpStart
+void CSearchManager::JumpStart()  ///snow:本函数主要进行存活期的判断
 {
 	// Find any searches that has stalled and jumpstart them.
 	// This will also prune all searches.
@@ -323,7 +326,8 @@ void CSearchManager::JumpStart()
 			case CSearch::FILE:
 				{
 					if (itSearchMap->second->m_tCreated + SEARCHFILE_LIFETIME < tNow)   ///snow:在CSearch::PrepareToStop()中赋值
-					{
+					{ 
+						///snow:该搜索对象存活时间已经超过期限
 						delete itSearchMap->second;
 						itSearchMap = m_mapSearches.erase(itSearchMap);
 						//Don't do anything after this.. We are already at the next entry.
@@ -339,7 +343,7 @@ void CSearchManager::JumpStart()
 				{
 					if (itSearchMap->second->m_tCreated + SEARCHKEYWORD_LIFETIME < tNow)
 					{
-						// Tell GUI that search ended
+						// Tell GUI that search ended   ///snow:更新GUI界面
 						if (theApp.emuledlg && theApp.emuledlg->searchwnd)
 							theApp.emuledlg->searchwnd->CancelKadSearch(itSearchMap->second->GetSearchID());
 						delete itSearchMap->second;
@@ -347,7 +351,7 @@ void CSearchManager::JumpStart()
 						//Don't do anything after this.. We are already at the next entry.
 						continue;
 					}
-					else if (itSearchMap->second->GetAnswers() >= SEARCHKEYWORD_TOTAL || itSearchMap->second->m_tCreated + SEARCHKEYWORD_LIFETIME - SEC(20) < tNow)
+					else if (itSearchMap->second->GetAnswers() >= SEARCHKEYWORD_TOTAL || itSearchMap->second->m_tCreated + SEARCHKEYWORD_LIFETIME - SEC(20) < tNow)   ///snow:离过期还有20秒，不再进行搜索，准备停止
 						itSearchMap->second->PrepareToStop();
 					else
 						itSearchMap->second->JumpStart();
@@ -418,7 +422,7 @@ void CSearchManager::JumpStart()
 					if (itSearchMap->second->m_tCreated + SEARCHNODE_LIFETIME < tNow)
 					{
 						// Tell Kad that it can start publishing.
-						CKademlia::GetPrefs()->SetPublish(true);
+						CKademlia::GetPrefs()->SetPublish(true);   ///snow:比其它type多出来的动作，告诉KAD可以发布了
 						delete itSearchMap->second;
 						itSearchMap = m_mapSearches.erase(itSearchMap);
 						//Don't do anything after this.. We are already at the next entry.
@@ -569,8 +573,8 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &uTarget, const uint8 u
 	}
 
 	// Inc the number of answers.
-	pSearch->m_uAnswers++;
-	// Update the search for the GUI
+	pSearch->m_uAnswers++;   ///snow:统计回应的联系人数，在JumpStart中用作判断是否继续搜索的依据
+	// Update the search for  the GUI
 	theApp.emuledlg->kademliawnd->searchList->SearchRef(pSearch);
 }
 
@@ -584,7 +588,7 @@ void CSearchManager::ProcessResponse(const CUInt128 &uTarget, uint32 uFromIP, ui
 		pSearch = itSearchMap->second;
 
 	// If this search was deleted before this response, delete contacts and abort, otherwise process them.
-	if (pSearch == NULL)
+	if (pSearch == NULL)   ///snow:没在搜索列表中，在回应返回之前，该搜索条目已被删除，则删除plistResults中的所有联系人
 	{
 		for (ContactList::const_iterator itContactList = plistResults->begin(); itContactList != plistResults->end(); ++itContactList)
 			delete (*itContactList);
@@ -606,7 +610,7 @@ void CSearchManager::ProcessResult(const CUInt128 &uTarget, const CUInt128 &uAns
 		pSearch = itSearchMap->second;
 
 	// If this search was deleted before these results, delete contacts and abort, otherwise process them.
-	if (pSearch == NULL)
+	if (pSearch == NULL)   ///snow:删除的不是联系人列表，是Tag列表
 	{
 		for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
 			delete *itTagList;
@@ -631,7 +635,7 @@ bool CSearchManager::FindNodeSpecial(const CUInt128 &uID, CKadClientSearcher* pR
 bool CSearchManager::FindNodeFWCheckUDP(){
 	CancelNodeFWCheckUDPSearch();
 	CUInt128 uID;
-	uID.SetValueRandom();
+	uID.SetValueRandom();  ///snow:随机选择一个Key
 	DebugLog(_T("Starting NODEFWCHECKUDP Kad Search"));
 	CSearch *pSearch = new CSearch;
 	pSearch->SetSearchTypes(CSearch::NODEFWCHECKUDP);

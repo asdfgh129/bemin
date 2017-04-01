@@ -274,7 +274,7 @@ void CKademlia::Process()
 				}
 			}
 		}
-		if (pZone->m_tNextSmallTimer <= tNow)
+		if (pZone->m_tNextSmallTimer <= tNow)  ///snow:距离上次执行已经超过1分钟了，可以再次执行OnSmallTimer()了
 		{
 			pZone->OnSmallTimer();
 			pZone->m_tNextSmallTimer = MIN2S(1) + tNow;
@@ -282,10 +282,10 @@ void CKademlia::Process()
 	}
 
 	// This is a convenient place to add this, although not related to routing
-	if (m_tNextSearchJumpStart <= tNow)
+	if (m_tNextSearchJumpStart <= tNow)  ///snow:距离上次执行已经超过1ms了
 	{
 		CSearchManager::JumpStart();
-		m_tNextSearchJumpStart = SEARCH_JUMPSTART + tNow;
+		m_tNextSearchJumpStart = SEARCH_JUMPSTART + tNow;  ///snow:加1ms???
 	}
 
 	// Try to consolidate any zones that are close to empty.

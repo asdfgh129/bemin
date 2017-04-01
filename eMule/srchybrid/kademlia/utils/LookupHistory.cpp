@@ -140,6 +140,7 @@ int	CLookupHistory::GetInterestingContactIdxByID(CUInt128 uContact) const
 	return (-1);
 }
 
+///snow:CSearch::StorePacket()中调用，
 void CLookupHistory::ContactAskedKeyword(CContact* pContact)
 {
 	// Find contact
@@ -149,7 +150,7 @@ void CLookupHistory::ContactAskedKeyword(CContact* pContact)
 		{
 			if (!m_aHistoryEntries[i]->IsInteresting())   ///snow:m_dwAskedSearchItemTime==0
 				m_aIntrestingHistoryEntries.Add(m_aHistoryEntries[i]);
-			m_aHistoryEntries[i]->m_dwAskedSearchItemTime = ::GetTickCount();   ///snow:更新此条目的搜索时间
+			m_aHistoryEntries[i]->m_dwAskedSearchItemTime = ::GetTickCount();   ///snow:更新此条目的搜索时间，IsInteresting()的判定将为true
 			ASSERT( m_aHistoryEntries[i]->m_uRespondedSearchItem == 0 );
 			return;
 		}

@@ -668,6 +668,7 @@ bool CIndexed::AddNotes(const CUInt128& uKeyID, const CUInt128& uSourceID, Kadem
 	}
 }
 
+///snow:在CLoadDataThread::Run()中调用，写入load_index.dat中的存储节点信息，另外在CSearch::~CSearch()中当SearchType==CSearch::STOREKEYWORD时写入目标节点信息
 bool CIndexed::AddLoad(const CUInt128& uKeyID, uint32 uTime, bool bIgnoreThreadLock)
 {
 	// do not access any data while the loading thread is busy;
@@ -678,7 +679,7 @@ bool CIndexed::AddLoad(const CUInt128& uKeyID, uint32 uTime, bool bIgnoreThreadL
 	}
 
 	//This is needed for when you restart the client.
-	if((uint32)time(NULL)>uTime)   ///snow:uTime需要大于当前时间？
+	if((uint32)time(NULL)>uTime)   ///snow:uTime需要大于当前时间？是的，因为这个时间表示的是我们下次想使用这个节点的时间，所以必须大于当前时间，如果不是，则参数有误
 		return false;
 
 	Load* pLoad;
@@ -996,7 +997,8 @@ void CIndexed::SendValidNoteResult(const CUInt128& uKeyID, uint32 uIP, uint16 uP
 	}
 }
 
-///snow:好奇怪的命名？在哪里Send了？
+///snow:好奇怪的命名？在哪里Send了？意思应该是发送了存储keyword请求？
+///snow:在CSearchManager::PrepareLookup()中调用，
 bool CIndexed::SendStoreRequest(const CUInt128& uKeyID)
 {
 	// do not access any data while the loading thread is busy;
@@ -1006,18 +1008,18 @@ bool CIndexed::SendStoreRequest(const CUInt128& uKeyID)
 	}
 
 	Load* pLoad;
-	if(m_mapLoad.Lookup(CCKey(uKeyID.GetData()), pLoad))
+	if(m_mapLoad.Lookup(CCKey(uKeyID.GetData()), pLoad))   ///snow:m_mapLoad中存在这个节点
 	{
-		if(pLoad->uTime < (uint32)time(NULL))
+		if(pLoad->uTime < (uint32)time(NULL))  ///snow:使用这个节点的期限过了
 		{
-			m_mapLoad.RemoveKey(CCKey(uKeyID.GetData()));
-			m_uTotalIndexLoad--;
+			m_mapLoad.RemoveKey(CCKey(uKeyID.GetData()));  ///snow:删除这个节点
+			m_uTotalIndexLoad--;                           ///snow:Load节点数减1
 			delete pLoad;
 			return true;
 		}
-		return false;
+		return false;    ///snow:存储在m_mapLoad中的节点没过期
 	}
-	return true;
+	return true;    ///snow:m_mapLoad中不存在这个节点
 }
 
 uint32 CIndexed::GetFileKeyCount()
