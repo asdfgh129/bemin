@@ -1555,14 +1555,14 @@ void CKademliaUDPListener::Process_KADEMLIA_PUBLISH_RES (const byte *pbyPacketDa
 
 	CSafeMemFile fileIO(pbyPacketData, uLenPacket);
 	CUInt128 uFile;
-	fileIO.ReadUInt128(&uFile);
+	fileIO.ReadUInt128(&uFile);   ///snow:16个字节的ID
 
 	bool bLoadResponse = false;
 	uint8 uLoad = 0;
 	if( fileIO.GetLength() > fileIO.GetPosition() )
 	{
 		bLoadResponse = true;
-		uLoad = fileIO.ReadUInt8();
+		uLoad = fileIO.ReadUInt8();   ///snow:跟STOREKEYWORD有关
 	}
 
 	CSearchManager::ProcessPublishResult(uFile, uLoad, bLoadResponse);
@@ -1578,8 +1578,8 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_RES (const byte *pbyPacketD
 	}
 	CSafeMemFile fileIO(pbyPacketData, uLenPacket);
 	CUInt128 uFile;
-	fileIO.ReadUInt128(&uFile);
-	uint8 uLoad = fileIO.ReadUInt8();
+	fileIO.ReadUInt128(&uFile);     ///snow:16个字节的ID
+	uint8 uLoad = fileIO.ReadUInt8();  ///snow:跟STOREKEYWORD有关
 	CSearchManager::ProcessPublishResult(uFile, uLoad, true);
 	if (fileIO.GetLength() > fileIO.GetPosition()){
 		// for future use

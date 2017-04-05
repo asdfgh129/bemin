@@ -549,6 +549,7 @@ void CSearchManager::UpdateStats()
 	}
 }
 
+///snow:CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_RES()、Process_KADEMLIA_PUBLISH_RES()中调用
 void CSearchManager::ProcessPublishResult(const CUInt128 &uTarget, const uint8 uLoad, const bool bLoadResponse)
 {
 	// We tried to publish some info and got a result.
@@ -565,7 +566,7 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &uTarget, const uint8 u
 	{
 		case CSearch::STOREKEYWORD:
 			if( bLoadResponse )
-				pSearch->UpdateNodeLoad( uLoad );
+				pSearch->UpdateNodeLoad( uLoad );  ///snow:uLoad的值被添加到m_uTotalLoad
 			break;
 		case CSearch::STOREFILE:
 		case CSearch::STORENOTES:
