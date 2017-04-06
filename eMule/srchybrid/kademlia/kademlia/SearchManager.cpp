@@ -120,6 +120,7 @@ bool CSearchManager::StartSearch(CSearch* pSearch)
 	return true;
 }
 
+///snow: CSearchResultsWnd::DoNewKadSearch()中调用，对搜索关键字进行分析
 CSearch* CSearchManager::PrepareFindKeywords(LPCTSTR szKeyword, UINT uSearchTermsSize, LPBYTE pucSearchTermsData)
 {
 	// Create a keyword search object.

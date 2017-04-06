@@ -278,6 +278,7 @@ void CSearch::PrepareToStop()
 	theApp.emuledlg->kademliawnd->UpdateSearchGraph(m_pLookupHistory);
 }
 
+///snow:CSearchManager::JumpStart()调用
 void CSearch::JumpStart()
 {
 	// If we had a response within the last 3 seconds, no need to jumpstart the search.
@@ -1080,6 +1081,7 @@ void CSearch::ProcessResult(const CUInt128 &uAnswer, TagList *plistInfo, uint32 
 
 void CSearch::ProcessResultFile(const CUInt128 &uAnswer, TagList *plistInfo)
 {
+	///snow:从Result中获取各Tag，赋值给下列变量，调用KademliaSearchFile()
 	// Process a possible source to a file.
 	// Set of data we could receive from the result.
 	uint8 uType = 0;
@@ -1139,6 +1141,7 @@ void CSearch::ProcessResultFile(const CUInt128 &uAnswer, TagList *plistInfo)
 	}
 }
 
+///snow:从回复中提取Tag信息，然后再匹配共享文件列表或下载文件列表，如果找到，则添加Note；最后增加m_uAnswers，更新Search GUI
 void CSearch::ProcessResultNotes(const CUInt128 &uAnswer, TagList *plistInfo)
 {
 	// Process a received Note to a file.
@@ -1225,13 +1228,15 @@ void CSearch::ProcessResultNotes(const CUInt128 &uAnswer, TagList *plistInfo)
 	// at any time after this call..
 	bool bFlag = theApp.searchlist->AddNotes(pEntry, ucharFileid);
 
+	///snow:先从共享文件列表找，如果没找到，再从下载列表找
 	// Check if this hash is in our shared files..
 	CAbstractFile* pFile = (CAbstractFile*)theApp.sharedfiles->GetFileByID(ucharFileid);
 
 	// If we didn't find a file in the shares check if it's in our download queue.
-	if(!pFile)
+	if(!pFile)   
 		pFile = (CAbstractFile*)theApp.downloadqueue->GetFileByID(ucharFileid);
 
+	///snow:如果从上面两个列表有找到，则添加Note
 	// If we found a file try to add the Note to the file.
 	if( pFile && pFile->AddNote(pEntry) )
 	{
@@ -1243,6 +1248,7 @@ void CSearch::ProcessResultNotes(const CUInt128 &uAnswer, TagList *plistInfo)
 		return;
 	}
 
+	///snow:没从上面两个列表找到
 	// It is possible that pFile->AddNote can fail even if we found a File.
 	if (bFlag)
 	{
@@ -1262,6 +1268,7 @@ void CSearch::ProcessResultKeyword(const CUInt128 &uAnswer, TagList *plistInfo, 
 	// Special publish answer tags need to be filtered based on its remote protocol version, because if an old node is not aware
 	// of those special tags, it doesn't knows it is not supposed accept and store such tags on publish request, so a malicious
 	// publisher could fake them and our remote node would relay them on answers
+	///snow:首先检查回应的联系人是不是我们发出请求的
 	uint8 uFromKadVersion = 0;
 	CContact* pFromContact = NULL;
 	for (ContactMap::const_iterator itContactMap = m_mapTried.begin(); itContactMap != m_mapTried.end(); ++itContactMap)
@@ -1294,6 +1301,7 @@ void CSearch::ProcessResultKeyword(const CUInt128 &uAnswer, TagList *plistInfo, 
 	bool bFileName = false;
 	bool bFileSize = false;
 
+	///snow:处理回应报文中的TagList信息
 	for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
 	{
 		CKadTag* pTag = *itTagList;
@@ -1392,30 +1400,31 @@ void CSearch::ProcessResultKeyword(const CUInt128 &uAnswer, TagList *plistInfo, 
 					, uFromKadVersion, ipstr(ntohl(uFromIP)));
 		}
 		delete pTag;
-	}
+	}  ///snow:end for  报文中的Taglist信息处理完毕
 	delete plistInfo;
 
 	// If we don't have a valid filename or filesize, drop this keyword.
-	if( !bFileName || !bFileSize )
+	if( !bFileName || !bFileSize )   ///snow:无效的文件名或文件长度
 		return;
 
 	// Check that this result matches original criteria
 	WordList listTestWords;
-	CSearchManager::GetWords(sName, &listTestWords);
+	CSearchManager::GetWords(sName, &listTestWords);   ///snow:对文件名进行分析，存入listTestWords
 	CKadTagValueString keyword;
+	///snow:CSearchManager::PrepareFindKeywords()中对m_listWords赋值，存储的是用户拟进行搜索的关键字
 	for (WordList::const_iterator itWordListWords = m_listWords.begin(); itWordListWords != m_listWords.end(); ++itWordListWords)
 	{
 		keyword = *itWordListWords;
 		bool bInterested = false;
 		for (WordList::const_iterator itWordListTestWords = listTestWords.begin(); itWordListTestWords != listTestWords.end(); ++itWordListTestWords)
 		{
-			if (!KadTagStrCompareNoCase(keyword, *itWordListTestWords))
+			if (!KadTagStrCompareNoCase(keyword, *itWordListTestWords))   ///snow:检查返回的关键字是否跟我们拟搜索的关键字是否匹配
 			{
 				bInterested = true;
 				break;
 			}
 		}
-		if (!bInterested)
+		if (!bInterested)  ///snow:不是我们要搜索的内容，直接返回
 			return;
 	}
 
