@@ -743,7 +743,7 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 					ASSERT( pCurrName->IsKeyEntry() );
 					///snow:异或运算，bOnlyTrusted跟TrustValue<1不同时为真或不同时为假，即bOnlyTrusted != (TrustValue<1)
 					///snow:第一次循环忽略TrustValue<1的结果，如果循环结束，搜索到的结果数小于uMaxResults（300），则置bOnlyTrusted = false;开始下一轮循环
-					if ( (bOnlyTrusted ^ (pCurrName->GetTrustValue() < 1.0f)) && (!pSearchTerms || pCurrName->StartSearchTermsMatch(pSearchTerms)) )///snow:存在与关键字相关条目
+					if ( (bOnlyTrusted ^ (pCurrName->GetTrustValue() < 1.0f)) && (!pSearchTerms || pCurrName->StartSearchTermsMatch(pSearchTerms)) )///snow:存在符合搜索关键字相关条目
 					{
 						if( iCount < 0 )   ///snow:这个是做什么的呢？
 							iCount++;

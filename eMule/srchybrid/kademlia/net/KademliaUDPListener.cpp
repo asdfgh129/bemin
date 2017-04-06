@@ -512,6 +512,7 @@ bool CKademliaUDPListener::AddContact_KADEMLIA2(const byte* pbyData, uint32 uLen
 }
 
 // Used only for Kad2.0
+///snow:取出20个Contact，组成一个长度为521的信息包，opcode为KADEMLIA2_BOOTSTRAP_RES
 void CKademliaUDPListener::Process_KADEMLIA2_BOOTSTRAP_REQ (uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey)
 {
 	// Get some contacts to return
@@ -547,6 +548,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_BOOTSTRAP_REQ (uint32 uIP, uint16 u
 }
 
 // Used only for Kad2.0
+///snow:取出对方发来的联系人列表，添加到RoutingZone中
 void CKademliaUDPListener::Process_KADEMLIA2_BOOTSTRAP_RES (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey, bool bValidReceiverKey)
 {
 	if (!IsOnOutTrackList(uIP, KADEMLIA2_BOOTSTRAP_REQ)){
@@ -768,6 +770,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_REQ (const byte *pbyPacketData, uin
 }
 
 // Used in Kad2.0 only
+///snow:将接收到的联系人添加到Zone中，并判断是否找到更近的联系人，如果是，则SendFindValue()
 void CKademliaUDPListener::Process_KADEMLIA2_RES (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey /*senderUDPKey*/)
 {
 	if (!IsOnOutTrackList(uIP, KADEMLIA2_REQ)){
@@ -877,6 +880,8 @@ void CKademliaUDPListener::Process_KADEMLIA2_RES (const byte *pbyPacketData, uin
 	}
 	if (nIgnoredCount > 0)
 		DebugLogWarning(_T("Ignored %u bad contacts in routing answer from %s"), nIgnoredCount, ipstr(ntohl(uIP)));
+
+	///snow:判断是否找到更近的联系人，如果是，则SendFindValue()
 	CSearchManager::ProcessResponse(uTarget, uIP, uUDPPort, pResults);
 }
 
@@ -934,6 +939,7 @@ static void TokenizeOptQuotedSearchTerm(LPCTSTR pszString, CStringWArray* lst)
 
 static CString* s_pstrDbgSearchExpr;
 
+///snow:Process_KADEMLIA2_SEARCH_KEY_REQ()及 CSearch::ProcessResultKeyword()中调用，递归调用自己，构建一棵二叉树
 SSearchTerm* CKademliaUDPListener::CreateSearchExpressionTree(CSafeMemFile& fileIO, int iLevel)
 {
 	// the max. depth has to match our own limit for creating the search expression
@@ -1116,15 +1122,15 @@ SSearchTerm* CKademliaUDPListener::CreateSearchExpressionTree(CSafeMemFile& file
 }
 
 // Used in Kad2.0 only
-///snow:CKademliaUDPListener::ProcessPacket()中调用
+///snow:CKademliaUDPListener::ProcessPacket()中调用，根据报文内容构造一棵搜索表达式二叉树，然后调用CIndexed::SendValidKeywordResult()
 void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey)
 {
 	CSafeMemFile fileIO( pbyPacketData, uLenPacket);
 	CUInt128 uTarget;
 	fileIO.ReadUInt128(&uTarget);
 	uint16 uStartPosition = fileIO.ReadUInt16();
-	bool uRestrictive = ((uStartPosition & 0x8000) == 0x8000);
-	uStartPosition = uStartPosition & 0x7FFF;
+	bool uRestrictive = ((uStartPosition & 0x8000) == 0x8000); ///snow:第1位是标志位
+	uStartPosition = uStartPosition & 0x7FFF;  ///snow:后15位是真正的值
 	SSearchTerm* pSearchTerms = NULL;
 	if (uRestrictive)
 	{
