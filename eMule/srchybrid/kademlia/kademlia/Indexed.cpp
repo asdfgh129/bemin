@@ -703,6 +703,7 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 		return;
 	}
 
+	///snow:先从m_mapKeyword中查找是否存在与uKeyID值相同的条目，如果找到，则遍历该Key对应的mapSource，针对每条mapSource条目，再遍历mapSource中的各个Entry，在Entry中搜索是否存在满足符合搜索表达式的SourceID
 	KeyHash* pCurrKeyHash;
 	if(m_mapKeyword.Lookup(CCKey(uKeyID.GetData()), pCurrKeyHash))  ///snow:存在对应的Key条目
 	{
@@ -745,7 +746,7 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 					///snow:第一次循环忽略TrustValue<1的结果，如果循环结束，搜索到的结果数小于uMaxResults（300），则置bOnlyTrusted = false;开始下一轮循环
 					if ( (bOnlyTrusted ^ (pCurrName->GetTrustValue() < 1.0f)) && (!pSearchTerms || pCurrName->StartSearchTermsMatch(pSearchTerms)) )///snow:存在符合搜索关键字相关条目
 					{
-						if( iCount < 0 )   ///snow:这个是做什么的呢？
+						if( iCount < 0 )   ///snow:这个是做什么的呢？跟参数uStartPosition有关
 							iCount++;
 						else if( (uint16)iCount < uMaxResults )
 						{

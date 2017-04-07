@@ -1060,13 +1060,13 @@ void CSearch::ProcessResult(const CUInt128 &uAnswer, TagList *plistInfo, uint32 
 	uint32 iAnswerBefore = m_uAnswers;
 	switch(m_uType)
 	{
-		case FILE:
+		case FILE:  ///snow:在CPartFile::Process()中通过调用CSearchManager::PrepareLookup(Kademlia::CSearch::FILE，...)传入
 			ProcessResultFile(uAnswer, plistInfo);
 			break;
-		case KEYWORD:
+		case KEYWORD:   ///snow:m_uType的值在 CSearchManager::PrepareFindKeywords()设置，并将Search对象存入m_mapSearches
 			ProcessResultKeyword(uAnswer, plistInfo, uFromIP, uFromPort);
 			break;
-		case NOTES:
+		case NOTES: ///snow:CCommentDialog类中以Notes参数调用PrepareLookup()传入
 			ProcessResultNotes(uAnswer, plistInfo);
 			break;
 	}

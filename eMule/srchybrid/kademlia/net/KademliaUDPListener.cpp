@@ -430,6 +430,7 @@ void CKademliaUDPListener::ProcessPacket(const byte* pbyData, uint32 uLenData, u
 }
 
 // Used only for Kad2.0
+///snow:读取报文信息，添加联系人到Zone，并给各参数赋值
 bool CKademliaUDPListener::AddContact_KADEMLIA2(const byte* pbyData, uint32 uLenData, uint32 uIP, uint16& uUDPPort, uint8* pnOutVersion, CKadUDPKey cUDPKey, bool& rbIPVerified, bool bUpdate, bool bFromHelloReq, bool* pbOutRequestsACK, CUInt128* puOutContactID)
 {
 	if (pbOutRequestsACK != NULL)
@@ -448,7 +449,7 @@ bool CKademliaUDPListener::AddContact_KADEMLIA2(const byte* pbyData, uint32 uLen
 	bool bUDPFirewalled = false;
 	bool bTCPFirewalled = false;
 	uint8 uTags = byteIO.ReadByte();
-	while (uTags)
+	while (uTags)   ///snow:处理Tag，主要有两种：TAG_SOURCEUPORT和TAG_KADMISCOPTIONS
 	{
 		CKadTag* pTag = byteIO.ReadTag();
 		
@@ -589,6 +590,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_BOOTSTRAP_RES (const byte *pbyPacke
 }
 
 // Used in Kad2.0 only
+///snow:调用SendMyDetails()将自己的各种信息发送给对方
 void CKademliaUDPListener::Process_KADEMLIA2_HELLO_REQ (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey, bool bValidReceiverKey)
 {
 	//uint16 dbgOldUDPPort = uUDPPort;
@@ -663,6 +665,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_HELLO_RES_ACK (const byte *pbyPacke
 }
 
 // Used in Kad2.0 only
+///snow:处理对方发送的联系人信息，调用AddContact_KADEMLIA2()添加到Zone
 void CKademliaUDPListener::Process_KADEMLIA2_HELLO_RES (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey, bool bValidReceiverKey)
 {
 	if (!IsOnOutTrackList(uIP, KADEMLIA2_HELLO_REQ)){
@@ -714,6 +717,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_HELLO_RES (const byte *pbyPacketDat
 }
 
 // Used in Kad2.0 only
+///snow:处理对方发来的请求节点信息，调用GetClosestTo()将自己保存的与目标节点最近的节点信息发送给对方，最多32个
 void CKademliaUDPListener::Process_KADEMLIA2_REQ (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey)
 {
 	// Get target and type
@@ -1123,6 +1127,7 @@ SSearchTerm* CKademliaUDPListener::CreateSearchExpressionTree(CSafeMemFile& file
 
 // Used in Kad2.0 only
 ///snow:CKademliaUDPListener::ProcessPacket()中调用，根据报文内容构造一棵搜索表达式二叉树，然后调用CIndexed::SendValidKeywordResult()
+///snow:CSearch::StorePacket()中 case KEYWORD分支发出请求
 void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey)
 {
 	CSafeMemFile fileIO( pbyPacketData, uLenPacket);
@@ -1134,7 +1139,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ (const byte *pbyPack
 	SSearchTerm* pSearchTerms = NULL;
 	if (uRestrictive)
 	{
-		try
+		try    ///snow:构造搜索表达式
 		{
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)
 			s_pstrDbgSearchExpr = (thePrefs.GetDebugServerSearchesLevel() > 0) ? new CString : NULL;
@@ -1157,12 +1162,14 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ (const byte *pbyPack
 		if (pSearchTerms == NULL)
 			throw CString(_T("Invalid search expression"));
 	}
+	///snow:发送符合搜索要求的Key值结果
 	CKademlia::GetIndexed()->SendValidKeywordResult(uTarget, pSearchTerms, uIP, uUDPPort, false, uStartPosition, senderUDPKey);
 	if(pSearchTerms)
 		Free(pSearchTerms);
 }
 
 // Used in Kad2.0 only
+///snow:CSearch::StorePacket()中case File分支发出相应的请求
 void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_SOURCE_REQ (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey)
 {
 	CSafeMemFile fileIO( pbyPacketData, uLenPacket);
@@ -1259,12 +1266,15 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_RES (const byte *pbyPacketDa
 			pTags = NULL;
 			throw;
 		}
+
+		///snow:调用CSearch::ProcessResult()处理三种类型的结果：FILE、KEYWORD、NOTE
 		CSearchManager::ProcessResult(uTarget, uAnswer, pTags, uIP, uUDPPort);
 		uCount--;
 	}
 }
 
 // Used in Kad2.0 only
+///snow:读取对方发来的报文，按Key值添加到相应的Index中
 void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey)
 {
 	//Used Pointers
@@ -1284,7 +1294,8 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ (const byte *pbyPac
 	CUInt128 uDistance(CKademlia::GetPrefs()->GetKadID());
 	uDistance.Xor(uFile);
 
-	// Shouldn't LAN IPs already be filtered?
+	// Shouldn't LAN IPs already be filtered? 
+	///snow:如果距离超过容忍值，则放弃
 	if(uDistance.Get32BitChunk(0) > SEARCHTOLERANCE && !::IsLANIP(ntohl(uIP)))
 		return;
 
@@ -1575,6 +1586,7 @@ void CKademliaUDPListener::Process_KADEMLIA_PUBLISH_RES (const byte *pbyPacketDa
 }
 
 // Used only by Kad2.0
+///snow:相对Kad1.0，多了个发送确认信息
 void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_RES (const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, CKadUDPKey senderUDPKey)
 {
 	if (!IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_KEY_REQ) && !IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_SOURCE_REQ) && !IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_NOTES_REQ)){
