@@ -2063,6 +2063,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_FIREWALLUDP(const byte *pbyPacketDa
 	}
 }
 
+///snow:pbyData中已包含opcode，opcode为2字节，所以取的是pbyData[1]，而不是pbyData[0]
 void CKademliaUDPListener::SendPacket(const byte *pbyData, uint32 uLenData, uint32 uDestinationHost, uint16 uDestinationPort, CKadUDPKey targetUDPKey, const CUInt128* uCryptTargetID)
 {
 	if (uLenData < 2) {
@@ -2083,6 +2084,7 @@ void CKademliaUDPListener::SendPacket(const byte *pbyData, uint32 uLenData, uint
 		, true , targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
 }
 
+///snow:pbyData中未包含opcode
 void CKademliaUDPListener::SendPacket(const byte *pbyData, uint32 uLenData, byte byOpcode, uint32 uDestinationHost, uint16 uDestinationPort, CKadUDPKey targetUDPKey, const CUInt128* uCryptTargetID)
 {
 	AddTrackedOutPacket(uDestinationHost, byOpcode);
@@ -2142,6 +2144,7 @@ void CKademliaUDPListener::ExpireClientSearch(CKadClientSearcher* pExpireImmedia
 	}
 }
 
+///snow:对0.49a以前的版本进行验证
 void CKademliaUDPListener::SendLegacyChallenge(uint32 uIP, uint16 uUDPPort, const CUInt128& uContactID){
 	// We want to verify that a pre-0.49a contact is valid and not sent from a spoofed IP.
 	// Because those versions don'T support any direct validating, we sent a KAD_REQ with a random ID,
