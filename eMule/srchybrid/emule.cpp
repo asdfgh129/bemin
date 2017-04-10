@@ -2167,8 +2167,9 @@ bool CemuleApp::IsTraceLog(LPCTSTR keyword)
 	{
 	    //_T("CAsyncSocketEx_Workflow"),
 		//_T("PacketData")//,
-//		_T("StreamData")
-		_T("KadBinaryTree")
+//		_T("StreamData"),
+		//_T("KadBinaryTree"),
+		_T("KadIndexData")
 	};
 	bool bRecord = false;
 	for (int i = 0; i < _countof(keywords); i++)

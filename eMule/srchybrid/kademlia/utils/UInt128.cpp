@@ -454,4 +454,3 @@ bool CUInt128::operator!= (ULONG uValue) const
 {
 	return (CompareTo(uValue) != 0);
 }
-¡¢

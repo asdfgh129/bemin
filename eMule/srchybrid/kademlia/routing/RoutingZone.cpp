@@ -230,7 +230,7 @@ void CRoutingZone::ReadFile(CString strSpecialNodesdate)
 			}
 			///snow:2以上版本每个联系人34字节:16字节的ID,4字节的IP,2字节的TCP Port,2字节的UDP Port,1字节的ContactVersion,8字节的 kadUDPKey, 1字节的bVerified=01；2以下低版本的只要25字节！
 			///snow:这边有两种情况：1是前四个字节不是00 00 00 00，是旧版本的Nodes.dat,uNumContacts!=0，后边是每个联系人25字节
--			///snow:                2是前四个字节是00 00 00 00，经过上面代码的处理，uNumContacts也被赋值了，后边是每个联系人34字节
+			///snow:                2是前四个字节是00 00 00 00，经过上面代码的处理，uNumContacts也被赋值了，后边是每个联系人34字节
 			if (uNumContacts != 0 && uNumContacts * 25 <= (file.GetLength() - file.GetPosition()))
 			{
 				// Hide contact list in the GUI

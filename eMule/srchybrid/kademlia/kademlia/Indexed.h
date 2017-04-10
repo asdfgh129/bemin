@@ -73,6 +73,8 @@ namespace Kademlia
 
 			private:
 				CIndexed* m_pOwner;
+				///snow:add by snow
+				void PrintCheckIndexData();
 			};
 
 			CIndexed();
@@ -106,6 +108,7 @@ namespace Kademlia
 			static CString	m_sSourceFileName;
 			static CString	m_sKeyFileName;
 			static CString	m_sLoadFileName;
+			
 	};
 
 

@@ -39,6 +39,10 @@ there client on the eMule forum..
 #include "../../Log.h"
 #include "../utils/KadUDPKey.h"
 
+#include "../../emule.h"  ///snow:by snow
+
+
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -82,7 +86,7 @@ void CIndexed::ReadFile(void)
 
 CIndexed::~CIndexed()
 { 
-	if (!m_bDataLoaded){
+if (!m_bDataLoaded){   ///snow:存放在文件中的数据没有加载完毕，直接删除掉三个map中各Entry已分配的存储空间
 		// the user clicked on disconnect/close just after he started kad (on probably just before posting in the forum the emule doenst works :P )
 		// while the loading thread is still busy. First tell the thread to abort its loading, afterwards wait for it to terminate
 		// and then delete all loaded items without writing them to the files (as they are incomplete and unchanged)
@@ -142,7 +146,7 @@ CIndexed::~CIndexed()
 		}
 		CKeyEntry::ResetGlobalTrackingMap();
 	}
-	else {
+	else {  ///snow:数据已加载完毕，将map中的各条目写回磁盘文件中
 		// standart cleanup with sotring
 		try
 		{
@@ -407,6 +411,7 @@ void CIndexed::Clean(void)
 	}
 }
 
+///snow:第一种情况是从m_mapKeyword中读取，另一种是从Kad网中接收了KADEMLIA2_PUBLISH_KEY_REQ码，在CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ()中处理
 bool CIndexed::AddKeyword(const CUInt128& uKeyID, const CUInt128& uSourceID, Kademlia::CKeyEntry* pEntry, uint8& uLoad, bool bIgnoreThreadLock)
 {
 	// do not access any data while the loading thread is busy;
@@ -1171,7 +1176,7 @@ int CIndexed::CLoadDataThread::Run()
 				uint32 uVersion = fileKey.ReadUInt32();   ///snow:前四个字节是版本号  04 00 00 00
 				if( uVersion < 5)                    ///snow:版本号小于5
 				{
-				time_t tSaveTime = fileKey.ReadUInt32();   ///snow:4字节保存时间：89 86 CB 58
+				time_t tSaveTime = fileKey.ReadUInt32();   ///snow:4字节保存时间：89 86 CB 58  是存活时间，有效期24小时
 					if( tSaveTime > time(NULL) )
 					{
 					fileKey.ReadUInt128(&uID);     ///snow:16字节ID:C6 FD 41 06 70 7F E5 80 B1 33 64 6D F2 73 50 F2
@@ -1283,7 +1288,7 @@ int CIndexed::CLoadDataThread::Run()
 				uint32 uVersion = fileSource.ReadUInt32();   ///snow:版本号：02 00 00 00
 				if( uVersion < 3 )
 				{
-				time_t tSaveTime = fileSource.ReadUInt32();   ///snow:保存时间：59 7B CA 58
+				time_t tSaveTime = fileSource.ReadUInt32();   ///snow:保存时间：59 7B CA 58 应该不是保存时间，是存活期限
 					if( tSaveTime > time(NULL) )
 					{
 					uint32 uNumKeys = fileSource.ReadUInt32();   ///snow:Key数目：5D 03 00 00   861条
@@ -1378,3 +1383,163 @@ int CIndexed::CLoadDataThread::Run()
 	m_pOwner->m_bDataLoaded = true;
 	return 0;
 }
+
+///snow:<----------------------------------------------------------------------------
+
+CString FormatTime(time_t time1)
+{
+	struct tm tm1;
+
+
+#ifdef WIN32
+	tm1 = *localtime(&time1);
+#else
+	localtime_r(&time1, &tm1 );
+#endif
+	CString strTime;
+	strTime.Format(_T("%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d"),
+		tm1.tm_year+1900, tm1.tm_mon+1, tm1.tm_mday,
+		tm1.tm_hour, tm1.tm_min,tm1.tm_sec);
+	return strTime;
+}
+
+CString binary(UINT32 int32)
+	{
+//	    std::string result;
+//    while (number>=1)
+//    {
+//        if (number % 2 == 0)
+//            result.append("0");
+//        else
+//            result.append("1");
+//// (number % 2 == 0) ? result.append("0") : result.append("1");
+////result += (number % 2 == 0) ? "0" : "1";
+//        number = number >> 1;
+//    }
+//    
+//    std::reverse(std::begin(result), std::end(result));
+//	CString str(result);
+//	return str;
+
+	char str[32];
+	itoa(int32,str,2);
+	CString binStr(str);
+	return binStr;
+
+	}
+void CIndexed::CLoadDataThread::PrintCheckIndexData()
+{
+	CBufferedFileIO fileKey;
+	CUInt128 uKeyID, uID, uSourceID;
+	if (fileKey.Open(m_sKeyFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite))
+	{
+		setvbuf(fileKey.m_pStream, NULL, _IOFBF, 32768);
+
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("FileName:%s\r\n"),m_sKeyFileName.GetBuffer(0));
+
+		uint32 uVersion = fileKey.ReadUInt32();   ///snow:前四个字节是版本号  04 00 00 00
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Version:%i"),uVersion);
+
+		time_t tSaveTime = fileKey.ReadUInt32();   ///snow:4字节保存时间：89 86 CB 58  是存活时间，有效期24小时
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("LiftTime:%s"),FormatTime(tSaveTime).GetBuffer(0));
+
+		fileKey.ReadUInt128(&uID);     ///snow:16字节ID:C6 FD 41 06 70 7F E5 80 B1 33 64 6D F2 73 50 F2
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("本机KadID(前32位):%s"),binary(uID.Get32BitChunk(0)).GetBuffer(0));
+
+		//if( Kademlia::CKademlia::GetPrefs()->GetKadID() == uID )
+		//	{
+		uint32 uNumKeys = fileKey.ReadUInt32();   ///snow:Key条目 A9 00 00 00 169条
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Key条数:%i"),uNumKeys);
+
+		while( uNumKeys)
+		{
+			fileKey.ReadUInt128(&uKeyID);     ///snow:16字节的KeyID：1F EE 40 06 1E 15 A3 CD 12 0D 9A 6B 78 C8 F3 D6
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("File ID(前32位):%s"),binary(uKeyID.Get32BitChunk(0)).GetBuffer(0));
+			
+			uint32 uNumSource = fileKey.ReadUInt32();  ///snow:4字节的source数目  2D 00 00 00  45个
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Source条数:%i"),uNumSource);
+
+			while( uNumSource)
+			{
+				fileKey.ReadUInt128(&uSourceID);   ///snow:16字节的SourceID: BA 33 6D D8 B5 2A D0 CE 89 91 FE BF F8 C2 38 C5
+				uint32 uNumName = fileKey.ReadUInt32();   ///snow:4字节的Name数目：01 00 00 00  同一hash，但不同文件名
+				while( uNumName)
+				{
+					CKeyEntry* pToAdd = new Kademlia::CKeyEntry();
+					pToAdd->m_uKeyID.SetValue(uKeyID);
+					pToAdd->m_uSourceID.SetValue(uSourceID);									
+					pToAdd->m_bSource = false;
+					pToAdd->m_tLifetime = fileKey.ReadUInt32();   ///snow:4字节的存活时间：3B 65 CB 58
+					if (uVersion >= 3)   ///snow:版本4包含了AICH信息，版本3不包含
+							///snow:读取AICH信息：2个字节的AICH条目：01 00  1条
+							///snow:在示例中总共读取了110个字节:从0000005eh处读取到000000cch处 01 00 00 00 57 00 53...(此处省略97字节）...BB 13 CA 58 00 00
+						pToAdd->ReadPublishTrackingDataFromFile(&fileKey, uVersion >= 4);   ///比src_index.dat多的部分
+						///snow:1字节的Tag条数：03
+						uint32 uTotalTags = fileKey.ReadByte();
+						///snow:第1个tag:读取了02 01 00 01 57 00 53 69 65 72 72 61 2C 20 4A 61 76 69....65 29 2B 2E 65 70 75 62
+						///snow:  02 type=TAGTYPE_STRING, 01 00 name len, 01 pcName=TAG_FILENAME ,57 00 ,filenameLen,文件名...87字节
+						///snow:第2个tag:读取了03 01 00 02 E2 13 2C 00
+						///snow:03 type=TAGTYPE_UINT32,01 00 name len, 02 pcName=TAG_FILESIZE,value:E2 13 2C 00
+						///snow:第3个tag:读取了09 01 00 15 01 DC 65 05 3A 3E F6 0E C4
+						///snow:09 type=TAGTYPE_UINT8,01 00 name len, 15 pcName=TAG_SOURCES,value:01
+						while( uTotalTags )
+							{
+							CKadTag* pTag = fileKey.ReadTag();  
+							if(pTag)
+								{
+								if (!pTag->m_name.Compare(TAG_FILENAME))
+									{
+									if (pToAdd->GetCommonFileName().IsEmpty())
+										pToAdd->SetFileName(pTag->GetStr());
+									delete pTag;
+									}
+								else if (!pTag->m_name.Compare(TAG_FILESIZE))
+									{
+									pToAdd->m_uSize = pTag->GetInt();
+									delete pTag;
+									}
+								else if (!pTag->m_name.Compare(TAG_SOURCEIP))
+									{
+									pToAdd->m_uIP = (uint32)pTag->GetInt();
+									pToAdd->AddTag(pTag);
+									}
+								else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
+									{
+									pToAdd->m_uTCPPort = (uint16)pTag->GetInt();
+									pToAdd->AddTag(pTag);
+									}
+								else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
+									{
+									pToAdd->m_uUDPPort = (uint16)pTag->GetInt();
+									pToAdd->AddTag(pTag);
+									}
+								else
+									{
+									pToAdd->AddTag(pTag);
+									}
+								}
+							uTotalTags--;
+							}
+						uint8 uLoad;
+						///snow:将Key_index.dat中的所有条目添加到m_mapKeyword
+						//if(m_pOwner->AddKeyword(uKeyID, uSourceID, pToAdd, uLoad, true))
+						//	uTotalKeyword++;
+						//else
+						//	delete pToAdd;
+						uNumName--;
+						}
+					uNumSource--;
+					}
+				uNumKeys--;
+				}
+		//	}
+		//}
+		//}
+		fileKey.Close();
+	}
+	else
+		DebugLogWarning(_T("Unable to load Kad file: %s"), m_sKeyFileName);
+}
+	
+
+
