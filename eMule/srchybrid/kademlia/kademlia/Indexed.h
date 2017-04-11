@@ -75,6 +75,7 @@ namespace Kademlia
 				CIndexed* m_pOwner;
 				///snow:add by snow
 				void PrintCheckIndexData();
+				void PrintCheckSourceIndexData();
 			};
 
 			CIndexed();

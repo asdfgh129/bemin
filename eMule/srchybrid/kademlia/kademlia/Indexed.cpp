@@ -1269,6 +1269,10 @@ int CIndexed::CLoadDataThread::Run()
 				DebugLogWarning(_T("Unable to load Kad file: %s"), m_sKeyFileName);
 		}
 
+
+		///snow:add by snow
+		PrintCheckIndexData();
+
 		if (!m_pOwner->m_bAbortLoading)
 		{ 
 /***********************************************snow:start*******************************************
@@ -1364,6 +1368,9 @@ int CIndexed::CLoadDataThread::Run()
 			else
 				DebugLogWarning(_T("Unable to load Kad file: %s"), m_sSourceFileName);
 		}
+
+		///snow:add by snow
+		PrintCheckSourceIndexData();
 	}
 	catch ( CIOException *ioe )
 	{
@@ -1404,7 +1411,7 @@ CString FormatTime(time_t time1)
 }
 
 CString binary(UINT32 int32)
-	{
+{
 //	    std::string result;
 //    while (number>=1)
 //    {
@@ -1421,12 +1428,14 @@ CString binary(UINT32 int32)
 //	CString str(result);
 //	return str;
 
-	char str[32];
+	char *str =new char[33];
 	itoa(int32,str,2);
 	CString binStr(str);
+	delete str;
 	return binStr;
 
-	}
+}
+
 void CIndexed::CLoadDataThread::PrintCheckIndexData()
 {
 	CBufferedFileIO fileKey;
@@ -1444,102 +1453,233 @@ void CIndexed::CLoadDataThread::PrintCheckIndexData()
 		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("LiftTime:%s"),FormatTime(tSaveTime).GetBuffer(0));
 
 		fileKey.ReadUInt128(&uID);     ///snow:16字节ID:C6 FD 41 06 70 7F E5 80 B1 33 64 6D F2 73 50 F2
-		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("本机KadID(前32位):%s"),binary(uID.Get32BitChunk(0)).GetBuffer(0));
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("本机KadID(前32位):%s(%i位),Hex:%x"),binary(uID.Get32BitChunk(0)).GetBuffer(0),binary(uID.Get32BitChunk(0)).GetLength(),uID.Get32BitChunk(0));
 
 		//if( Kademlia::CKademlia::GetPrefs()->GetKadID() == uID )
 		//	{
 		uint32 uNumKeys = fileKey.ReadUInt32();   ///snow:Key条目 A9 00 00 00 169条
-		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Key条数:%i"),uNumKeys);
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Key条数:%i\r\n"),uNumKeys);
+
+		uint32 uTotalNumkeys,uTotalNumSources,uTotalEntrys;
+		uTotalNumkeys = uNumKeys;
 
 		while( uNumKeys)
 		{
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("\r\n	Key第 %i 条:"),uTotalNumkeys-uNumKeys+1);
 			fileKey.ReadUInt128(&uKeyID);     ///snow:16字节的KeyID：1F EE 40 06 1E 15 A3 CD 12 0D 9A 6B 78 C8 F3 D6
-			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("File ID(前32位):%s"),binary(uKeyID.Get32BitChunk(0)).GetBuffer(0));
-			
-			uint32 uNumSource = fileKey.ReadUInt32();  ///snow:4字节的source数目  2D 00 00 00  45个
-			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Source条数:%i"),uNumSource);
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("	File ID(前32位):%s(%i位),Hex:%x"),binary(uKeyID.Get32BitChunk(0)).GetBuffer(0),binary(uKeyID.Get32BitChunk(0)).GetLength(),uKeyID.Get32BitChunk(0));
 
+			CUInt128 uDistance(uID);
+			uDistance.Xor(uKeyID);
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("	Distance(前32位):%s(%i位),Dec:%d,容忍值:16777216(%s)"),binary(uDistance.Get32BitChunk(0)).GetBuffer(0),binary(uDistance.Get32BitChunk(0)).GetLength(),uDistance.Get32BitChunk(0),binary(16777216).GetBuffer(0));
+
+			uint32 uNumSource = fileKey.ReadUInt32();  ///snow:4字节的source数目  2D 00 00 00  45个
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("	Source条数:%i\r\n"),uNumSource);
+
+			uTotalNumSources=uNumSource;
 			while( uNumSource)
 			{
+				theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("		Source第 %i 条:"),uTotalNumSources-uNumSource+1);
 				fileKey.ReadUInt128(&uSourceID);   ///snow:16字节的SourceID: BA 33 6D D8 B5 2A D0 CE 89 91 FE BF F8 C2 38 C5
+				theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("		Source ID(前32位):%s"),binary(uSourceID.Get32BitChunk(0)).GetBuffer(0));
+
 				uint32 uNumName = fileKey.ReadUInt32();   ///snow:4字节的Name数目：01 00 00 00  同一hash，但不同文件名
+				theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("		Entry数:%i"),uNumName);
+
+				uTotalEntrys=uNumName;
 				while( uNumName)
 				{
+					theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Entry第 %i 条:"),uTotalEntrys-uNumName+1);
 					CKeyEntry* pToAdd = new Kademlia::CKeyEntry();
 					pToAdd->m_uKeyID.SetValue(uKeyID);
 					pToAdd->m_uSourceID.SetValue(uSourceID);									
 					pToAdd->m_bSource = false;
 					pToAdd->m_tLifetime = fileKey.ReadUInt32();   ///snow:4字节的存活时间：3B 65 CB 58
+					theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			LiftTime:%s"),FormatTime(pToAdd->m_tLifetime).GetBuffer(0));
+
 					if (uVersion >= 3)   ///snow:版本4包含了AICH信息，版本3不包含
-							///snow:读取AICH信息：2个字节的AICH条目：01 00  1条
-							///snow:在示例中总共读取了110个字节:从0000005eh处读取到000000cch处 01 00 00 00 57 00 53...(此处省略97字节）...BB 13 CA 58 00 00
+						///snow:读取AICH信息：2个字节的AICH条目：01 00  1条
+						///snow:在示例中总共读取了110个字节:从0000005eh处读取到000000cch处 01 00 00 00 57 00 53...(此处省略97字节）...BB 13 CA 58 00 00  参见ReadPublishTrackingDataFromFile()注释
 						pToAdd->ReadPublishTrackingDataFromFile(&fileKey, uVersion >= 4);   ///比src_index.dat多的部分
-						///snow:1字节的Tag条数：03
-						uint32 uTotalTags = fileKey.ReadByte();
-						///snow:第1个tag:读取了02 01 00 01 57 00 53 69 65 72 72 61 2C 20 4A 61 76 69....65 29 2B 2E 65 70 75 62
-						///snow:  02 type=TAGTYPE_STRING, 01 00 name len, 01 pcName=TAG_FILENAME ,57 00 ,filenameLen,文件名...87字节
-						///snow:第2个tag:读取了03 01 00 02 E2 13 2C 00
-						///snow:03 type=TAGTYPE_UINT32,01 00 name len, 02 pcName=TAG_FILESIZE,value:E2 13 2C 00
-						///snow:第3个tag:读取了09 01 00 15 01 DC 65 05 3A 3E F6 0E C4
-						///snow:09 type=TAGTYPE_UINT8,01 00 name len, 15 pcName=TAG_SOURCES,value:01
-						while( uTotalTags )
+					///snow:1字节的Tag条数：03
+					uint32 uTotalTags = fileKey.ReadByte();
+					theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("		Tag数:%i"),uTotalTags);
+					///snow:第1个tag:读取了02 01 00 01 57 00 53 69 65 72 72 61 2C 20 4A 61 76 69....65 29 2B 2E 65 70 75 62
+					///snow:  02 type=TAGTYPE_STRING, 01 00 name len, 01 pcName=TAG_FILENAME ,57 00 ,filenameLen,文件名...87字节
+					///snow:第2个tag:读取了03 01 00 02 E2 13 2C 00
+					///snow:03 type=TAGTYPE_UINT32,01 00 name len, 02 pcName=TAG_FILESIZE,value:E2 13 2C 00
+					///snow:第3个tag:读取了09 01 00 15 01 DC 65 05 3A 3E F6 0E C4
+					///snow:09 type=TAGTYPE_UINT8,01 00 name len, 15 pcName=TAG_SOURCES,value:01
+					while( uTotalTags )
+					{
+						CKadTag* pTag = fileKey.ReadTag();  
+						if(pTag)
+						{
+							if (!pTag->m_name.Compare(TAG_FILENAME))
 							{
-							CKadTag* pTag = fileKey.ReadTag();  
-							if(pTag)
-								{
-								if (!pTag->m_name.Compare(TAG_FILENAME))
-									{
-									if (pToAdd->GetCommonFileName().IsEmpty())
-										pToAdd->SetFileName(pTag->GetStr());
-									delete pTag;
-									}
-								else if (!pTag->m_name.Compare(TAG_FILESIZE))
-									{
-									pToAdd->m_uSize = pTag->GetInt();
-									delete pTag;
-									}
-								else if (!pTag->m_name.Compare(TAG_SOURCEIP))
-									{
-									pToAdd->m_uIP = (uint32)pTag->GetInt();
-									pToAdd->AddTag(pTag);
-									}
-								else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
-									{
-									pToAdd->m_uTCPPort = (uint16)pTag->GetInt();
-									pToAdd->AddTag(pTag);
-									}
-								else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
-									{
-									pToAdd->m_uUDPPort = (uint16)pTag->GetInt();
-									pToAdd->AddTag(pTag);
-									}
-								else
-									{
-									pToAdd->AddTag(pTag);
-									}
-								}
-							uTotalTags--;
+								//if (pToAdd->GetCommonFileName().IsEmpty())
+								//{
+								//	pToAdd->SetFileName(pTag->GetStr());
+									theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FileName:%s"),pTag->GetStr().GetBuffer(0));
+								//}
+								//delete pTag;
 							}
-						uint8 uLoad;
-						///snow:将Key_index.dat中的所有条目添加到m_mapKeyword
-						//if(m_pOwner->AddKeyword(uKeyID, uSourceID, pToAdd, uLoad, true))
-						//	uTotalKeyword++;
-						//else
-						//	delete pToAdd;
-						uNumName--;
+							else if (!pTag->m_name.Compare(TAG_FILESIZE))
+							{
+								//pToAdd->m_uSize = pTag->GetInt();
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Size:%i"),pTag->GetInt());
+								//delete pTag;
+							}
+							else if (!pTag->m_name.Compare(TAG_SOURCEIP))
+							{
+								//pToAdd->m_uIP = (uint32)pTag->GetInt();
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:IP:%i"),ipstr(pTag->GetInt()));
+								//pToAdd->AddTag(pTag);
+							}
+							else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
+							{
+								//pToAdd->m_uTCPPort = (uint16)pTag->GetInt();
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Port:%i"),pTag->GetInt());
+								//pToAdd->AddTag(pTag);
+							}
+							else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
+							{
+								//pToAdd->m_uUDPPort = (uint16)pTag->GetInt();
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:UDP Port:%i"),pTag->GetInt());
+								//pToAdd->AddTag(pTag);
+							}
+							else
+							{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Other type:%s"),ByteToHexStr(pTag->m_name.GetBuffer(0),pTag->m_name.GetLength()).GetBuffer(0));
+								//pToAdd->AddTag(pTag);
+							}
+							delete pTag;
 						}
-					uNumSource--;
+						uTotalTags--;
 					}
-				uNumKeys--;
+					
+					delete pToAdd;
+					uNumName--;
 				}
-		//	}
-		//}
-		//}
+				uNumSource--;
+			}
+			uNumKeys--;
+		}
+
 		fileKey.Close();
 	}
 	else
 		DebugLogWarning(_T("Unable to load Kad file: %s"), m_sKeyFileName);
 }
-	
+
+void CIndexed::CLoadDataThread::PrintCheckSourceIndexData()
+{
+	CBufferedFileIO fileSource;
+	CUInt128 uKeyID, uID, uSourceID;
+	if (fileSource.Open(m_sSourceFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite))
+	{
+		setvbuf(fileSource.m_pStream, NULL, _IOFBF, 32768);
+
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("FileName:%s\r\n"),m_sSourceFileName.GetBuffer(0));
+
+		uint32 uVersion = fileSource.ReadUInt32();   ///snow:版本号：02 00 00 00
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Version:%i"),uVersion);
 
 
+		time_t tSaveTime = fileSource.ReadUInt32();   ///snow:保存时间：59 7B CA 58 应该不是保存时间，是存活期限
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("LiftTime:%s"),FormatTime(tSaveTime).GetBuffer(0));
+
+		uint32 uNumKeys = fileSource.ReadUInt32();   ///snow:Key数目：5D 03 00 00   861条
+		theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Key条数:%i\r\n"),uNumKeys);
+
+		uint32 uTotalNumkeys,uTotalNumSources,uTotalEntrys;
+		uTotalNumkeys = uNumKeys;
+
+		while( uNumKeys)
+		{
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("\r\n	Key第 %i 条:"),uTotalNumkeys-uNumKeys+1);
+			fileSource.ReadUInt128(&uKeyID);    ///snow:16字节的keyid:1B 8E 41 06 CD 8C 99 43 75 9B 4B 66 49 8B 1C B1
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("	File ID(前32位):%s(%i位),Hex:%x"),binary(uKeyID.Get32BitChunk(0)).GetBuffer(0),binary(uKeyID.Get32BitChunk(0)).GetLength(),uKeyID.Get32BitChunk(0));
+
+			uint32 uNumSource = fileSource.ReadUInt32();   ///snow:4字节的SourceNum ：01 00 00 00
+			//theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("Key条数:%i\r\n"),uNumKeys);
+			theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("	Source条数:%i\r\n"),uNumSource);
+
+			uTotalNumSources=uNumSource;
+			while( uNumSource)
+			{
+				theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("		Source第 %i 条:"),uTotalNumSources-uNumSource+1);
+				fileSource.ReadUInt128(&uSourceID);   ///snow:16字节的sourceid:61 9E 6D 07 F4 CB 0E 6E 42 8D 72 0A 11 6F C4 02
+				theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("		Source ID(前32位):%s"),binary(uSourceID.Get32BitChunk(0)).GetBuffer(0));
+
+				uint32 uNumName = fileSource.ReadUInt32();   ///snow:4字节的NameNum: 01 00 00 00
+				theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("		Entry数:%i"),uNumName);
+
+				uTotalEntrys=uNumName;
+				while( uNumName)
+				{
+					theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Entry第 %i 条:"),uTotalEntrys-uNumName+1);
+					CEntry* pToAdd = new Kademlia::CEntry();
+					pToAdd->m_bSource = true;
+					pToAdd->m_tLifetime = fileSource.ReadUInt32();   ///snow:4字节的存活时间：71 69 CA 58
+					theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			LiftTime:%s"),FormatTime(pToAdd->m_tLifetime).GetBuffer(0));
+					uint32 uTotalTags = fileSource.ReadByte();    ///snow:1字节的tag数 06
+					theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("		Tag数:%i"),uTotalTags);
+					///snow:03 01 00 02 00 C0 9A 2B  UINT32 TAG_FILESIZE
+					///snow:03 01 00 FE A8 3A 39 53  UINT32 TAG_SOURCEIP
+					///snow:09 01 00 FF 01           UINT8  TAG_SOURCETYPE
+					///snow:08 01 00 FD 9E 1B        UINT16 TAG_SOURCEPORT
+					///snow:08 01 00 FC DB 06        UINT16 TAG_SOURCEUPORT
+					///snow:09 01 00 F3 03           UIN8   TAG_ENCRYPTION 
+					while( uTotalTags )
+					{
+						CKadTag* pTag = fileSource.ReadTag();
+						if(pTag)
+						{
+							if (!pTag->m_name.Compare(TAG_SOURCEIP))
+							{
+								//pToAdd->m_uIP = (uint32)pTag->GetInt();
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:IP:%i"),ipstr(pTag->GetInt()));
+								//pToAdd->AddTag(pTag);
+							}
+							else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
+							{
+								//pToAdd->m_uTCPPort = (uint16)pTag->GetInt();
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Port:%i"),pTag->GetInt());
+								//pToAdd->AddTag(pTag);
+							}
+							else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
+							{
+								//pToAdd->m_uUDPPort = (uint16)pTag->GetInt();
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:UDP Port:%i"),pTag->GetInt());
+								//pToAdd->AddTag(pTag);
+							}
+							else
+							{
+								//pToAdd->AddTag(pTag);
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Other type:%x"),atoi(pTag->m_name));
+							}
+							delete pTag;
+						}
+						uTotalTags--;
+					}
+					//pToAdd->m_uKeyID.SetValue(uKeyID);
+					//pToAdd->m_uSourceID.SetValue(uSourceID);
+					delete pToAdd;
+					uNumName--;
+				}
+				uNumSource--;
+			}
+			uNumKeys--;
+		}
+
+
+		fileSource.Close();
+
+	}
+	else
+		DebugLogWarning(_T("Unable to load Kad file: %s"), m_sSourceFileName);
+
+}
+
+///snow:--------------------------------------------------------------------------->by snow
