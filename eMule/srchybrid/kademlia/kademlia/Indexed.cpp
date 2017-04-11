@@ -1520,54 +1520,247 @@ void CIndexed::CLoadDataThread::PrintCheckIndexData()
 								//if (pToAdd->GetCommonFileName().IsEmpty())
 								//{
 								//	pToAdd->SetFileName(pTag->GetStr());
-									theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FileName:%s"),pTag->GetStr().GetBuffer(0));
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FileName:%s"),pTag->GetStr().GetBuffer(0));
 								//}
 								//delete pTag;
-							}
+								}
 							else if (!pTag->m_name.Compare(TAG_FILESIZE))
-							{
+								{
 								//pToAdd->m_uSize = pTag->GetInt();
 								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Size:%i"),pTag->GetInt());
 								//delete pTag;
-							}
+								}
 							else if (!pTag->m_name.Compare(TAG_SOURCEIP))
-							{
+								{
 								//pToAdd->m_uIP = (uint32)pTag->GetInt();
-								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:IP:%i"),ipstr(pTag->GetInt()));
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:IP:%s"),ipstr((UINT32)pTag->GetInt()));
 								//pToAdd->AddTag(pTag);
-							}
+								}
 							else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
-							{
+								{
 								//pToAdd->m_uTCPPort = (uint16)pTag->GetInt();
 								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Port:%i"),pTag->GetInt());
 								//pToAdd->AddTag(pTag);
-							}
+								}
 							else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
-							{
+								{
 								//pToAdd->m_uUDPPort = (uint16)pTag->GetInt();
 								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:UDP Port:%i"),pTag->GetInt());
 								//pToAdd->AddTag(pTag);
-							}
+								}
+							else if (!pTag->m_name.Compare(TAG_BUDDYHASH))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:BUDDYHASH:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_CLIENTLOWID))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:CLIENTLOWID:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_COLLECTION))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:COLLECTION:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_COMPLETE_SOURCES))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:COMPLETE_SOURCES:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_ENCRYPTION))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:ENCRYPTION:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILE_COUNT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILE_COUNT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILECOMMENT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILECOMMENT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILEFORMAT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILEFORMAT:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							//else if (!pTag->m_name.Compare(TAG_FILENAME))
+							//	{
+							//	theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILENAME:%i"),pTag->GetInt());
+							//	}
+							else if (!pTag->m_name.Compare(TAG_FILERATING))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILERATING:%i"),pTag->GetInt());
+								}
+							//else if (!pTag->m_name.Compare(TAG_FILESIZE))
+							//	{
+							//	theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILESIZE:%i"),pTag->GetInt());
+							//	}
+							else if (!pTag->m_name.Compare(TAG_FILESIZE_HI))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILESIZE_HI:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILETYPE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILETYPE:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							else if (!pTag->m_name.Compare(TAG_IP_ADDRESS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:IP_ADDRESS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_KADAICHHASHRESULT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:KADAICHHASHRESULT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_KADMISCOPTIONS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:KADMISCOPTIONS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PARTFILENAME))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PARTFILENAME:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							else if (!pTag->m_name.Compare(TAG_PARTS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PARTS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PERMISSIONS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PERMISSIONS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PORT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PORT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PRIORITY))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PRIORITY:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PUBLISHINFO))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PUBLISHINFO:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_SERVERIP))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SERVERIP:%s"),ipstr(pTag->GetInt()));
+								}
+							else if (!pTag->m_name.Compare(TAG_SERVERPORT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SERVERPORT:%i"),pTag->GetInt());
+								}
+							//else if (!pTag->m_name.Compare(TAG_SOURCEIP))
+							//	{
+							//	theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCEIP:%i"),pTag->GetInt());
+							//	}
+							//else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
+							//	{
+							//	theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCEPORT:%i"),pTag->GetInt());
+							//	}
+							else if (!pTag->m_name.Compare(TAG_SOURCES))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCES:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_SOURCETYPE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCETYPE:%i"),pTag->GetInt());
+								}
+							//else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
+							//	{
+							//	theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCEUPORT:%i"),pTag->GetInt());
+							//	}
+							else if (!pTag->m_name.Compare(TAG_STATUS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:STATUS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_USER_COUNT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:USER_COUNT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_VERSION))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:VERSION:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_DESCRIPTION))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:DESCRIPTION:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FAIL))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FAIL:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_GAPEND))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:GAPEND:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_GAPSTART))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:GAPSTART:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_KADAICHHASHPUB))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:KADAICHHASHPUB:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_ALBUM))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_ALBUM:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_ARTIST))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_ARTIST:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_BITRATE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_BITRATE:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_CODEC))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_CODEC:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_LENGTH))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_LENGTH:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_TITLE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_TITLE:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							else if (!pTag->m_name.Compare(TAG_PART_HASH))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PART_HASH:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PART_PATH))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PART_PATH:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PING))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PING:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PREFERENCE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PREFERENCE:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_TRANSFERRED))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:TRANSFERRED:%i"),pTag->GetInt());
+								}
+
 							else
-							{
-								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Other type:%s"),ByteToHexStr(pTag->m_name.GetBuffer(0),pTag->m_name.GetLength()).GetBuffer(0));
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Other type:%s"),ByteToHexStr((uchar*)pTag->m_name.GetBuffer(0),pTag->m_name.GetLength()).GetBuffer(0));
 								//pToAdd->AddTag(pTag);
-							}
+								}
 							delete pTag;
-						}
+							}
 						uTotalTags--;
-					}
-					
+						}
+
 					delete pToAdd;
 					uNumName--;
-				}
+					}
 				uNumSource--;
-			}
+				}
 			uNumKeys--;
-		}
+			}
 
 		fileKey.Close();
-	}
+		}
 	else
 		DebugLogWarning(_T("Unable to load Kad file: %s"), m_sKeyFileName);
 }
@@ -1639,7 +1832,7 @@ void CIndexed::CLoadDataThread::PrintCheckSourceIndexData()
 							if (!pTag->m_name.Compare(TAG_SOURCEIP))
 							{
 								//pToAdd->m_uIP = (uint32)pTag->GetInt();
-								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:IP:%i"),ipstr(pTag->GetInt()));
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:IP:%s"),ipstr(pTag->GetInt()));
 								//pToAdd->AddTag(pTag);
 							}
 							else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
@@ -1654,10 +1847,202 @@ void CIndexed::CLoadDataThread::PrintCheckSourceIndexData()
 								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:UDP Port:%i"),pTag->GetInt());
 								//pToAdd->AddTag(pTag);
 							}
+							else if (!pTag->m_name.Compare(TAG_BUDDYHASH))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:BUDDYHASH:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							else if (!pTag->m_name.Compare(TAG_CLIENTLOWID))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:CLIENTLOWID:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_COLLECTION))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:COLLECTION:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_COMPLETE_SOURCES))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:COMPLETE_SOURCES:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_ENCRYPTION))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:ENCRYPTION:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILE_COUNT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILE_COUNT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILECOMMENT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILECOMMENT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILEFORMAT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILEFORMAT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILENAME))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILENAME:%s"),pTag->GetStr().GetBuffer(0));
+								}
+							else if (!pTag->m_name.Compare(TAG_FILERATING))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILERATING:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILESIZE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILESIZE:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILESIZE_HI))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILESIZE_HI:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FILETYPE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FILETYPE:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_IP_ADDRESS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:IP_ADDRESS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_KADAICHHASHRESULT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:KADAICHHASHRESULT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_KADMISCOPTIONS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:KADMISCOPTIONS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PARTFILENAME))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PARTFILENAME:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PARTS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PARTS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PERMISSIONS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PERMISSIONS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PORT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PORT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PRIORITY))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PRIORITY:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PUBLISHINFO))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PUBLISHINFO:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_SERVERIP))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SERVERIP:%s"),ipstr(pTag->GetInt()));
+								}
+							else if (!pTag->m_name.Compare(TAG_SERVERPORT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SERVERPORT:%i"),pTag->GetInt());
+								}
+							//else if (!pTag->m_name.Compare(TAG_SOURCEIP))
+							//	{
+							//	theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCEIP:%i"),pTag->GetInt());
+							//	}
+							//else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
+							//	{
+							//	theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCEPORT:%i"),pTag->GetInt());
+							//	}
+							else if (!pTag->m_name.Compare(TAG_SOURCES))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCES:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_SOURCETYPE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCETYPE:%i"),pTag->GetInt());
+								}
+							//else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
+							//	{
+							//	theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:SOURCEUPORT:%i"),pTag->GetInt());
+							//	}
+							else if (!pTag->m_name.Compare(TAG_STATUS))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:STATUS:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_USER_COUNT))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:USER_COUNT:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_VERSION))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:VERSION:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_DESCRIPTION))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:DESCRIPTION:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_FAIL))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:FAIL:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_GAPEND))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:GAPEND:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_GAPSTART))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:GAPSTART:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_KADAICHHASHPUB))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:KADAICHHASHPUB:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_ALBUM))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_ALBUM:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_ARTIST))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_ARTIST:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_BITRATE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_BITRATE:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_CODEC))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_CODEC:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_LENGTH))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_LENGTH:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_MEDIA_TITLE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:MEDIA_TITLE:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PART_HASH))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PART_HASH:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PART_PATH))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PART_PATH:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PING))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PING:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_PREFERENCE))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:PREFERENCE:%i"),pTag->GetInt());
+								}
+							else if (!pTag->m_name.Compare(TAG_TRANSFERRED))
+								{
+								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:TRANSFERRED:%i"),pTag->GetInt());
+								}
 							else
 							{
 								//pToAdd->AddTag(pTag);
-								theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Other type:%x"),atoi(pTag->m_name));
+							theApp.QueueTraceLogLine(TRACE_INDEX_DATA,_T("			Tag:Other type:%s"),ByteToHexStr((uchar*)pTag->m_name.GetBuffer(0),pTag->m_name.GetLength()).GetBuffer(0));
 							}
 							delete pTag;
 						}

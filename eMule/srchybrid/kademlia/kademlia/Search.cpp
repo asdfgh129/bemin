@@ -859,6 +859,7 @@ void CSearch::StorePacket()
 				UIntList::const_iterator itListFileID = m_listFileIDs.begin();
 				uchar ucharFileid[16];
 
+				///snow:在这里写入的数据在Process_KADEMLIA2_PUBLISH_KEY_REQ()中读取处理
 				while(iCount && (itListFileID != m_listFileIDs.end()))  ///snow:遍历m_listFileIDs，每50个文件一个信息包
 				{
 					uint16 iPacketCount = 0;
@@ -1556,6 +1557,7 @@ void CSearch::SendFindValue(CContact* pContact, bool bReAskMore)
 	}
 }
 
+///snow:在 CSharedFileList::Publish()、 CUpDownClient::TryToConnect()中调用
 void CSearch::AddFileID(const CUInt128& uID)
 {
 	// Add a file hash to the search list.
