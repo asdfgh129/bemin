@@ -204,6 +204,7 @@ CSearch* CSearchManager::PrepareLookup(uint32 uType, bool bStart, const CUInt128
 		return NULL;
 
 	// Create a new search.
+	///snow:以参数uType和uID构造一个CSearch对象
 	CSearch *pSearch = new CSearch;
 
 	// Set type and target.
@@ -226,6 +227,8 @@ CSearch* CSearchManager::PrepareLookup(uint32 uType, bool bStart, const CUInt128
 
 		// Inc search ID.
 		pSearch->m_uSearchID = ++m_uNextID;
+
+		///snow:bStart参数决定是否开始搜索
 		if( bStart )
 		{
 			// Auto start this search.  ///snow:加上if(AlreadySearchingFor(uID))就是StartSearch

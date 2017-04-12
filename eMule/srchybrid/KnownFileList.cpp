@@ -425,6 +425,7 @@ bool CKnownFileList::SafeAddKFile(CKnownFile* toadd)
 	return true;
 }
 
+///snow:在m_Files_map中查验三个信息：日期、大小和文件名
 CKnownFile* CKnownFileList::FindKnownFile(LPCTSTR filename, uint32 date, uint64 size) const
 {
 	POSITION pos = m_Files_map.GetStartPosition();

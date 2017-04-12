@@ -212,6 +212,7 @@ CPublishKeyword* CPublishKeywordList::FindKeyword(const CStringW& rstrKeyword, P
 	return NULL;
 }
 
+///snow:CSharedFileList::AddFile()和CSharedFileList::AddKeywords()中调用
 void CPublishKeywordList::AddKeywords(CKnownFile* pFile)
 {
 	const Kademlia::WordList& wordlist = pFile->GetKadKeywords();
@@ -221,12 +222,14 @@ void CPublishKeywordList::AddKeywords(CKnownFile* pFile)
 	{
 		const CStringW& strKeyword = *it;
 		CPublishKeyword* pPubKw = FindKeyword(strKeyword);
-		if (pPubKw == NULL)
+		if (pPubKw == NULL)   ///snow:如果该keyword不存在，添加keyword到列表末尾
 		{
 			pPubKw = new CPublishKeyword(strKeyword);
 			m_lstKeywords.AddTail(pPubKw);
 			SetNextPublishTime(0);
 		}
+
+		///snow:添加文件引用到该Keyword，在pPubKw对象的m_aFiles数组中添加一个pFile的条目
 		if(pPubKw->AddRef(pFile) && pPubKw->GetNextPublishTime() > MIN2S(30))
 		{
 			// User may be adding and removing files, so if this is a keyword that
@@ -574,6 +577,8 @@ void CSharedFileList::FindSharedFiles()
 	HashNextFile();
 }
 
+
+///snow:FindSharedFiles()及AddSingleSharedDirectory()中调用
 void CSharedFileList::AddFilesFromDirectory(const CString& rstrDirectory)
 {
 	CFileFind ff;
@@ -628,6 +633,7 @@ bool CSharedFileList::AddSingleSharedFile(const CString& rstrFilePath, bool bNoU
 	return bNoUpdate || CheckAndAddSingleFile(rstrFilePath);
 }
 
+///snow:给定目录文件名
 bool CSharedFileList::CheckAndAddSingleFile(const CString& rstrFilePath)
 {
 	
@@ -674,6 +680,7 @@ void CSharedFileList::RepublishFile(CKnownFile* pFile)
 	}
 }
 
+///snow:SafeAddKFile()和CheckAndAddSingleFile()中调用
 bool CSharedFileList::AddFile(CKnownFile* pFile)
 {
 	ASSERT( pFile->GetFileIdentifier().HasExpectedMD4HashCount() );
@@ -1246,6 +1253,8 @@ bool CSharedFileList::IsFilePtrInList(const CKnownFile* file) const
 	return false;
 }
 
+
+///snow:当有文件被添加到共享时，启动CAddFileThread线程，对waitingforhash_list中的文件进行Hashing
 void CSharedFileList::HashNextFile(){
 	// SLUGFILLER: SafeHash
 	if (!theApp.emuledlg || !::IsWindow(theApp.emuledlg->m_hWnd))	// wait for the dialog to open
@@ -1257,6 +1266,8 @@ void CSharedFileList::HashNextFile(){
 	// SLUGFILLER: SafeHash
 	if (waitingforhash_list.IsEmpty())
 		return;
+
+	///snow:将文件从waitingforhash_list移动到currentlyhashing_list
 	UnknownFile_Struct* nextfile = waitingforhash_list.RemoveHead();
 	currentlyhashing_list.AddTail(nextfile);	// SLUGFILLER: SafeHash - keep track
 	CAddFileThread* addfilethread = (CAddFileThread*) AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_BELOW_NORMAL,0, CREATE_SUSPENDED);
@@ -1267,6 +1278,7 @@ void CSharedFileList::HashNextFile(){
 }
 
 // SLUGFILLER: SafeHash
+///snow:检查文件是否已在Hashing，不重复hashing同一文件
 bool CSharedFileList::IsHashing(const CString& rstrDirectory, const CString& rstrName){
 	for (POSITION pos = waitingforhash_list.GetHeadPosition(); pos != 0; ){
 		const UnknownFile_Struct* pFile = waitingforhash_list.GetNext(pos);
@@ -1349,13 +1361,14 @@ void CSharedFileList::Publish()
 					//We have the next keyword to check if it can be published
 
 					//Debug check to make sure things are going well.
-					ASSERT( pPubKw->GetRefCount() != 0 );
+					ASSERT( pPubKw->GetRefCount() != 0 );///snow:pPubKw对象中m_aFiles数组存储的条目数
 
 					if (tNow >= pPubKw->GetNextPublishTime())
 					{
 						//This keyword can be published.
+						///snow:PrepareLookup首先以传递进去的参数uType和uID构造一个CSearch对象，再检查m_mapLoad中是否已有该keyword，如果没找到，则返回该对象；否则返回NULL
 						Kademlia::CSearch* pSearch = Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::STOREKEYWORD, false, pPubKw->GetKadID());
-						if (pSearch)
+						if (pSearch)  ///snow:表示m_mapLoad中没有该Keyword
 						{
 							//pSearch was created. Which means no search was already being done with this HashID.
 							//This also means that it was checked to see if network load wasn't a factor.
@@ -1622,6 +1635,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind& ff){
 	ULONGLONG ullFoundFileSize = ff.GetLength();
 
 	// check if this file is explicit unshared
+	///snow:检查是否是排除共享的文件类型
 	for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL; m_liSingleExcludedFiles.GetNext(pos) )
 	{
 		if (strFoundFilePath.CompareNoCase(m_liSingleExcludedFiles.GetAt(pos)) == 0)
@@ -1640,7 +1654,8 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind& ff){
 	// ignore real(!) LNK files
 	TCHAR szExt[_MAX_EXT];
 	_tsplitpath(strFoundFileName, NULL, NULL, NULL, szExt);
-	if (_tcsicmp(szExt, _T(".lnk")) == 0){
+	///snow:快捷方式的处理
+	if (_tcsicmp(szExt, _T(".lnk")) == 0){  ///snow:文件扩展名是快捷方式
 		SHFILEINFO info;
 		if (SHGetFileInfo(strFoundFilePath, 0, &info, sizeof(info), SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK)){
 			if (!thePrefs.GetResolveSharedShellLinks()) {
@@ -1689,6 +1704,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind& ff){
 	}
 
 	// ignore real(!) thumbs.db files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
+	///snow:thumbs.db文件的处理
 	if (strFoundFileName.CompareNoCase(_T("thumbs.db")) == 0)
 	{
 		// if that's a valid 'Storage' file, we declare it as a "thumbs.db" file.
@@ -1720,6 +1736,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind& ff){
 	else
 		AdjustNTFSDaylightFileTime(fdate, strFoundFilePath);
 
+	///snow:在CKnownFileList::m_Files_map中查找是否已存在该文件，非本类m_Files_map
 	CKnownFile* toadd = theApp.knownfiles->FindKnownFile(strFoundFileName, fdate, ullFoundFileSize);
 	if (toadd)
 	{
@@ -1737,6 +1754,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind& ff){
 					DebugLog( _T("File shared twice, might have been a single shared file before - %s") , pFileInMap->GetFilePath());
 			}
 		}
+		///snow:本类的m_Files_map中还没有该文件的条目
 		else
 		{
 			if (!strShellLinkDir.IsEmpty())
@@ -1747,6 +1765,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind& ff){
 			AddFile(toadd);
 		}
 	}
+	///snow:不在knownfilelist中，添加到waitingforhash_list，等待Hashing
 	else
 	{
 		//not in knownfilelist - start adding thread to hash file if the hashing of this file isnt already waiting

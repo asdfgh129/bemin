@@ -452,22 +452,25 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		m_AvailPartFrequency[i] = 0;
 	
 	// create hashset
+	///snow:根据文件大小进行分块，每块大小为PARTSIZE（9.28M)，然后分块进行Hash
 	CAICHRecoveryHashSet cAICHHashSet(this, m_nFileSize);
 	uint64 togo = m_nFileSize;
 	UINT hashcount;
 	for (hashcount = 0; togo >= PARTSIZE; )
 	{
+		///snow:Hash二叉树
 		CAICHHashTree* pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash((uint64)hashcount*PARTSIZE, PARTSIZE);
 		ASSERT( pBlockAICHHashTree != NULL );
 
 		uchar* newhash = new uchar[16];
-		if (!CreateHash(file, PARTSIZE, newhash, pBlockAICHHashTree)) {
+		if (!CreateHash(file, PARTSIZE, newhash, pBlockAICHHashTree)) {   ///snow:对分块进行hash
 			LogError(_T("Failed to hash file \"%s\" - %s"), strFilePath, _tcserror(errno));
 			fclose(file);
 			delete[] newhash;
 			return false;
 		}
 
+		///snow:hash过程中关机或关闭程序了
 		if (theApp.emuledlg==NULL || !theApp.emuledlg->IsRunning()){ // in case of shutdown while still hashing
 			fclose(file);
 			delete[] newhash;
@@ -487,6 +490,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		}
 	}
 
+	///snow:文件分块的最后一块，一般文件大小不会刚好是PARTSIZE的整数倍，所以最后一块大小就会小于PARTSIZE
 	CAICHHashTree* pBlockAICHHashTree;
 	if (togo == 0)
 		pBlockAICHHashTree = NULL; // sha hashtree doesnt takes hash of 0-sized data
@@ -507,8 +511,8 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	cAICHHashSet.ReCalculateHash(false);
 	if (cAICHHashSet.VerifyHashTree(true))
 	{
-		cAICHHashSet.SetStatus(AICH_HASHSETCOMPLETE);
-		m_FileIdentifier.SetAICHHash(cAICHHashSet.GetMasterHash());
+		cAICHHashSet.SetStatus(AICH_HASHSETCOMPLETE);   ///snow:设置状态为Hash完成
+		m_FileIdentifier.SetAICHHash(cAICHHashSet.GetMasterHash());  ///snow:计算总Hash值，赋值给m_AICHFileHash
 		if (!m_FileIdentifier.SetAICHHashSet(cAICHHashSet))
 		{
 			ASSERT( false );
@@ -524,7 +528,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		DebugLogError(LOG_STATUSBAR, _T("Failed to calculate AICH Hashset from file %s"), GetFileName());
 	}
 
-	if (!hashcount){
+	if (!hashcount){   ///snow:文件大小小于PARTSIZE
 		m_FileIdentifier.SetMD4Hash(lasthash);
 		delete[] lasthash;
 	} 
