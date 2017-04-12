@@ -426,6 +426,10 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	}
 	strFilePath.ReleaseBuffer();
 	SetFilePath(strFilePath);
+	
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("filename:%s"),strFilePath);
+	
 	FILE* file = _tfsopen(strFilePath, _T("rbS"), _SH_DENYNO); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file){
 		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), strFilePath, _T(""), _tcserror(errno));
@@ -452,16 +456,17 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		m_AvailPartFrequency[i] = 0;
 	
 	// create hashset
-	///snow:根据文件大小进行分块，每块大小为PARTSIZE（9.28M)，然后分块进行Hash
+	///snow:根据文件大小进行分块，每块大小为PARTSIZE（9728000=9.28M)，然后分块进行Hash
 	CAICHRecoveryHashSet cAICHHashSet(this, m_nFileSize);
 	uint64 togo = m_nFileSize;
 	UINT hashcount;
 	for (hashcount = 0; togo >= PARTSIZE; )
 	{
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("hashcount:%i"),hashcount);///snow:add by snow
 		///snow:Hash二叉树
 		CAICHHashTree* pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash((uint64)hashcount*PARTSIZE, PARTSIZE);
 		ASSERT( pBlockAICHHashTree != NULL );
-
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("准备Hash"));///snow:add by snow
 		uchar* newhash = new uchar[16];
 		if (!CreateHash(file, PARTSIZE, newhash, pBlockAICHHashTree)) {   ///snow:对分块进行hash
 			LogError(_T("Failed to hash file \"%s\" - %s"), strFilePath, _tcserror(errno));
@@ -490,7 +495,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		}
 	}
 
-	///snow:文件分块的最后一块，一般文件大小不会刚好是PARTSIZE的整数倍，所以最后一块大小就会小于PARTSIZE
+	///snow:文件分块的最后一块，一般文件大小不会刚好是PARTSIZE的整数倍，所以最后一块的大小就会小于PARTSIZE
 	CAICHHashTree* pBlockAICHHashTree;
 	if (togo == 0)
 		pBlockAICHHashTree = NULL; // sha hashtree doesnt takes hash of 0-sized data
@@ -534,7 +539,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	} 
 	else {
 		m_FileIdentifier.GetRawMD4HashSet().Add(lasthash);
-		m_FileIdentifier.CalculateMD4HashByHashSet(false);
+		m_FileIdentifier.CalculateMD4HashByHashSet(false);//snow:从HashSet计算MD4Hash，参数bVerifyOnly=false
 	}
 
 	if (pvProgressParam && theApp.emuledlg && theApp.emuledlg->IsRunning()){
@@ -1057,6 +1062,8 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 
 void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAICHHashTree* pShaHashOut)
 {
+    theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs"),__FUNCTION__);///snow:add by snow
+
 	ASSERT( pFile != NULL );
 	ASSERT( pMd4HashOut != NULL || pShaHashOut != NULL );
 

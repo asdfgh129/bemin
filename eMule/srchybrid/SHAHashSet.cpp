@@ -93,8 +93,8 @@ uint64	CAICHHashTree::GetBaseSize() const
 
 // recursive
 CAICHHashTree* CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8* nLevel){
-	(*nLevel)++;
-	if (*nLevel > 22){ // sanity
+	(*nLevel)++;  ///snow:初值为0，依次递增
+	if (*nLevel > 22){ // sanity   ///snow:22的值应该是根据最大文件大小(256G)计算出来的
 		ASSERT( false );
 		return false;
 	}
@@ -107,7 +107,12 @@ CAICHHashTree* CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8* nL
 		return NULL;
 	}
 
+	///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Level:%d|StartPos:%I64d|nSize:%I64d|m_nDataSize:%I64d|Block:%I64d|Tree:%s"),*nLevel-1,nStartPos,nSize,m_nDataSize,GetBaseSize(),m_bIsLeftBranch?_T("Left"):_T("Right"));
+
 	if (nStartPos == 0 && nSize == m_nDataSize){
+
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("StartPos:%I64d|Size:%I64d|m_nDataSize:%I64d，递归调用结束，FindHash will return this!"),nStartPos,nSize,m_nDataSize);
 		// this is the searched hash
 		return this;
 	}
@@ -117,33 +122,39 @@ CAICHHashTree* CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8* nL
 		return NULL;
 	}
 	else{
-		uint64 nBlocks = m_nDataSize / GetBaseSize() + ((m_nDataSize % GetBaseSize() != 0 )? 1:0); 
-		uint64 nLeft = ( ((m_bIsLeftBranch) ? nBlocks+1:nBlocks) / 2)* GetBaseSize();
+		uint64 nBlocks = m_nDataSize / GetBaseSize() + ((m_nDataSize % GetBaseSize() != 0 )? 1:0);  ///snow:计算分块数
+		uint64 nLeft = ( ((m_bIsLeftBranch) ? nBlocks+1:nBlocks) / 2)* GetBaseSize();   ///snow:m_bIsLeftBranch在构造时置为true，计算左边子树的字节数
 		uint64 nRight = m_nDataSize - nLeft;
 		if (nStartPos < nLeft){
-			if (nStartPos + nSize > nLeft){ // sanity
+			if (nStartPos + nSize > nLeft){ // sanity  ///snow:最多==nLeft
 				ASSERT ( false );
 				return NULL;
 			}
 			if (m_pLeftTree == NULL)
-				m_pLeftTree = new CAICHHashTree(nLeft, true, (nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);
+			{	
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("构造左子树，nDataSize:%I64d|nBaseSize:%I64d"),nLeft,(nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);
+				m_pLeftTree = new CAICHHashTree(nLeft, true, (nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);///snow:构造左子树,m_nDataSize=nLeft，m_bIsLeftBranch为true，分块大小依nLeft而定
+			}
 			else{
 				ASSERT( m_pLeftTree->m_nDataSize == nLeft );
 			}
-			return m_pLeftTree->FindHash(nStartPos, nSize, nLevel);
+			return m_pLeftTree->FindHash(nStartPos, nSize, nLevel);  ///snow:nLevel已经在函数开头+1了
 		}
 		else{
-			nStartPos -= nLeft;
-			if (nStartPos + nSize > nRight){ // sanity
+			nStartPos -= nLeft;  ///snow:在右子树，起始位置要减去nLeft
+			if (nStartPos + nSize > nRight){ // sanity  ///snow:最多也是==nRight
 				ASSERT ( false );
 				return NULL;
 			}
 			if (m_pRightTree == NULL)
-				m_pRightTree = new CAICHHashTree(nRight, false, (nRight <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);
+			{
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("构造右子树，nDataSize:%I64d|nBaseSize:%I64d"),nLeft,(nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);
+				m_pRightTree = new CAICHHashTree(nRight, false, (nRight <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);///snow:构造右子树,m_nDataSize=nRight，m_bIsLeftBranch为false，分块大小依nRight而定
+			}
 			else{
 				ASSERT( m_pRightTree->m_nDataSize == nRight ); 
 			}
-			return m_pRightTree->FindHash(nStartPos, nSize, nLevel);
+			return m_pRightTree->FindHash(nStartPos, nSize, nLevel);///snow:nLevel已经在函数开头+1了
 		}
 	}
 }
@@ -536,12 +547,12 @@ bool CAICHUntrustedHash::AddSigningIP(uint32 dwIP, bool bTestOnly){
 /////////////////////////////////////////////////////////////////////////////////////////
 ///CAICHRecoveryHashSet
 CAICHRecoveryHashSet::CAICHRecoveryHashSet(CKnownFile* pOwner, EMFileSize nSize)
-	: m_pHashTree(0, true, PARTSIZE)
+: m_pHashTree(0, true, PARTSIZE)   ///snow:这里对m_pHashTree赋的值在后面的语句被覆盖掉了
 {
 	m_eStatus = AICH_EMPTY;
 	m_pOwner = pOwner;
 	if (nSize != (uint64)0)
-		SetFileSize(nSize);
+		SetFileSize(nSize);  ///snow:设置了m_pHashTree.m_nDataSize,m_bBaseSize的值
 }
 
 CAICHRecoveryHashSet::~CAICHRecoveryHashSet(void)
