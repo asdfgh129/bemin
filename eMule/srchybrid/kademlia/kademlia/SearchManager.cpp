@@ -507,6 +507,7 @@ void CSearchManager::JumpStart()  ///snow:本函数主要进行存活期的判断
 
 void CSearchManager::UpdateStats()
 {
+	///snow:统计m_mapSearches中各SearchType的个数
 	// Update stats on the searches, this info can be used to determine if we need can start new searches.
 	uint8 uTotalFile = 0;
 	uint8 uTotalStoreSrc = 0;

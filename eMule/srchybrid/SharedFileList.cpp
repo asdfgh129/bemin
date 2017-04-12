@@ -68,7 +68,7 @@ public:
 		// min. keyword char is allowed to be < 3 in some cases (see also 'CSearchManager::GetWords')
 		//ASSERT( rstrKeyword.GetLength() >= 3 );
 		ASSERT( !rstrKeyword.IsEmpty() );
-		KadGetKeywordHash(rstrKeyword, &m_nKadID);
+		KadGetKeywordHash(rstrKeyword, &m_nKadID);  ///snow:从keyword生成Hash
 		SetNextPublishTime(0);
 		SetPublishedCount(0);
 	}
@@ -360,6 +360,7 @@ int CAddFileThread::Run()
 		Log(GetResString(IDS_HASHINGFILE) + _T(" \"%s\""), strFilePath);
 	
 	CKnownFile* newrecord = new CKnownFile();
+	///snow:对文件进行分块Hash
 	if (newrecord->CreateFromFile(m_strDirectory, m_strFilename, m_partfile) && theApp.emuledlg && theApp.emuledlg->IsRunning()) // SLUGFILLER: SafeHash - in case of shutdown while still hashing
 	{
 		newrecord->SetSharedDirectory(m_strSharedDir);
@@ -466,6 +467,8 @@ void CSharedFileList::FindSharedFiles()
 		CSingleLock listlock(&m_mutWriteList);
 		
 		POSITION pos = m_Files_map.GetStartPosition();
+
+		///snow:将非PartFile的共享文件从m_Files_map移动到m_UnsharedFiles_map
 		while (pos)
 		{
 			CCKey key;
@@ -524,10 +527,11 @@ void CSharedFileList::FindSharedFiles()
 #endif
 
 
-	AddFilesFromDirectory(tempDir);
+	AddFilesFromDirectory(tempDir);///snow:先从Incoming目录添加
 	tempDir.MakeLower();
 	l_sAdded.AddHead( tempDir );
 
+	///snow:根据选项中设置的下载分类目录，逐个目录将文件添加到m_Files_map
 	for (int ix=1;ix<thePrefs.GetCatCount();ix++)
 	{
 		tempDir=CString( thePrefs.GetCatPath(ix) );
@@ -542,6 +546,7 @@ void CSharedFileList::FindSharedFiles()
 		}
 	}
 
+	///snow:根据选项中设置的共享目录，逐个目录将文件添加到m_Files_map
 	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition();pos != 0;)
 	{
 		tempDir = thePrefs.shareddir_list.GetNext(pos);
@@ -556,6 +561,7 @@ void CSharedFileList::FindSharedFiles()
 		}
 	}
 	// add all single shared files
+	///snow:添加单个共享文件
 	for (POSITION pos = m_liSingleSharedFiles.GetHeadPosition(); pos != NULL; m_liSingleSharedFiles.GetNext(pos))
 		CheckAndAddSingleFile(m_liSingleSharedFiles.GetAt(pos));
 
@@ -584,6 +590,7 @@ void CSharedFileList::AddFilesFromDirectory(const CString& rstrDirectory)
 		return;
 	}
 
+	///snow:遍历目录，添加目录中的文件到m_Files_map
 	while (!end)
 	{
 		end = !ff.FindNextFile();
@@ -1306,6 +1313,7 @@ void CSharedFileList::UpdateFile(CKnownFile* toupdate)
 	output->UpdateFile(toupdate);
 }
 
+///snow:CUploadQueue::UploadTimer()中调用，是类的运行起点
 void CSharedFileList::Process()
 {
 	Publish();
@@ -1327,7 +1335,7 @@ void CSharedFileList::Publish()
 	if( Kademlia::CKademlia::IsConnected() && ( !isFirewalled || ( isFirewalled && theApp.clientlist->GetBuddyStatus() == Connected) || bDirectCallback) && GetCount() && Kademlia::CKademlia::GetPublish())
 	{ 
 		//We are connected to Kad. We are either open or have a buddy. And Kad is ready to start publishing.
-		if( Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY)
+		if( Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY)///snow:为什么不超过两个hash?这里的totalStoreKey的值指的是m_mapSearches中的各searchtype的统计数
 		{
 			//We are not at the max simultaneous keyword publishes 
 			if (tNow >= m_keywords->GetNextPublishTime())
