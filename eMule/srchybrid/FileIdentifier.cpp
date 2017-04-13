@@ -59,6 +59,7 @@ EMFileSize CFileIdentifierBase::GetFileSize() const
 void CFileIdentifierBase::SetMD4Hash(const uchar* pucFileHash)
 {
 	md4cpy(m_abyMD4Hash, pucFileHash);
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|m_abyMD4Hash:%s|pucFileHash:%s"),__FUNCTION__,__LINE__,ByteToHexStr(m_abyMD4Hash,16).GetBuffer(0),ByteToHexStr(pucFileHash,16).GetBuffer(0));///snow:add by snow
 }
 
 void CFileIdentifierBase::SetMD4Hash(CFileDataIO* pFile)
@@ -148,6 +149,8 @@ CFileIdentifier::~CFileIdentifier(void)
 	DeleteMD4Hashset();
 }
 
+
+///snow:将m_aMD4HashSet中的hash依次按序写入buffer，调用CreateHash对buffer生成Hash，根据参数bVerifyOnly决定是赋值给m_abyMD4Hash，还是校验Hash值是否正确
 bool CFileIdentifier::CalculateMD4HashByHashSet(bool bVerifyOnly, bool bDeleteOnVerifyFail)
 {
 	if (m_aMD4HashSet.GetCount() <= 1)

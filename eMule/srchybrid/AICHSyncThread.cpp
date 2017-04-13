@@ -378,7 +378,7 @@ bool CAICHSyncThread::ConvertToKnown2ToKnown264(CSafeFile* pTargetFile){
 	theApp.QueueLogLine(false, GetResString(IDS_CONVERTINGKNOWN2MET), OLD_KNOWN2_MET_FILENAME, KNOWN2_MET_FILENAME);
 
 	try {
-		pTargetFile->WriteUInt8(KNOWN2_MET_VERSION);
+		pTargetFile->WriteUInt8(KNOWN2_MET_VERSION);  ///snow:文件第一个字节是版本号
 		uint32 nHashCount;
 		while (oldfile.GetPosition() < oldfile.GetLength()){
 			CAICHHash aichHash(&oldfile);

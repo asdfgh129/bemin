@@ -92,6 +92,7 @@ uint64	CAICHHashTree::GetBaseSize() const
 }
 
 // recursive
+///snow:生成并定位分块所对应的CAICHHashTree对象，递归调用自己，构建一棵二叉树。构建的二叉树有两种规格，一种粒度为PARTSIZE(9500KB)大小，一种粒度为EMBLOCKSIZE(180K)大小
 CAICHHashTree* CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8* nLevel){
 	(*nLevel)++;  ///snow:初值为0，依次递增
 	if (*nLevel > 22){ // sanity   ///snow:22的值应该是根据最大文件大小(256G)计算出来的
@@ -217,7 +218,7 @@ const CAICHHashTree* CAICHHashTree::FindExistingHash(uint64 nStartPos, uint64 nS
 	}
 }
 
-// recursive
+// recursive  递归
 // calculates missing hash fromt he existing ones
 // overwrites existing hashs
 // fails if no hash is found for any branch
@@ -232,7 +233,7 @@ bool CAICHHashTree::ReCalculateHash(CAICHHashAlgo* hashalg, bool bDontReplace){
 			hashalg->Reset();
 			hashalg->Add(m_pLeftTree->m_Hash.GetRawHash(), HASHSIZE);
 			hashalg->Add(m_pRightTree->m_Hash.GetRawHash(), HASHSIZE);
-			hashalg->Finish(m_Hash);
+			hashalg->Finish(m_Hash);   ///snow:生成m_Hash
 			m_bHashValid = true;
 			return true;
 		}
@@ -316,7 +317,9 @@ void CAICHHashTree::SetBlockHash(uint64 nSize, uint64 nStartPos, CAICHHashAlgo* 
 		return;
 	}
 
-	pHashAlg->Finish(pToInsert->m_Hash);
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%d|m_Hash:%s"),__FUNCTION__,__LINE__,m_Hash.GetString());///snow:add by snow
+	pHashAlg->Finish(pToInsert->m_Hash);   ///snow:将生成的BlockHash添加到pHashAlg中
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%d|m_Hash:%s"),__FUNCTION__,__LINE__,m_Hash.GetString());///snow:add by snow
 	pToInsert->m_bHashValid = true;
 	//DEBUG_ONLY(theApp.QueueDebugLogLine(/*DLP_VERYLOW,*/ false, _T("Set ShaHash for block %u - %u (%u Bytes) to %s"), nStartPos, nStartPos + nSize, nSize, pToInsert->m_Hash.GetString()) );
 	
@@ -757,6 +760,7 @@ bool CAICHRecoveryHashSet::SaveHashSet(){
 		return false;
 	}
 
+	///snow:CAICHSyncThread::Run()中会新建KNOWN2_MET_FILENAME，并写入文件头信息
 	CString fullpath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR);
 	fullpath.Append(KNOWN2_MET_FILENAME);
 	CSafeFile file;
@@ -779,6 +783,7 @@ bool CAICHRecoveryHashSet::SaveHashSet(){
 		if (header != KNOWN2_MET_VERSION){
 			AfxThrowFileException(CFileException::endOfFile, 0, file.GetFileName());
 		}
+		///snow:AddStoredAICHHash()将为m_liAICHHashsStored添加成员，下面的代码就将调用AddStoredAICHHash
 		// first we check if the hashset we want to write is already stored
 		if (m_liAICHHashsStored.Find(m_pHashTree.m_Hash) != NULL)
 		{
@@ -802,9 +807,10 @@ bool CAICHRecoveryHashSet::SaveHashSet(){
 		}*/
 
 		// write hashset
-		uint32 nExistingSize = (UINT)file.GetLength();
-		file.SeekToEnd();
+		uint32 nExistingSize = (UINT)file.GetLength();  ///snow:保存原文件长度，防止写入出错时恢复
+		file.SeekToEnd();   ///snow:定位到文件末尾
 
+		///snow:先写入文件总的Hash值m_Hash，再根据文件长度计算出分块Hash数nHashCount，写入nHashCount，再调用WriteLowestLevelHashs写入分块Hash
 		m_pHashTree.m_Hash.Write(&file);
 		uint32 nHashCount = (uint32)((PARTSIZE/EMBLOCKSIZE + ((PARTSIZE % EMBLOCKSIZE != 0)? 1 : 0)) * (m_pHashTree.m_nDataSize/PARTSIZE));
 		if (m_pHashTree.m_nDataSize % PARTSIZE != 0)
@@ -822,6 +828,8 @@ bool CAICHRecoveryHashSet::SaveHashSet(){
 			theApp.QueueDebugLogLine(true, _T("Failed to save HashSet: Calculated and real size of hashset differ!"));
 			return false;
 		}
+
+		///snow:写入文件HAsh成功了，将m_Hash存入m_liAICHHashsStored
 		CAICHRecoveryHashSet::AddStoredAICHHash(m_pHashTree.m_Hash);
 		theApp.QueueDebugLogLine(false, _T("Successfully saved eMuleAC Hashset, %u Hashs + 1 Masterhash written"), nHashCount);
 	    file.Flush();
@@ -1087,6 +1095,7 @@ CAICHRequestedData CAICHRecoveryHashSet::GetAICHReqDetails(const  CUpDownClient*
 	return empty;
 }
 
+///snow:CAICHSyncThread::Run()和CAICHRecoveryHashSet::SaveHashSet()中调用
 void CAICHRecoveryHashSet::AddStoredAICHHash(CAICHHash Hash)
 {
 #ifdef _DEBUG

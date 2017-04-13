@@ -456,7 +456,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		m_AvailPartFrequency[i] = 0;
 	
 	// create hashset
-	///snow:根据文件大小进行分块，每块大小为PARTSIZE（9728000=9.28M)，然后分块进行Hash
+	///snow:根据文件大小进行分块，每块大小为PARTSIZE（9728000=9500KB)，然后分块进行Hash
 	CAICHRecoveryHashSet cAICHHashSet(this, m_nFileSize);
 	uint64 togo = m_nFileSize;
 	UINT hashcount;
@@ -470,6 +470,10 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		ASSERT( pBlockAICHHashTree != NULL );
 		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|准备Hash"),__FUNCTION__,__LINE__);///snow:add by snow
 		uchar* newhash = new uchar[16];
+
+		///snow:CreateHash生成两种Hash，一种是MD4Hash，通过传出参数存入newhash，后面将加入m_FileIdentifier.m_aMD4HashSet
+		///snow:另一种是AICHHAsh，存放在pBlockAICHHashTree中，而pBlockAICHHashTree通过FindHash在cAICHHashSet中生成并定位对象
+
 		if (!CreateHash(file, PARTSIZE, newhash, pBlockAICHHashTree)) {   ///snow:对分块进行hash，应该追踪一下file：一是for循环时每次传递给CreateHash的是同一个file，在CreateHash中，CStdioFile pFile(file)，pFile是新对象，但file不是，file中的位置指针依然有效；二是pFile->Read()时指针的移动是否等同file指针的移动？是的！
 			LogError(_T("Failed to hash file \"%s\" - %s"), strFilePath, _tcserror(errno));
 			fclose(file);
@@ -484,7 +488,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 			return false;
 		}
 
-		m_FileIdentifier.GetRawMD4HashSet().Add(newhash);
+		m_FileIdentifier.GetRawMD4HashSet().Add(newhash);   ///snow:往m_aMD4HashSet中添加hash，最后CalculateMD4HashByHashSet时用到，生成m_abyMD4Hash
 		togo -= PARTSIZE;
 		hashcount++;
 
@@ -503,46 +507,48 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	if (togo == 0)
 		pBlockAICHHashTree = NULL; // sha hashtree doesnt takes hash of 0-sized data
 	else{
-		pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash((uint64)hashcount*PARTSIZE, togo);
+		pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash((uint64)hashcount*PARTSIZE, togo);  ///snow:生成并定位分块所对应的CAICHHashTree对象
 		ASSERT( pBlockAICHHashTree != NULL );
 	}
 	
 	uchar* lasthash = new uchar[16];
 	md4clr(lasthash);
-	if (!CreateHash(file, togo, lasthash, pBlockAICHHashTree)) {
+	if (!CreateHash(file, togo, lasthash, pBlockAICHHashTree)) {   ///snow:对最后一块生成HAsh
 		LogError(_T("Failed to hash file \"%s\" - %s"), strFilePath, _tcserror(errno));
 		fclose(file);
 		delete[] lasthash;
 		return false;
 	}
 	
-	cAICHHashSet.ReCalculateHash(false);
-	if (cAICHHashSet.VerifyHashTree(true))
+	cAICHHashSet.ReCalculateHash(false);    ///snow:生成m_Hash
+	if (cAICHHashSet.VerifyHashTree(true))    ///snow:校验AICHHash
 	{
 		cAICHHashSet.SetStatus(AICH_HASHSETCOMPLETE);   ///snow:设置状态为Hash完成
-		m_FileIdentifier.SetAICHHash(cAICHHashSet.GetMasterHash());  ///snow:计算总Hash值，赋值给m_AICHFileHash
+		m_FileIdentifier.SetAICHHash(cAICHHashSet.GetMasterHash());  ///snow:return m_pHashTree.m_Hash，赋值给m_AICHFileHash
 		if (!m_FileIdentifier.SetAICHHashSet(cAICHHashSet))
 		{
 			ASSERT( false );
 			DebugLogError(_T("CreateFromFile() - failed to create AICH PartHashSet out of RecoveryHashSet - %s"), GetFileName());
 		}
-		if (!cAICHHashSet.SaveHashSet())
+		if (!cAICHHashSet.SaveHashSet())   ///snow:将计算出来的文件Hash写入Known2_64.met
 			LogError(LOG_STATUSBAR, GetResString(IDS_SAVEACFAILED));
 		else
-			SetAICHRecoverHashSetAvailable(true);
+			SetAICHRecoverHashSetAvailable(true);   ///snow:m_bAICHRecoverHashSetAvailable=true
 	}
 	else{
 		// now something went pretty wrong
 		DebugLogError(LOG_STATUSBAR, _T("Failed to calculate AICH Hashset from file %s"), GetFileName());
 	}
 
+
+	///snow:生成MD4Hash
 	if (!hashcount){   ///snow:文件大小小于PARTSIZE
 		m_FileIdentifier.SetMD4Hash(lasthash);
 		delete[] lasthash;
 	} 
 	else {
 		m_FileIdentifier.GetRawMD4HashSet().Add(lasthash);
-		m_FileIdentifier.CalculateMD4HashByHashSet(false);//snow:从HashSet计算MD4Hash，参数bVerifyOnly=false
+		m_FileIdentifier.CalculateMD4HashByHashSet(false);//snow:从m_aMD4HashSet计算MD4Hash，参数bVerifyOnly=false，表示赋值给m_abyMD4Hash
 	}
 
 	if (pvProgressParam && theApp.emuledlg && theApp.emuledlg->IsRunning()){
@@ -1065,6 +1071,9 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 
 
 ///snow:按块生成MD4Hash和SHAHash，pFile中应该有一个文件位置指针，指示当前读取位置
+///snow:CreateHash生成两种Hash，一种是MD4Hash，通过传出参数存入newhash，后面将加入m_FileIdentifier.m_aMD4HashSet
+///snow:另一种是AICHHAsh，存放在pBlockAICHHashTree中，而pBlockAICHHashTree通过FindHash在cAICHHashSet中生成并定位对象
+
 void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAICHHashTree* pShaHashOut)
 {
     ///theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs"),__FUNCTION__);///snow:add by snow
@@ -1089,7 +1098,7 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 			len = (uint32)Required / 64;               ///snow:当Required<8192时，假设Required=6314，len=6314/64=98，剩下42字节
 		pFile->Read(X, len*64);             ///snow:读取64*128(8K)字节到X，当len<128时，读取len*64
 
-		
+		///snow:AICHHash的处理
 		// SHA hash needs 180KB blocks
 		///snow:SHA hash需要180KB，所以当数据不足180KB时，先添加到pHashAlg中，当到达180KB时，调用SetBlockHash，
 		if (pShaHashOut != NULL && pHashAlg != NULL){
@@ -1098,7 +1107,7 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 								
 				pHashAlg->Add(X, nToComplete);   ///snow:只从X中读取nToComplete，剩下(len*64) - nToComplete字节
 				ASSERT( nIACHPos + nToComplete == EMBLOCKSIZE );
-				pShaHashOut->SetBlockHash(EMBLOCKSIZE, posCurrentEMBlock, pHashAlg);  ///snow:再次调用FindHash进行分块Hash。粒度为EMBLOCKSIZE
+				pShaHashOut->SetBlockHash(EMBLOCKSIZE, posCurrentEMBlock, pHashAlg);  ///snow:调用SetBlockHash生成BLOCKHash
 				posCurrentEMBlock += EMBLOCKSIZE;
 
 				pHashAlg->Reset();   ///snow:重置pHashAlg
@@ -1117,6 +1126,7 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 			}
 		}
 
+		///snow:MD4HAsh的处理
 		if (pMd4HashOut != NULL){
 			md4.Add(X, len*64);
 		}
@@ -1124,6 +1134,7 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 	}
 
 	///snow:剩下不足64字节的部分
+	///snow:1、这部分只处理AICHHASH
 	Required = Length % 64;
 	if (Required != 0){
 		pFile->Read(X, (uint32)Required);
@@ -1162,6 +1173,7 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 		VERIFY( pShaHashOut->ReCalculateHash(pHashAlg, false) );
 	}
 
+	///snow:2、通过md4生成MD4hash，赋值给pMd4HashOut
 	if (pMd4HashOut != NULL){
 		md4.Add(X, (uint32)Required);
 		md4.Finish();
