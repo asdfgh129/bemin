@@ -646,7 +646,7 @@ bool CRoutingZone::Add(CContact* pContact, bool& bUpdate, bool& bOutIPVerified)
 			bUpdate = false;
 
 			///snow:add by snow
-			theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Add Remaining|Parent Index:%s|Parent level:%i|Current Index:%s|Current Level:%i|Contact Num:%i"),__FUNCTION__,__LINE__,m_pSuperZone?m_pSuperZone->m_uZoneIndex.ToBinaryString():_T("0-0"),m_pSuperZone?m_pSuperZone->m_uLevel:-1,m_uZoneIndex.ToBinaryString(),m_uLevel,m_pBin->GetSize());
+			theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Function:%hs|Line:%i|Parent Index:%s|Parent level:%i|Current Index:%s|Current Level:%i|Contact Num:%i"),__FUNCTION__,__LINE__,m_pSuperZone?m_pSuperZone->m_uZoneIndex.ToBinaryString():_T("0-0"),m_pSuperZone?m_pSuperZone->m_uLevel:-1,m_uZoneIndex.ToBinaryString(),m_uLevel,m_pBin->GetSize());
 
 			// This bin is not full, so add the new contact.
 			if(m_pBin->AddContact(pContact))
@@ -662,7 +662,7 @@ bool CRoutingZone::Add(CContact* pContact, bool& bUpdate, bool& bOutIPVerified)
 		{
 
 			///snow:add by snow
-			theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Add CanSplit|Parent Index:%s|Parent level:%i|Current Index:%s|Current Level:%i|Contact Num:%i"),__FUNCTION__,__LINE__,m_pSuperZone?m_pSuperZone->m_uZoneIndex.ToBinaryString():_T("0-0"),m_pSuperZone?m_pSuperZone->m_uLevel:-1,m_uZoneIndex.ToBinaryString(),m_uLevel,m_pBin->GetSize());
+			theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Function:%hs|Line:%i|Parent Index:%s|Parent level:%i|Current Index:%s|Current Level:%i|Contact Num:%i"),__FUNCTION__,__LINE__,m_pSuperZone?m_pSuperZone->m_uZoneIndex.ToBinaryString():_T("0-0"),m_pSuperZone?m_pSuperZone->m_uLevel:-1,m_uZoneIndex.ToBinaryString(),m_uLevel,m_pBin->GetSize());
 
 			// This bin was full and split, call add on the correct branch.
 			Split();
@@ -779,9 +779,9 @@ void CRoutingZone::Split()
 	m_pSubZones[1] = GenSubZone(1);
 
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Split SubZone0|Parent Index:%s|Current Index:%s|Current Level:%i"),__FUNCTION__,__LINE__,m_uZoneIndex.ToBinaryString(),m_pSubZones[0]->m_uZoneIndex.ToBinaryString(),m_pSubZones[0]->m_uLevel);
+	theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Function:%hs|Line:%i|Parent Index:%s|Current Index:%s|Current Level:%i"),__FUNCTION__,__LINE__,m_uZoneIndex.ToBinaryString(),m_pSubZones[0]->m_uZoneIndex.ToBinaryString(),m_pSubZones[0]->m_uLevel);
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Split SubZone1|Parent Index:%s|Current Index:%s|Current Level:%i"),__FUNCTION__,__LINE__,m_uZoneIndex.ToBinaryString(),m_pSubZones[1]->m_uZoneIndex.ToBinaryString(),m_pSubZones[1]->m_uLevel);
+	theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Function:%hs|Line:%i|Parent Index:%s|Current Index:%s|Current Level:%i"),__FUNCTION__,__LINE__,m_uZoneIndex.ToBinaryString(),m_pSubZones[1]->m_uZoneIndex.ToBinaryString(),m_pSubZones[1]->m_uLevel);
 
 	///snow:删除叶子结点
 	ContactList listEntries;
@@ -800,7 +800,7 @@ void CRoutingZone::Split()
 		int iSuperZone = (*itContactList)->m_uDistance.GetBitNumber(m_uLevel);
 		
 		///snow:add by snow
-		theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingZone|Function:Split AddConatct|SubZone :%i|Contact ID:%s"),__FUNCTION__,__LINE__,iSuperZone, (*itContactList)->GetClientID().ToBinaryString());
+		theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Function:%hs|Line:%i|SubZone :%i|Contact ID:%s"),__FUNCTION__,__LINE__,iSuperZone, (*itContactList)->GetClientID().ToBinaryString());
 
 		if (!m_pSubZones[iSuperZone]->m_pBin->AddContact(*itContactList))  ///snow:AddContact()中添加的也是指针
 			delete *itContactList;

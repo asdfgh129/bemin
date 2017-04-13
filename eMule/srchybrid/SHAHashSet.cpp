@@ -108,11 +108,11 @@ CAICHHashTree* CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8* nL
 	}
 
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Level:%d|StartPos:%I64d|nSize:%I64d|m_nDataSize:%I64d|Block:%I64d|Tree:%s"),__FUNCTION__,__LINE__,*nLevel-1,nStartPos,nSize,m_nDataSize,GetBaseSize(),m_bIsLeftBranch?_T("Left"):_T("Right"));
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|Level:%d|StartPos:%I64d|nSize:%I64d|m_nDataSize:%I64d|Block:%I64d|Tree:%s"),__FUNCTION__,__LINE__,*nLevel-1,nStartPos,nSize,m_nDataSize,GetBaseSize(),m_bIsLeftBranch?_T("Left"):_T("Right"));
 
 	if (nStartPos == 0 && nSize == m_nDataSize){
 
-		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("StartPos:%I64d|Size:%I64d|m_nDataSize:%I64d，递归调用结束，FindHash will return this!"),__FUNCTION__,__LINE__,nStartPos,nSize,m_nDataSize);
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|StartPos:%I64d|Size:%I64d|m_nDataSize:%I64d，递归调用结束，FindHash will return this!"),__FUNCTION__,__LINE__,nStartPos,nSize,m_nDataSize);
 		// this is the searched hash
 		return this;
 	}
@@ -132,7 +132,7 @@ CAICHHashTree* CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8* nL
 			}
 			if (m_pLeftTree == NULL)
 			{	
-				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("构造左子树，nDataSize:%I64d|nBaseSize:%I64d"),__FUNCTION__,__LINE__,nLeft,(nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|构造左子树，nDataSize:%I64d|nBaseSize:%I64d"),__FUNCTION__,__LINE__,nLeft,(nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);
 				m_pLeftTree = new CAICHHashTree(nLeft, true, (nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);///snow:构造左子树,m_nDataSize=nLeft，m_bIsLeftBranch为true，分块大小依nLeft而定
 			}
 			else{
@@ -148,7 +148,7 @@ CAICHHashTree* CAICHHashTree::FindHash(uint64 nStartPos, uint64 nSize, uint8* nL
 			}
 			if (m_pRightTree == NULL)
 			{
-				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("构造右子树，nDataSize:%I64d|nBaseSize:%I64d"),__FUNCTION__,__LINE__,nLeft,(nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|构造右子树，nDataSize:%I64d|nBaseSize:%I64d"),__FUNCTION__,__LINE__,nLeft,(nLeft <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);
 				m_pRightTree = new CAICHHashTree(nRight, false, (nRight <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE);///snow:构造右子树,m_nDataSize=nRight，m_bIsLeftBranch为false，分块大小依nRight而定
 			}
 			else{

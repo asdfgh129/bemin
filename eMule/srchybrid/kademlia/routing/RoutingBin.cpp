@@ -121,7 +121,7 @@ bool CRoutingBin::AddContact(CContact *pContact)
 	if ( m_listEntries.size() < K)  ///snow:K桶还未装满，添加到队尾
 	{
 		///snow:add by snow
-		theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Class:CRoutingBin|Function:AddContact|Contact ID:%s|Contact IP:%s|Distance:%s|Contact Num:%i"),__FUNCTION__,__LINE__,pContact->GetClientID().ToHexString(),ipstr(pContact->GetIPAddress()),pContact->GetDistance().ToBinaryString(),m_listEntries.size());
+		theApp.QueueTraceLogLine(TRACE_KAD_BINARY_TREE,_T("Function:%hs|Line:%i|Contact ID:%s|Contact IP:%s|Distance:%s|Contact Num:%i"),__FUNCTION__,__LINE__,pContact->GetClientID().ToHexString(),ipstr(pContact->GetIPAddress()),pContact->GetDistance().ToBinaryString(),m_listEntries.size());
 
 	m_listEntries.push_back(pContact);  ///snow:添加到K桶m_listEntries中
 	AdjustGlobalTracking(pContact->GetIPAddress(), true);///snow:添加到两个globalMap中
