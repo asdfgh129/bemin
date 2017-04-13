@@ -259,7 +259,7 @@ void CKademliaUDPListener::ProcessPacket(const byte* pbyData, uint32 uLenData, u
 	//	CMiscUtils::debugHexDump(pbyPacketData, uLenPacket);
 
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Function:%s|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:KademliaUDP|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(uIP)), ntohs(uUDPPort),uLenPacket,GetKadOpcodeStr(byOpcode).GetBuffer(0),ByteToHexStr((uchar*)pbyPacketData,uLenPacket).GetBuffer(0),TrimZero((uchar*)pbyPacketData,uLenPacket).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:KademliaUDP|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(uIP)), ntohs(uUDPPort),uLenPacket,GetKadOpcodeStr(byOpcode).GetBuffer(0),ByteToHexStr((uchar*)pbyPacketData,uLenPacket).GetBuffer(0),TrimZero((uchar*)pbyPacketData,uLenPacket).GetBuffer(0));
 
 
 	switch (byOpcode)

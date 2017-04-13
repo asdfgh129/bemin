@@ -301,7 +301,7 @@ bool CAICHHashTree::VerifyHashTree(CAICHHashAlgo* hashalg, bool bDeleteBadTrees)
 
 void CAICHHashTree::SetBlockHash(uint64 nSize, uint64 nStartPos, CAICHHashAlgo* pHashAlg){
 	ASSERT ( nSize <= EMBLOCKSIZE );
-	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs,Line:%d,nStartPos:%I64d,nSize:%I64d"),__FUNCTION__,__LINE__,nStartPos,nSize);///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%d|nStartPos:%I64d,nSize:%I64d"),__FUNCTION__,__LINE__,nStartPos,nSize);///snow:add by snow
 	CAICHHashTree* pToInsert = FindHash(nStartPos, nSize);
 	if (pToInsert == NULL){ // sanity
 		ASSERT ( false );

@@ -780,7 +780,7 @@ int CAsyncSocketEx::Receive(void* lpBuf, int nBufLen, int nFlags /*=0*/)
 		///snow:add by snow
 		; 
 		int len = recv(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
-		theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Function:%s|Line:%i|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),__FUNCTION__,__LINE__,m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),len,ByteToHexStr((uchar*)lpBuf,len).GetBuffer(0));
+		theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Function:%hs|Line:%i|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),__FUNCTION__,__LINE__,m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),len,ByteToHexStr((uchar*)lpBuf,len).GetBuffer(0));
    return len;
 }
 
@@ -793,7 +793,7 @@ int CAsyncSocketEx::Send(const void* lpBuf, int nBufLen, int nFlags /*=0*/)
 #endif //NOLAYERS
 		///return send(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags); ///snow:by snow
 		///snow:add by snow
-		theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Function:%s|Line:%i|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),__FUNCTION__,__LINE__,m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0));
+		theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Function:%hs|Line:%i|Socket:%i|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:"),__FUNCTION__,__LINE__,m_SocketData.hSocket,GetPeerAddress().GetBuffer(0),GetPeerPort(),nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0));
 		int len= send(m_SocketData.hSocket, (LPSTR)lpBuf, nBufLen, nFlags);
 	//	theApp.QueueTraceLogLine(CAsyncSocketEx_workflow,_T("snow:CAsyncSocketEx::Send£¬after send"));
 		return len;

@@ -428,7 +428,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	SetFilePath(strFilePath);
 	
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%s|Line:%i|filename:%s"),__FUNCTION__,__LINE__,strFilePath);
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|filename:%s"),__FUNCTION__,__LINE__,strFilePath);
 	
 	FILE* file = _tfsopen(strFilePath, _T("rbS"), _SH_DENYNO); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file){
@@ -460,15 +460,17 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	CAICHRecoveryHashSet cAICHHashSet(this, m_nFileSize);
 	uint64 togo = m_nFileSize;
 	UINT hashcount;
+
+	///snow:当文件大小大于PARTSIZE时，每块大小为PARTSIZE，调用CreateHash，生成newhash，存入m_FileIdentifier；文件大小小于PARTSIZE时，跳过此步骤
 	for (hashcount = 0; togo >= PARTSIZE; )
 	{
-		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%s|Line:%i|hashcount:%i"),__FUNCTION__,__LINE__,hashcount);///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|hashcount:%i"),__FUNCTION__,__LINE__,hashcount);///snow:add by snow
 		///snow:Hash二叉树
 		CAICHHashTree* pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash((uint64)hashcount*PARTSIZE, PARTSIZE);
 		ASSERT( pBlockAICHHashTree != NULL );
-		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%s|Line:%i|准备Hash"),__FUNCTION__,__LINE__);///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|准备Hash"),__FUNCTION__,__LINE__);///snow:add by snow
 		uchar* newhash = new uchar[16];
-		if (!CreateHash(file, PARTSIZE, newhash, pBlockAICHHashTree)) {   ///snow:对分块进行hash
+		if (!CreateHash(file, PARTSIZE, newhash, pBlockAICHHashTree)) {   ///snow:对分块进行hash，应该追踪一下file：一是for循环时每次传递给CreateHash的是同一个file，在CreateHash中，CStdioFile pFile(file)，pFile是新对象，但file不是，file中的位置指针依然有效；二是pFile->Read()时指针的移动是否等同file指针的移动？是的！
 			LogError(_T("Failed to hash file \"%s\" - %s"), strFilePath, _tcserror(errno));
 			fclose(file);
 			delete[] newhash;
@@ -1062,7 +1064,7 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 }
 
 
-///snow:按块生成MD4Hash和SHAHash
+///snow:按块生成MD4Hash和SHAHash，pFile中应该有一个文件位置指针，指示当前读取位置
 void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAICHHashTree* pShaHashOut)
 {
     ///theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs"),__FUNCTION__);///snow:add by snow
@@ -1079,7 +1081,7 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 	if (pShaHashOut != NULL)
 		pHashAlg = CAICHRecoveryHashSet::GetNewHashAlgo();   ///snow:new CSHA()
 
-	while (Required >= 64){
+	while (Required >= 64){   ///snow:最后剩下的不足64字节，因为 Required=Required-(Required/64)*64
         uint32 len; 
 		if ((Required / 64) > sizeof(X)/(64 * sizeof(X[0])))   ///snow:Required/64>128   
 			len = sizeof(X)/(64 * sizeof(X[0]));               ///snow:len=128
@@ -1103,14 +1105,14 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 				pHashAlg->Add(X+nToComplete,(len*64) - nToComplete);  ///snow:读取X中剩下的(len*64) - nToComplete字节
 				nIACHPos = (len*64) - nToComplete;
 
-				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%s|Line:%i|Required:%I64d,len:%i,sizeof(X):%i,sizeof(X[0]):%i,nToComplete:%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,len,sizeof(X),sizeof(X[0]),nToComplete,posCurrentEMBlock,nIACHPos);///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|Required:%I64d,len:%i,sizeof(X):%i,sizeof(X[0]):%i,nToComplete:%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,len,sizeof(X),sizeof(X[0]),nToComplete,posCurrentEMBlock,nIACHPos);///snow:add by snow
 
 			}
 			else{
 				pHashAlg->Add(X, len*64);   ///snow:暂存在pHashAlg，满180K时进行SHAHASH
 				nIACHPos += len*64;
 
-				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%s|Line:%i|Required:%I64d,len:%i,sizeof(X):%i,sizeof(X[0]):%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,len,sizeof(X),sizeof(X[0]),posCurrentEMBlock,nIACHPos);///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|Required:%I64d,len:%i,sizeof(X):%i,sizeof(X[0]):%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,len,sizeof(X),sizeof(X[0]),posCurrentEMBlock,nIACHPos);///snow:add by snow
 
 			}
 		}
@@ -1121,12 +1123,13 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 		Required -= len*64;
 	}
 
-	///snow:剩下不足一块(64字节)的部分
+	///snow:剩下不足64字节的部分
 	Required = Length % 64;
 	if (Required != 0){
 		pFile->Read(X, (uint32)Required);
 
-		if (pShaHashOut != NULL){
+		if (pShaHashOut != NULL){   
+			///snow:最后的部分如果能够构成一个EMBLOCKSIZE分块
 			if (nIACHPos + Required >= EMBLOCKSIZE){
 				uint32 nToComplete = (uint32)(EMBLOCKSIZE - nIACHPos);
 				pHashAlg->Add(X, nToComplete);
@@ -1136,18 +1139,20 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 				pHashAlg->Reset();
 				pHashAlg->Add(X+nToComplete, (uint32)(Required - nToComplete));
 				nIACHPos = Required - nToComplete;
-						theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|Required:%I64d,nToComplete:%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,nToComplete,posCurrentEMBlock,nIACHPos);///snow:add by snow
+				
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|Required:%I64d,nToComplete:%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,nToComplete,posCurrentEMBlock,nIACHPos);///snow:add by snow
 			}
 			else{
 				pHashAlg->Add(X, (uint32)Required);
 				nIACHPos += Required;
-						theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|Required:%I64d,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,posCurrentEMBlock,nIACHPos);///snow:add by snow
+				
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|Required:%I64d,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,posCurrentEMBlock,nIACHPos);///snow:add by snow
 			}
 		}
 
 	}
 
-	///snow:剩下部分的处理
+	///snow:剩下不足形成一个EMBLOCKSIZE分块部分的Hash处理
 	if (pShaHashOut != NULL){   
 		if(nIACHPos > 0){
 			pShaHashOut->SetBlockHash(nIACHPos, posCurrentEMBlock, pHashAlg);
@@ -1169,7 +1174,9 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 bool CKnownFile::CreateHash(FILE* fp, uint64 uSize, uchar* pucHash, CAICHHashTree* pShaHashOut)
 {
 	bool bResult = false;
-	CStdioFile file(fp);
+	CStdioFile file(fp);  ///snow:构造file时fp中的文件当前位置指针没有移动？保留在上次访问的位置？确实是！FILE *fp由_tfsopen打开，本身有一个文件位置指针，CStdioFile file(fp)只是一个包装，并未改变fp的指针
+
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%i|file Position:%I64d"),__FUNCTION__,__LINE__,file.GetPosition());///snow:add by snow
 	try
 	{
 		CreateHash(&file, uSize, pucHash, pShaHashOut);
