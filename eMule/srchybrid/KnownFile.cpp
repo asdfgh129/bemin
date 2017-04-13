@@ -428,7 +428,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	SetFilePath(strFilePath);
 	
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("filename:%s"),strFilePath);
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("filename:%s"),__FUNCTION__,__LINE__,strFilePath);
 	
 	FILE* file = _tfsopen(strFilePath, _T("rbS"), _SH_DENYNO); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file){
@@ -462,11 +462,11 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	UINT hashcount;
 	for (hashcount = 0; togo >= PARTSIZE; )
 	{
-		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("hashcount:%i"),hashcount);///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("hashcount:%i"),__FUNCTION__,__LINE__,hashcount);///snow:add by snow
 		///snow:Hash二叉树
 		CAICHHashTree* pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash((uint64)hashcount*PARTSIZE, PARTSIZE);
 		ASSERT( pBlockAICHHashTree != NULL );
-		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("准备Hash"));///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("准备Hash"),__FUNCTION__,__LINE__);///snow:add by snow
 		uchar* newhash = new uchar[16];
 		if (!CreateHash(file, PARTSIZE, newhash, pBlockAICHHashTree)) {   ///snow:对分块进行hash
 			LogError(_T("Failed to hash file \"%s\" - %s"), strFilePath, _tcserror(errno));
@@ -496,6 +496,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	}
 
 	///snow:文件分块的最后一块，一般文件大小不会刚好是PARTSIZE的整数倍，所以最后一块的大小就会小于PARTSIZE
+	///snow:或文件大小小于PARTSIZE
 	CAICHHashTree* pBlockAICHHashTree;
 	if (togo == 0)
 		pBlockAICHHashTree = NULL; // sha hashtree doesnt takes hash of 0-sized data
@@ -1060,45 +1061,57 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 	return true;
 }
 
+
+///snow:按块生成MD4Hash和SHAHash
 void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAICHHashTree* pShaHashOut)
 {
-    theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs"),__FUNCTION__);///snow:add by snow
+    ///theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs"),__FUNCTION__);///snow:add by snow
 
 	ASSERT( pFile != NULL );
-	ASSERT( pMd4HashOut != NULL || pShaHashOut != NULL );
+	ASSERT( pMd4HashOut != NULL || pShaHashOut != NULL );   ///snow:传出参数必须已分配内存
 
-	uint64  Required = Length;
+	uint64  Required = Length;    ///snow:PARTSIZE 9728000
 	uchar   X[64*128];
 	uint64	posCurrentEMBlock = 0;
 	uint64	nIACHPos = 0;
 	CMD4 md4;
 	CAICHHashAlgo* pHashAlg = NULL;
 	if (pShaHashOut != NULL)
-		pHashAlg = CAICHRecoveryHashSet::GetNewHashAlgo();
+		pHashAlg = CAICHRecoveryHashSet::GetNewHashAlgo();   ///snow:new CSHA()
 
 	while (Required >= 64){
         uint32 len; 
-        if ((Required / 64) > sizeof(X)/(64 * sizeof(X[0]))) 
-			len = sizeof(X)/(64 * sizeof(X[0]));
+		if ((Required / 64) > sizeof(X)/(64 * sizeof(X[0])))   ///snow:Required/64>128   
+			len = sizeof(X)/(64 * sizeof(X[0]));               ///snow:len=128
 		else
-			len = (uint32)Required / 64;
-		pFile->Read(X, len*64);
+			len = (uint32)Required / 64;               ///snow:当Required<8192时，假设Required=6314，len=6314/64=98，剩下42字节
+		pFile->Read(X, len*64);             ///snow:读取64*128(8K)字节到X，当len<128时，读取len*64
 
+		
 		// SHA hash needs 180KB blocks
+		///snow:SHA hash需要180KB，所以当数据不足180KB时，先添加到pHashAlg中，当到达180KB时，调用SetBlockHash，
 		if (pShaHashOut != NULL && pHashAlg != NULL){
-			if (nIACHPos + len*64 >= EMBLOCKSIZE){
+			if (nIACHPos + len*64 >= EMBLOCKSIZE){   ///snow:达到180KB了，在最后一轮时Required=143360，已经不能满足180KB的要求了
 				uint32 nToComplete = (uint32)(EMBLOCKSIZE - nIACHPos);
-				pHashAlg->Add(X, nToComplete);
+								
+				pHashAlg->Add(X, nToComplete);   ///snow:只从X中读取nToComplete，剩下(len*64) - nToComplete字节
 				ASSERT( nIACHPos + nToComplete == EMBLOCKSIZE );
-				pShaHashOut->SetBlockHash(EMBLOCKSIZE, posCurrentEMBlock, pHashAlg);
+				pShaHashOut->SetBlockHash(EMBLOCKSIZE, posCurrentEMBlock, pHashAlg);  ///snow:再次调用FindHash进行分块Hash。粒度为EMBLOCKSIZE
 				posCurrentEMBlock += EMBLOCKSIZE;
-				pHashAlg->Reset();
-				pHashAlg->Add(X+nToComplete,(len*64) - nToComplete);
+
+				pHashAlg->Reset();   ///snow:重置pHashAlg
+				pHashAlg->Add(X+nToComplete,(len*64) - nToComplete);  ///snow:读取X中剩下的(len*64) - nToComplete字节
 				nIACHPos = (len*64) - nToComplete;
+
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs,%d,Required:%I64d,len:%i,sizeof(X):%i,sizeof(X[0]):%i,nToComplete:%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,len,sizeof(X),sizeof(X[0]),nToComplete,posCurrentEMBlock,nIACHPos);///snow:add by snow
+
 			}
 			else{
-				pHashAlg->Add(X, len*64);
+				pHashAlg->Add(X, len*64);   ///snow:暂存在pHashAlg，满180K时进行SHAHASH
 				nIACHPos += len*64;
+
+				theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs,%d,Required:%I64d,len:%i,sizeof(X):%i,sizeof(X[0]):%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,len,sizeof(X),sizeof(X[0]),posCurrentEMBlock,nIACHPos);///snow:add by snow
+
 			}
 		}
 
@@ -1108,6 +1121,7 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 		Required -= len*64;
 	}
 
+	///snow:剩下不足一块(64字节)的部分
 	Required = Length % 64;
 	if (Required != 0){
 		pFile->Read(X, (uint32)Required);
@@ -1122,14 +1136,19 @@ void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAI
 				pHashAlg->Reset();
 				pHashAlg->Add(X+nToComplete, (uint32)(Required - nToComplete));
 				nIACHPos = Required - nToComplete;
+						theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs,%d,Required:%I64d,nToComplete:%i,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,nToComplete,posCurrentEMBlock,nIACHPos);///snow:add by snow
 			}
 			else{
 				pHashAlg->Add(X, (uint32)Required);
 				nIACHPos += Required;
+						theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs,%d,Required:%I64d,posCurrentEMBlock:%I64d,nIACHPos:%I64d"),__FUNCTION__,__LINE__,Required,posCurrentEMBlock,nIACHPos);///snow:add by snow
 			}
 		}
+
 	}
-	if (pShaHashOut != NULL){
+
+	///snow:剩下部分的处理
+	if (pShaHashOut != NULL){   
 		if(nIACHPos > 0){
 			pShaHashOut->SetBlockHash(nIACHPos, posCurrentEMBlock, pHashAlg);
 			posCurrentEMBlock += nIACHPos;
