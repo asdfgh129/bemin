@@ -686,7 +686,7 @@ bool CSharedFileList::AddFile(CKnownFile* pFile)
 	ASSERT( pFile->GetFileIdentifier().HasExpectedMD4HashCount() );
 	ASSERT( !pFile->IsKindOf(RUNTIME_CLASS(CPartFile)) || !STATIC_DOWNCAST(CPartFile, pFile)->m_bMD4HashsetNeeded );
 	ASSERT( !pFile->IsShellLinked() || ShouldBeShared(pFile->GetSharedDirectory(), _T(""), false) );
-	CCKey key(pFile->GetFileHash());
+	CCKey key(pFile->GetFileHash());  ///snow:return toadd.m_FileIdentifier.m_abyMD4Hash
 	CKnownFile* pFileInMap;
 	if (m_Files_map.Lookup(key, pFileInMap))
 	{
@@ -1740,7 +1740,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind& ff){
 	CKnownFile* toadd = theApp.knownfiles->FindKnownFile(strFoundFileName, fdate, ullFoundFileSize);
 	if (toadd)
 	{
-		CCKey key(toadd->GetFileHash());
+		CCKey key(toadd->GetFileHash());   ///snow:return toadd.m_FileIdentifier.m_abyMD4Hash
 		CKnownFile* pFileInMap;
 		if (m_Files_map.Lookup(key, pFileInMap))
 		{
