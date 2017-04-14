@@ -457,7 +457,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	
 	// create hashset
 	///snow:根据文件大小进行分块，每块大小为PARTSIZE（9728000=9500KB)，然后分块进行Hash
-	CAICHRecoveryHashSet cAICHHashSet(this, m_nFileSize);
+	CAICHRecoveryHashSet cAICHHashSet(this, m_nFileSize);   ///snow:构造总HashSet
 	uint64 togo = m_nFileSize;
 	UINT hashcount;
 
@@ -473,6 +473,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 
 		///snow:CreateHash生成两种Hash，一种是MD4Hash，通过传出参数存入newhash，后面将加入m_FileIdentifier.m_aMD4HashSet
 		///snow:另一种是AICHHAsh，存放在pBlockAICHHashTree中，而pBlockAICHHashTree通过FindHash在cAICHHashSet中生成并定位对象
+		///snow:在CreateHash中SetBlockHash()对pBlockAICHHashTree重新动作FindHash，生成新的Hash子树
 
 		if (!CreateHash(file, PARTSIZE, newhash, pBlockAICHHashTree)) {   ///snow:对分块进行hash，应该追踪一下file：一是for循环时每次传递给CreateHash的是同一个file，在CreateHash中，CStdioFile pFile(file)，pFile是新对象，但file不是，file中的位置指针依然有效；二是pFile->Read()时指针的移动是否等同file指针的移动？是的！
 			LogError(_T("Failed to hash file \"%s\" - %s"), strFilePath, _tcserror(errno));
