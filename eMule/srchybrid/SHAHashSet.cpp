@@ -391,6 +391,7 @@ void CAICHHashTree::WriteHash(CFileDataIO* fileDataOut, uint32 wHashIdent, bool 
 }
 
 // write lowest level hashs into file, ordered from left to right optional without identifier
+///snow:最低一层的叶子节点才存储分块Hash值
 bool CAICHHashTree::WriteLowestLevelHashs(CFileDataIO* fileDataOut, uint32 wHashIdent, bool bNoIdent, bool b32BitIdent) const{
 	wHashIdent <<= 1;
 	wHashIdent |= (m_bIsLeftBranch) ? 1: 0;
@@ -422,15 +423,16 @@ bool CAICHHashTree::WriteLowestLevelHashs(CFileDataIO* fileDataOut, uint32 wHash
 }
 
 // recover all low level hashs from given data. hashs are assumed to be ordered in left to right - no identifier used
+///snow:与FindHash()操作基本一致，通过递归调用生成各级子树
 bool CAICHHashTree::LoadLowestLevelHashs(CFileDataIO* fileInput){
-	if (m_nDataSize <= GetBaseSize()){ // sanity
+	if (m_nDataSize <= GetBaseSize()){ // sanity   ///snow:叶子结点，已经是最低一级的节点了，读取保存其中的m_Hash值
 		// lowest level, read hash
 		m_Hash.Read(fileInput);
 		//theApp.AddDebugLogLine(false,m_Hash.GetString());
 		m_bHashValid = true; 
 		return true;
 	}
-	else{
+	else{   ///snow:非叶结点
 		uint64 nBlocks = m_nDataSize / GetBaseSize() + ((m_nDataSize % GetBaseSize() != 0 )? 1:0); 
 		uint64 nLeft = ( ((m_bIsLeftBranch) ? nBlocks+1:nBlocks) / 2)* GetBaseSize();
 		uint64 nRight = m_nDataSize - nLeft;
@@ -618,7 +620,7 @@ bool CAICHRecoveryHashSet::CreatePartRecoveryData(uint64 nPartStartPos, CFileDat
 		return false;
 	}
 	if (!bDbgDontLoad){
-		if (!LoadHashSet()){
+		if (!LoadHashSet()){  ///snow:从Known2_64.met中读取m_pOwner->GetFileName()相一致的Hash二叉树，保存在成员变量m_pHashTree中
 			theApp.QueueDebugLogLine(/*DLP_VERYHIGH,*/ false, _T("Created RecoveryData error: failed to load hashset (file: %s)"), m_pOwner->GetFileName() );
 			SetStatus(AICH_ERROR);
 			return false;
@@ -816,6 +818,8 @@ bool CAICHRecoveryHashSet::SaveHashSet(){
 		if (m_pHashTree.m_nDataSize % PARTSIZE != 0)
 			nHashCount += (uint32)((m_pHashTree.m_nDataSize % PARTSIZE)/EMBLOCKSIZE + (((m_pHashTree.m_nDataSize % PARTSIZE) % EMBLOCKSIZE != 0)? 1 : 0));
 		file.WriteUInt32(nHashCount);
+
+		///snow:所有的分块Hash均存放在二叉树的最低一层即叶子节点中
 		if (!m_pHashTree.WriteLowestLevelHashs(&file, 0, true, true)){
 			// thats bad... really
 			file.SetLength(nExistingSize);
@@ -877,6 +881,15 @@ bool CAICHRecoveryHashSet::LoadHashSet(){
 		return false;
 	}
 	try {
+
+		/*************************************snow:start:Known2_64.met文件格式******************************
+		/*  1、第一个字节(8位)为文件版本号
+		/*  2、第一个文件：20字节的文件主Hash ：m_Hash 
+		/*                 4字节的nHashCount
+		/*                 nHashCount*HASHSIZE字节的各分块hash
+		/*  3、第二个文件：同第一个文件
+		**************************************snow；end****************************************************/
+
 		//setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
 		uint8 header = file.ReadUInt8();
 		if (header != KNOWN2_MET_VERSION){
@@ -887,8 +900,9 @@ bool CAICHRecoveryHashSet::LoadHashSet(){
 		uint32 nHashCount;
 		while (file.GetPosition() < nExistingSize){
 			CurrentHash.Read(&file);
-			if (m_pHashTree.m_Hash == CurrentHash){
+			if (m_pHashTree.m_Hash == CurrentHash){   ///snow:找到了我们要找的文件的主Hash
 				// found Hashset
+				///snow:根据文件长度计算Hashcount，与known2_64.met中保存的hashcount进行比较，看是否一致
 				uint32 nExpectedCount =	(uint32)((PARTSIZE/EMBLOCKSIZE + ((PARTSIZE % EMBLOCKSIZE != 0)? 1 : 0)) * (m_pHashTree.m_nDataSize/PARTSIZE));
 				if (m_pHashTree.m_nDataSize % PARTSIZE != 0)
 					nExpectedCount += (uint32)((m_pHashTree.m_nDataSize % PARTSIZE)/EMBLOCKSIZE + (((m_pHashTree.m_nDataSize % PARTSIZE) % EMBLOCKSIZE != 0)? 1 : 0));
@@ -898,11 +912,13 @@ bool CAICHRecoveryHashSet::LoadHashSet(){
 					return false;
 				}
 				//uint32 dbgPos = file.GetPosition();
+				///snow:读取各分块Hash值，并按层级重新组成一棵二叉树，各分块的Hash值保存在二叉树的叶子结点中
 				if (!m_pHashTree.LoadLowestLevelHashs(&file)){
 					theApp.QueueDebugLogLine(true, _T("Failed to load HashSet: LoadLowestLevelHashs failed!"));
 					return false;
 				}
 				//uint32 dbgHashRead = (file.GetPosition()-dbgPos)/HASHSIZE;
+				///snow:再次计算m_Hash，再次与读取出来的CurrentHash比较
 				if (!ReCalculateHash(false)){
 					theApp.QueueDebugLogLine(true, _T("Failed to load HashSet: Calculating loaded hashs failed!"));
 					return false;
@@ -913,6 +929,7 @@ bool CAICHRecoveryHashSet::LoadHashSet(){
 				}
 				return true;
 			}
+			///snow:该Hash不是我们要找的HAsh，读取HashCount，跳过nHashCount*HASHSIZE字节，执行下一循环，读取下一个文件主Hash
 			nHashCount = file.ReadUInt32();
 			if (file.GetPosition() + nHashCount*HASHSIZE > nExistingSize){
 				AfxThrowFileException(CFileException::endOfFile, 0, file.GetFileName());

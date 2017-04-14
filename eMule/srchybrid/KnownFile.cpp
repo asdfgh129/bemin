@@ -1074,7 +1074,7 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 ///snow:按块生成MD4Hash和SHAHash，pFile中应该有一个文件位置指针，指示当前读取位置
 ///snow:CreateHash生成两种Hash，一种是MD4Hash，通过传出参数存入newhash，后面将加入m_FileIdentifier.m_aMD4HashSet
 ///snow:另一种是AICHHAsh，存放在pBlockAICHHashTree中，而pBlockAICHHashTree通过FindHash在cAICHHashSet中生成并定位对象
-
+///snow:pBlockAICHHashTree在SetBlockHash()中通过FindHash()还继续生成新的子树
 void CKnownFile::CreateHash(CFile* pFile, uint64 Length, uchar* pMd4HashOut, CAICHHashTree* pShaHashOut)
 {
     ///theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("%hs"),__FUNCTION__);///snow:add by snow
