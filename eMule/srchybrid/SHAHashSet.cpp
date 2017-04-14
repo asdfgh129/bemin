@@ -244,6 +244,8 @@ bool CAICHHashTree::ReCalculateHash(CAICHHashAlgo* hashalg, bool bDontReplace){
 		return true;
 }
 
+
+///snow:参数bDeleteBadTrees决定是否删除m_bHashValid==false的子树
 bool CAICHHashTree::VerifyHashTree(CAICHHashAlgo* hashalg, bool bDeleteBadTrees){
 	if (!m_bHashValid){
 		ASSERT ( false );
@@ -364,7 +366,7 @@ bool CAICHHashTree::CreatePartRecoveryData(uint64 nStartPos, uint64 nSize, CFile
 				ASSERT ( false );
 				return false;
 			}
-			m_pRightTree->WriteHash(fileDataOut, wHashIdent, b32BitIdent);   ///snow:是叶子节点吗？
+			m_pRightTree->WriteHash(fileDataOut, wHashIdent, b32BitIdent);   ///snow:是叶子节点吗？不是，每个结点都有一个m_Hash，在ReCalculateHash()中生成
 			theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%d|"),__FUNCTION__,__LINE__);///snow:add by snow
 			return m_pLeftTree->CreatePartRecoveryData(nStartPos, nSize, fileDataOut, wHashIdent, b32BitIdent);
 		}
