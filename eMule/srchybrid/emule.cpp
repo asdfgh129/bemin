@@ -2170,7 +2170,8 @@ bool CemuleApp::IsTraceLog(LPCTSTR keyword)
 //		_T("StreamData"),
 		//_T("KadBinaryTree"),
 		//_T("KadIndexData")
-		_T("AICHHASHTREE")
+		//_T("AICHHASHTREE")
+		_T("PublishSource")
 	};
 	bool bRecord = false;
 	for (int i = 0; i < _countof(keywords); i++)

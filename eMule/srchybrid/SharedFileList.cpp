@@ -106,14 +106,18 @@ public:
 		m_aFiles.RemoveAll();
 	}
 
-	void RotateReferences(int iRotateSize)
+	///snow:将m_aFiles数组中前iRotateSize个元素与后m_aFiles.GetSize() - iRotateSize个元素对掉一下
+	void RotateReferences(int iRotateSize)   ///snow:iRotateSize>=150
 	{
 		if (m_aFiles.GetSize() > iRotateSize)
 		{
 			CKnownFile** ppRotated = (CKnownFile**)malloc(m_aFiles.m_nAllocSize * sizeof(*m_aFiles.GetData()));
+			///snow:m_nAllocSize:分配的大小，GetSize():实际存储的大小
 			if (ppRotated != NULL)
 			{
+				///snow:将数组中最后的（m_aFiles.GetSize() - iRotateSize）个元素拷贝到前面
 				memcpy(ppRotated, m_aFiles.GetData() + iRotateSize, (m_aFiles.GetSize() - iRotateSize) * sizeof(*m_aFiles.GetData()));
+				///snow:将原先在前面的iRotateSize个元素拷贝到后面
 				memcpy(ppRotated + m_aFiles.GetSize() - iRotateSize, m_aFiles.GetData(), iRotateSize * sizeof(*m_aFiles.GetData()));
 				free(m_aFiles.GetData());
 				m_aFiles.m_aT = ppRotated;
@@ -176,8 +180,7 @@ CPublishKeywordList::CPublishKeywordList()
 
 CPublishKeywordList::~CPublishKeywordList()
 {
-	RemoveAllKeywords();
-}
+	RemoveAllKeywords();}
 
 CPublishKeyword* CPublishKeywordList::GetNextKeyword()
 {
@@ -221,6 +224,8 @@ void CPublishKeywordList::AddKeywords(CKnownFile* pFile)
 	for (it = wordlist.begin(); it != wordlist.end(); it++)
 	{
 		const CStringW& strKeyword = *it;
+
+		theApp.QueueTraceLogLine(TRACE_PUBLISH_SOURCE,_T("Function:%hs|Line:%i|strKeyword:%s"),__FUNCTION__,__LINE__,strKeyword);///snow:add by snow
 		CPublishKeyword* pPubKw = FindKeyword(strKeyword);
 		if (pPubKw == NULL)   ///snow:如果该keyword不存在，添加keyword到列表末尾
 		{
@@ -680,7 +685,7 @@ void CSharedFileList::RepublishFile(CKnownFile* pFile)
 	}
 }
 
-///snow:SafeAddKFile()和CheckAndAddSingleFile()中调用
+///snow:SafeAddKFile()和CheckAndAddSingleFile()中调用,将pFile添加到m_Files_map
 bool CSharedFileList::AddFile(CKnownFile* pFile)
 {
 	ASSERT( pFile->GetFileIdentifier().HasExpectedMD4HashCount() );
@@ -1347,7 +1352,7 @@ void CSharedFileList::Publish()
 	if( Kademlia::CKademlia::IsConnected() && ( !isFirewalled || ( isFirewalled && theApp.clientlist->GetBuddyStatus() == Connected) || bDirectCallback) && GetCount() && Kademlia::CKademlia::GetPublish())
 	{ 
 		//We are connected to Kad. We are either open or have a buddy. And Kad is ready to start publishing.
-		if( Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY)///snow:为什么不超过两个hash?这里的totalStoreKey的值指的是m_mapSearches中的各searchtype的统计数
+		if( Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY)///snow:为什么不超过两个hash?这里的totalStoreKey的值指的是m_mapSearches中的各searchtype的统计数，CSearchManager::UpdateStats()调用SetTotalStoreKey(uTotalStoreKey)更新m_uTotolStoreKey
 		{
 			//We are not at the max simultaneous keyword publishes 
 			if (tNow >= m_keywords->GetNextPublishTime())
@@ -1392,11 +1397,11 @@ void CSharedFileList::Publish()
 								if( !aFiles[f]->IsPartFile() && IsFilePtrInList(aFiles[f]))
 								{
 									count++;
-									pSearch->AddFileID(Kademlia::CUInt128(aFiles[f]->GetFileHash()));
+									pSearch->AddFileID(Kademlia::CUInt128(aFiles[f]->GetFileHash()));///snow:将fileHash添加到m_listFileIDs
 									if( count > 150 )
 									{
 										//We only publish up to 150 files per keyword publish then rotate the list.
-										pPubKw->RotateReferences(f);
+										pPubKw->RotateReferences(f);///snow:将m_aFiles中的元素前后掉个个
 										break;
 									}
 								}

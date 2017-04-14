@@ -865,7 +865,7 @@ void CSearch::StorePacket()
 					uint16 iPacketCount = 0;
 					byte byPacket[1024*50];
 					CByteIO byIO(byPacket,sizeof(byPacket));
-					byIO.WriteUInt128(m_uTarget);
+					byIO.WriteUInt128(m_uTarget);  ///snow:拟发送的Keyword
 					byIO.WriteUInt16(0); // Will be corrected before sending. ///snow:文件ID数，在后面更新
 					while((iPacketCount < 50) && (itListFileID != m_listFileIDs.end()))   ///snow:添加50个文件ID及Tags
 					{

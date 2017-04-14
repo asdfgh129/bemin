@@ -298,4 +298,5 @@ inline BOOL afxIsWin95()
 #define TRACE_KAD_BINARY_TREE _T("KadBinaryTree")
 #define TRACE_INDEX_DATA _T("KadIndexData")
 #define TRACE_AICHHASHTREE _T("AICHHASHTREE")
+#define TRACE_PUBLISH_SOURCE _T("PublishSource")
 ///----------------------------------->by snow
