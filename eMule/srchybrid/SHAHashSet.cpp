@@ -325,6 +325,7 @@ void CAICHHashTree::SetBlockHash(uint64 nSize, uint64 nStartPos, CAICHHashAlgo* 
 	
 }
 
+///snow:b32BitIdent参数确定文件大小是否大于4G，wHashIdent参数通过移位形成一个32位的01串，代表了结点的位置，1是左子树，0是右子树
 bool CAICHHashTree::CreatePartRecoveryData(uint64 nStartPos, uint64 nSize, CFileDataIO* fileDataOut, uint32 wHashIdent, bool b32BitIdent){
 	if (nStartPos + nSize > m_nDataSize){ // sanity
 		ASSERT ( false );
@@ -335,9 +336,10 @@ bool CAICHHashTree::CreatePartRecoveryData(uint64 nStartPos, uint64 nSize, CFile
 		return false;
 	}
 
-	if (nStartPos == 0 && nSize == m_nDataSize){
+	if (nStartPos == 0 && nSize == m_nDataSize){   ///snow:叶子结点
 		// this is the searched part, now write all blocks of this part
 		// hashident for this level will be adjsuted by WriteLowestLevelHash
+		theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%d|nSize:%I64d"),__FUNCTION__,__LINE__,nSize);///snow:add by snow
 		return WriteLowestLevelHashs(fileDataOut, wHashIdent, false, b32BitIdent);
 	}
 	else if (m_nDataSize <= GetBaseSize()){ // sanity
@@ -346,9 +348,10 @@ bool CAICHHashTree::CreatePartRecoveryData(uint64 nStartPos, uint64 nSize, CFile
 		return false;
 	}
 	else{
-		wHashIdent <<= 1;
-		wHashIdent |= (m_bIsLeftBranch) ? 1: 0;
+		wHashIdent <<= 1;  ///snow:左移一位，保存上一层级的标记，比如 0011，左移成为0110 ，空出来的一位0给当前层级使用   
+		wHashIdent |= (m_bIsLeftBranch) ? 1: 0;   ///snow:1是左子树，0是右子树，在上例中，如果是左子树，则是0111，右子树，则是0110
 		
+		///snow:计算Block数及左、右子树大小
 		uint64 nBlocks = m_nDataSize / GetBaseSize() + ((m_nDataSize % GetBaseSize() != 0 )? 1:0); 
 		uint64 nLeft = ( ((m_bIsLeftBranch) ? nBlocks+1:nBlocks) / 2)* GetBaseSize();
 		uint64 nRight = m_nDataSize - nLeft;
@@ -361,7 +364,8 @@ bool CAICHHashTree::CreatePartRecoveryData(uint64 nStartPos, uint64 nSize, CFile
 				ASSERT ( false );
 				return false;
 			}
-			m_pRightTree->WriteHash(fileDataOut, wHashIdent, b32BitIdent);
+			m_pRightTree->WriteHash(fileDataOut, wHashIdent, b32BitIdent);   ///snow:是叶子节点吗？
+			theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%d|"),__FUNCTION__,__LINE__);///snow:add by snow
 			return m_pLeftTree->CreatePartRecoveryData(nStartPos, nSize, fileDataOut, wHashIdent, b32BitIdent);
 		}
 		else{
@@ -371,12 +375,14 @@ bool CAICHHashTree::CreatePartRecoveryData(uint64 nStartPos, uint64 nSize, CFile
 				return false;
 			}
 			m_pLeftTree->WriteHash(fileDataOut, wHashIdent, b32BitIdent);
+			theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%d|"),__FUNCTION__,__LINE__);///snow:add by snow
 			return m_pRightTree->CreatePartRecoveryData(nStartPos, nSize, fileDataOut, wHashIdent, b32BitIdent);
 
 		}
 	}
 }
 
+///snow:根据是否大文件，写入32位还是16位的节点标识，再写入本节点的m_Hash
 void CAICHHashTree::WriteHash(CFileDataIO* fileDataOut, uint32 wHashIdent, bool b32BitIdent) const{
 	ASSERT( m_bHashValid );
 	wHashIdent <<= 1;
@@ -388,6 +394,8 @@ void CAICHHashTree::WriteHash(CFileDataIO* fileDataOut, uint32 wHashIdent, bool 
 	else
 		fileDataOut->WriteUInt32(wHashIdent);
 	m_Hash.Write(fileDataOut);
+
+	theApp.QueueTraceLogLine(TRACE_AICHHASHTREE,_T("Function:%hs|Line:%d|wHashIdent:%i|m_Hash:%s"),__FUNCTION__,__LINE__,wHashIdent,m_Hash.GetString());///snow:add by snow
 }
 
 // write lowest level hashs into file, ordered from left to right optional without identifier
@@ -395,15 +403,15 @@ void CAICHHashTree::WriteHash(CFileDataIO* fileDataOut, uint32 wHashIdent, bool 
 bool CAICHHashTree::WriteLowestLevelHashs(CFileDataIO* fileDataOut, uint32 wHashIdent, bool bNoIdent, bool b32BitIdent) const{
 	wHashIdent <<= 1;
 	wHashIdent |= (m_bIsLeftBranch) ? 1: 0;
-	if (m_pLeftTree == NULL && m_pRightTree == NULL){
+	if (m_pLeftTree == NULL && m_pRightTree == NULL){    ///snow:是叶子结点，
 		if (m_nDataSize <= GetBaseSize() && m_bHashValid ){
 			if (!bNoIdent && !b32BitIdent){
 				ASSERT( wHashIdent <= 0xFFFF );
-				fileDataOut->WriteUInt16((uint16)wHashIdent);
+				fileDataOut->WriteUInt16((uint16)wHashIdent);   ///snow:小文件，16位标识
 			}
 			else if (!bNoIdent && b32BitIdent)
-				fileDataOut->WriteUInt32(wHashIdent);
-			m_Hash.Write(fileDataOut);
+				fileDataOut->WriteUInt32(wHashIdent);       ///snow:大文件，32位标识
+			m_Hash.Write(fileDataOut);      ///snow:写入节点Hash
 			//theApp.AddDebugLogLine(false,_T("%s"),m_Hash.GetString(), wHashIdent, this);
 			return true;
 		}
@@ -416,7 +424,7 @@ bool CAICHHashTree::WriteLowestLevelHashs(CFileDataIO* fileDataOut, uint32 wHash
 		ASSERT( false );
 		return false;
 	}
-	else{
+	else{    ///snow:非叶子结点，递归调用
 		return m_pLeftTree->WriteLowestLevelHashs(fileDataOut, wHashIdent, bNoIdent, b32BitIdent)
 				&& m_pRightTree->WriteLowestLevelHashs(fileDataOut, wHashIdent, bNoIdent, b32BitIdent);
 	}
@@ -609,6 +617,7 @@ const CAICHHashTree* CAICHRecoveryHashSet::FindPartHash(uint16 nPart)
 	return phtResult;
 }
 
+///snow: CUpDownClient::ProcessAICHRequest()中调用
 bool CAICHRecoveryHashSet::CreatePartRecoveryData(uint64 nPartStartPos, CFileDataIO* fileDataOut, bool bDbgDontLoad){
 	ASSERT( m_pOwner );
 	if (m_pOwner->IsPartFile() || m_eStatus != AICH_HASHSETCOMPLETE){
@@ -628,16 +637,17 @@ bool CAICHRecoveryHashSet::CreatePartRecoveryData(uint64 nPartStartPos, CFileDat
 	}
 	bool bResult;
 	uint8 nLevel = 0;
-	uint32 nPartSize = (uint32)min(PARTSIZE, (uint64)m_pOwner->GetFileSize()-nPartStartPos);
+	uint32 nPartSize = (uint32)min(PARTSIZE, (uint64)m_pOwner->GetFileSize()-nPartStartPos);  ///snow:确定分块大小
 	m_pHashTree.FindHash(nPartStartPos, nPartSize,&nLevel);
-	uint16 nHashsToWrite = (uint16)((nLevel-1) + nPartSize/EMBLOCKSIZE + ((nPartSize % EMBLOCKSIZE != 0 )? 1:0));
-	const bool bUse32BitIdentifier = m_pOwner->IsLargeFile();
+	uint16 nHashsToWrite = (uint16)((nLevel-1) + nPartSize/EMBLOCKSIZE + ((nPartSize % EMBLOCKSIZE != 0 )? 1:0));  ///snow:确定写入的Hash数，level层数+part分成Block大小的分块数
+	const bool bUse32BitIdentifier = m_pOwner->IsLargeFile();   ///snow:是否大于4G
 
 	if (bUse32BitIdentifier)
-		fileDataOut->WriteUInt16(0); // no 16bit hashs to write
-	fileDataOut->WriteUInt16(nHashsToWrite);
-	uint32 nCheckFilePos = (UINT)fileDataOut->GetPosition();
+		fileDataOut->WriteUInt16(0); // no 16bit hashs to write  ///snow:是大文件，写入2字节 00 00
+	fileDataOut->WriteUInt16(nHashsToWrite);  ///snow:写入hash个数
+	uint32 nCheckFilePos = (UINT)fileDataOut->GetPosition();  ///snow:检查调用m_pHashTree.CreatePartRecoveryData()后写入的字节数是否相符
 	if (m_pHashTree.CreatePartRecoveryData(nPartStartPos, nPartSize, fileDataOut, 0, bUse32BitIdentifier)){
+		///snow:每个hash大文件（>4G)占24字节，小文件占22字节
 		if (nHashsToWrite*(HASHSIZE+(bUse32BitIdentifier? 4:2)) != fileDataOut->GetPosition() - nCheckFilePos){
 			ASSERT( false );
 			theApp.QueueDebugLogLine(/*DLP_VERYHIGH,*/ false, _T("Created RecoveryData has wrong length (file: %s)"), m_pOwner->GetFileName() );
@@ -652,7 +662,7 @@ bool CAICHRecoveryHashSet::CreatePartRecoveryData(uint64 nPartStartPos, CFileDat
 		bResult = false;
 		SetStatus(AICH_ERROR);
 	}
-	if (!bUse32BitIdentifier)
+	if (!bUse32BitIdentifier)     ///snow:如果是小文件，最后写入 00 00 结尾
 		fileDataOut->WriteUInt16(0); // no 32bit hashs to write
 
 	if (!bDbgDontLoad){
