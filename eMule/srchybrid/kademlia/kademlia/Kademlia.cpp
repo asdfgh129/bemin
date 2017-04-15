@@ -537,6 +537,7 @@ void CKademlia::CancelClientSearch(CKadClientSearcher& rFromRequester){
 	CSearchManager::CancelNodeSpecial(&rFromRequester);
 }
 
+///snow:对关键字生成Hash
 void KadGetKeywordHash(const CStringA& rstrKeywordA, Kademlia::CUInt128* pKadID)
 {
 	CMD4 md4;
