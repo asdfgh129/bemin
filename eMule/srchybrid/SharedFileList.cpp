@@ -1432,11 +1432,11 @@ void CSharedFileList::Publish()
 			if(tNow >= m_lastPublishKadSrc)
 			{
 				if(m_currFileSrc > GetCount())
-					m_currFileSrc = 0;
+					m_currFileSrc = 0;   ///snow:m_Files_mapÖÐµÄindex
 				CKnownFile* pCurKnownFile = GetFileByIndex(m_currFileSrc);
 				if(pCurKnownFile)
 				{
-					if(pCurKnownFile->PublishSrc())
+					if(pCurKnownFile->PublishSrc())  ///snow:ÔÊÐípublish
 					{
 						if(Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::STOREFILE, true, Kademlia::CUInt128(pCurKnownFile->GetFileHash()))==NULL)
 							pCurKnownFile->SetLastPublishTimeKadSrc(0,0);

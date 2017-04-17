@@ -1882,6 +1882,7 @@ bool CKnownFile::PublishNotes()
 	return false;
 }
 
+///snow:是否可以Publish，当被墙及没有buddy的情况下，是不可以Publish的
 bool CKnownFile::PublishSrc()
 {
 	uint32 lastBuddyIP = 0;
