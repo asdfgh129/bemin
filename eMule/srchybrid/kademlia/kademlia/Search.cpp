@@ -1735,6 +1735,7 @@ void CSearch::PreparePacketForTags(CByteIO *byIO, CKnownFile *pFile, uint8 byTar
 		delete *itTagList;
 }
 
+///snow:取加载的Load节点与有回应的Load节点的比值
 uint32 CSearch::GetNodeLoad() const
 {
 	// Node load is the average of all node load responses.

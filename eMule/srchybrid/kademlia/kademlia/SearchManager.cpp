@@ -508,9 +508,10 @@ void CSearchManager::JumpStart()  ///snow:本函数主要进行存活期的判断
 	}
 }
 
+///snow:在CKademlia::Process()中调用，定时更新。在下一次更新时，当前状态不保留，也就是反复重新统计m_mapSearches中存储各搜索对象的类型
 void CSearchManager::UpdateStats()
 {
-	///snow:统计m_mapSearches中各SearchType的个数
+	///snow:统计m_mapSearches中各SearchType的个数，统计前各变量先置零
 	// Update stats on the searches, this info can be used to determine if we need can start new searches.
 	uint8 uTotalFile = 0;
 	uint8 uTotalStoreSrc = 0;
@@ -571,7 +572,7 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &uTarget, const uint8 u
 	{
 		case CSearch::STOREKEYWORD:
 			if( bLoadResponse )
-				pSearch->UpdateNodeLoad( uLoad );  ///snow:uLoad的值被添加到m_uTotalLoad
+				pSearch->UpdateNodeLoad( uLoad );  ///snow:uLoad的值被添加到m_uTotalLoad，m_uTotalLoadResponses++
 			break;
 		case CSearch::STOREFILE:
 		case CSearch::STORENOTES:

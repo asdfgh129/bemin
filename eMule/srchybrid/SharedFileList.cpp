@@ -719,7 +719,7 @@ bool CSharedFileList::AddFile(CKnownFile* pFile)
 			pFile->m_pCollection = NULL;
 		}
 		else if (!pFile->m_pCollection->GetCollectionAuthorKeyString().IsEmpty())
-		{
+		{   ///snow:从文件内部提取文件名，防止用户修改用户名
 			//If the collection has a key, resetting the file name will
 			//cause the key to be added into the wordlist to be stored
 			//into Kad.
@@ -1352,7 +1352,8 @@ void CSharedFileList::Publish()
 	if( Kademlia::CKademlia::IsConnected() && ( !isFirewalled || ( isFirewalled && theApp.clientlist->GetBuddyStatus() == Connected) || bDirectCallback) && GetCount() && Kademlia::CKademlia::GetPublish())
 	{ 
 		//We are connected to Kad. We are either open or have a buddy. And Kad is ready to start publishing.
-		if( Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY)///snow:为什么不超过两个hash?这里的totalStoreKey的值指的是m_mapSearches中的各searchtype的统计数，CSearchManager::UpdateStats()调用SetTotalStoreKey(uTotalStoreKey)更新m_uTotolStoreKey
+		if( Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY)///snow:为什么不超过两个hash?这里的totalStoreKey的值指的是m_mapSearches中的各searchtype的统计数，CSearchManager::UpdateStats()调用SetTotalStoreKey(uTotalStoreKey)更新m_uTotalStoreKey
+			///snow:这个判断条件的意思是当搜索列表中存在一个拟发布Keyword的搜索对象时，不再处理跟发布keyword有关的信息，必须等上个发布处理完毕
 		{
 			//We are not at the max simultaneous keyword publishes 
 			if (tNow >= m_keywords->GetNextPublishTime())

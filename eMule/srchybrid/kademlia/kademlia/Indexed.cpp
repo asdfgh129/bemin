@@ -541,7 +541,7 @@ bool CIndexed::AddSources(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 		pCurrSrcHash->ptrlistSource.AddHead(pCurrSource);
 		m_mapSources.SetAt(CCKey(pCurrSrcHash->uKeyID.GetData()), pCurrSrcHash);
 		m_uTotalIndexSource++;
-		uLoad = 1;
+		uLoad = 1;      ///snow:新文件，uLoad =1
 		return true;
 	}
 	else   ///snow:已存在同ID的Source条目
@@ -550,15 +550,15 @@ bool CIndexed::AddSources(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 		for(POSITION pos1 = pCurrSrcHash->ptrlistSource.GetHeadPosition(); pos1 != NULL; )
 		{
 			Source* pCurrSource = pCurrSrcHash->ptrlistSource.GetNext(pos1);
-			if( pCurrSource->ptrlEntryList.GetSize() )
+			if( pCurrSource->ptrlEntryList.GetSize() )   ///snow:ptrlEntryList中的Entry条目不为0
 			{
 				CEntry* pCurrEntry = pCurrSource->ptrlEntryList.GetHead();
 				ASSERT(pCurrEntry!=NULL);
-				if( pCurrEntry->m_uIP == pEntry->m_uIP && ( pCurrEntry->m_uTCPPort == pEntry->m_uTCPPort || pCurrEntry->m_uUDPPort == pEntry->m_uUDPPort ))
+				if( pCurrEntry->m_uIP == pEntry->m_uIP && ( pCurrEntry->m_uTCPPort == pEntry->m_uTCPPort || pCurrEntry->m_uUDPPort == pEntry->m_uUDPPort ))   ///snow:IP、Port或UDPPort相一致
 				{
 					delete pCurrSource->ptrlEntryList.RemoveHead();
 					pCurrSource->ptrlEntryList.AddHead(pEntry);
-					uLoad = (uint8)((uSize*100)/KADEMLIAMAXSOUCEPERFILE);
+					uLoad = (uint8)((uSize*100)/KADEMLIAMAXSOUCEPERFILE);   ///snow:每文件最多1000个源，uLoad=该文件源数*0.1
 					return true;
 				}
 			}
@@ -572,6 +572,8 @@ bool CIndexed::AddSources(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 				return true;
 			}
 		}
+
+		///snow:IP、Port或UDPPort不相一致
 		if( uSize > KADEMLIAMAXSOUCEPERFILE )
 		{
 			Source* pCurrSource = pCurrSrcHash->ptrlistSource.RemoveTail();
@@ -579,7 +581,7 @@ bool CIndexed::AddSources(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 			pCurrSource->uSourceID.SetValue(uSourceID);
 			pCurrSource->ptrlEntryList.AddHead(pEntry);
 			pCurrSrcHash->ptrlistSource.AddHead(pCurrSource);
-			uLoad = 100;
+			uLoad = 100;   ///snow:每文件最多1000个源，该文件源数>1000，uLoad=100（最大值）
 			return true;
 		}
 		else
@@ -673,7 +675,7 @@ bool CIndexed::AddNotes(const CUInt128& uKeyID, const CUInt128& uSourceID, Kadem
 	}
 }
 
-///snow:在CLoadDataThread::Run()中调用，写入load_index.dat中的存储节点信息，另外在CSearch::~CSearch()中当SearchType==CSearch::STOREKEYWORD时写入目标节点信息
+///snow:添加Load节点到m_mapLoad中，在CLoadDataThread::Run()中调用，写入load_index.dat中的存储节点信息，另外在CSearch::~CSearch()中当SearchType==CSearch::STOREKEYWORD时写入目标节点信息。
 bool CIndexed::AddLoad(const CUInt128& uKeyID, uint32 uTime, bool bIgnoreThreadLock)
 {
 	// do not access any data while the loading thread is busy;

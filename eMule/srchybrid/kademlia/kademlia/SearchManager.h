@@ -42,7 +42,7 @@ namespace Kademlia
 
 	class CRoutingZone;
 	class CKadClientSearcher;
-	class CSearchManager
+	class CSearchManager  ///snow:方法全部是静态方法
 	{
 			friend class CRoutingZone;
 			friend class CKademlia;
