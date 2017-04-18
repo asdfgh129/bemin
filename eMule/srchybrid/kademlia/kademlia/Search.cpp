@@ -159,9 +159,12 @@ CSearch::~CSearch()
 	// Check if this search was contacting a overload node and adjust time of next time we use that node.
 	if(CKademlia::IsRunning() && GetNodeLoad() > 20)
 	{
+		///snow:这边有个疑问：m_uTotalLoad和m_uTotalLoadResponses是成员变量，只在STOREFILE的CSearch对象中根据响应返回的值赋值，不可能跟发起STOREKEYWORD的CSearch对象有关系呀？
+		///snow:错了，在Process_KADEMLIA2_PUBLISH_KEY_REQ()中pIndexed->AddKeyword(uFile, uTarget, pEntry, uLoad)返回了uLoad值，也同样发回了KADEMLIA2_PUBLISH_RES信息包
+		///snow:新的疑问：AddSource时的uLoad做什么用？
 		switch(GetSearchTypes())
 		{
-			case CSearch::STOREKEYWORD:
+			case CSearch::STOREKEYWORD:   
 				Kademlia::CKademlia::GetIndexed()->AddLoad(GetTarget(), ((uint32)(DAY2S(7)*((double)GetNodeLoad()/100.0))+(uint32)time(NULL)));
 				break;
 		}
@@ -865,7 +868,7 @@ void CSearch::StorePacket()
 					uint16 iPacketCount = 0;
 					byte byPacket[1024*50];
 					CByteIO byIO(byPacket,sizeof(byPacket));
-					byIO.WriteUInt128(m_uTarget);  ///snow:拟发送的Keyword
+					byIO.WriteUInt128(m_uTarget);  ///snow:拟发送的Keyword，在PrepareLookup中通过参数传入
 					byIO.WriteUInt16(0); // Will be corrected before sending. ///snow:文件ID数，在后面更新
 					while((iPacketCount < 50) && (itListFileID != m_listFileIDs.end()))   ///snow:添加50个文件ID及Tags
 					{
@@ -1735,7 +1738,7 @@ void CSearch::PreparePacketForTags(CByteIO *byIO, CKnownFile *pFile, uint8 byTar
 		delete *itTagList;
 }
 
-///snow:取加载的Load节点与有回应的Load节点的比值
+///snow:取加载的Load节点与有回应的Load节点的比值 不是加载，是回应了Kadmelia2_Publish_source_req时发回的Load值总和
 uint32 CSearch::GetNodeLoad() const
 {
 	// Node load is the average of all node load responses.

@@ -1384,7 +1384,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ (const byte *pbyPac
 			throw;
 		}
 
-		if( !pIndexed->AddKeyword(uFile, uTarget, pEntry, uLoad) )
+		if( !pIndexed->AddKeyword(uFile, uTarget, pEntry, uLoad) )    ///snow:这里也返回了uLoad
 		{
 			//We already indexed the maximum number of keywords.
 			//We do not index anymore but we still send a success..

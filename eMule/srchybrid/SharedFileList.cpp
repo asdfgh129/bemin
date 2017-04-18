@@ -215,7 +215,7 @@ CPublishKeyword* CPublishKeywordList::FindKeyword(const CStringW& rstrKeyword, P
 	return NULL;
 }
 
-///snow:CSharedFileList::AddFile()和CSharedFileList::AddKeywords()中调用
+///snow:CSharedFileList::AddFile()和CSharedFileList::AddKeywords()中调用,根据文件名获取各关键字，将关键字对象添加到m_lstKeywords，然后将文件源添加到各关键字对象的m_aFiles中
 void CPublishKeywordList::AddKeywords(CKnownFile* pFile)
 {
 	const Kademlia::WordList& wordlist = pFile->GetKadKeywords();
@@ -685,7 +685,7 @@ void CSharedFileList::RepublishFile(CKnownFile* pFile)
 	}
 }
 
-///snow:SafeAddKFile()和CheckAndAddSingleFile()中调用,将pFile添加到m_Files_map
+///snow:SafeAddKFile()和CheckAndAddSingleFile()中调用,将pFile添加到m_Files_map，同时添加Keyword
 bool CSharedFileList::AddFile(CKnownFile* pFile)
 {
 	ASSERT( pFile->GetFileIdentifier().HasExpectedMD4HashCount() );

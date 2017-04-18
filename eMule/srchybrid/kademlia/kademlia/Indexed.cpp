@@ -429,7 +429,7 @@ bool CIndexed::AddKeyword(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 		return false;
 	}
 
-	if( m_uTotalIndexKeyword > KADEMLIAMAXENTRIES )
+	if( m_uTotalIndexKeyword > KADEMLIAMAXENTRIES )  ///snow:本机存储的关键字超过60000
 	{
 		uLoad = 100;
 		return false;
@@ -456,7 +456,7 @@ bool CIndexed::AddKeyword(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 	else   ///snow:已存在同一ID的Key条目
 	{
 		uint32 uIndexTotal = pCurrKeyHash->mapSource.GetCount();
-		if ( uIndexTotal > KADEMLIAMAXINDEX )
+		if ( uIndexTotal > KADEMLIAMAXINDEX )   ///snow:当前关键字下存储的文件源超过50000
 		{
 			uLoad = 100;
 			//Too many entries for this Keyword..
@@ -467,7 +467,7 @@ bool CIndexed::AddKeyword(const CUInt128& uKeyID, const CUInt128& uSourceID, Kad
 		{
 			if (pCurrSource->ptrlEntryList.GetCount() > 0)
 			{
-				if( uIndexTotal > KADEMLIAMAXINDEX - 5000 )
+				if( uIndexTotal > KADEMLIAMAXINDEX - 5000 )   ///snow:大于45000
 				{
 					uLoad = 100;
 					//We are in a hot node.. If we continued to update all the publishes
