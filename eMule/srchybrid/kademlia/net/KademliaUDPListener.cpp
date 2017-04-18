@@ -1288,7 +1288,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ (const byte *pbyPac
 	}
 
 	CByteIO byteIO(pbyPacketData, uLenPacket);
-	CUInt128 uFile;
+	CUInt128 uFile;   ///snow:关键字ID,应命名为uKeyID，统一命名
 	byteIO.ReadUInt128(&uFile);
 
 	CUInt128 uDistance(CKademlia::GetPrefs()->GetKadID());
@@ -1303,7 +1303,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ (const byte *pbyPac
 	CString sInfo;
 	uint16 uCount = byteIO.ReadUInt16();
 	uint8 uLoad = 0;
-	CUInt128 uTarget;
+	CUInt128 uTarget;   ///snow:uSoureID，文件源的MD4Hash
 	while( uCount > 0 )
 	{
 		sInfo.Empty();
@@ -1384,7 +1384,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ (const byte *pbyPac
 			throw;
 		}
 
-		if( !pIndexed->AddKeyword(uFile, uTarget, pEntry, uLoad) )    ///snow:这里也返回了uLoad
+		if( !pIndexed->AddKeyword(uFile, uTarget, pEntry, uLoad) )    ///snow:每个Entry执行一次AddKeyword()，参数uFile，uTarget其实都已经存储在pEntry了，这里也返回了uLoad
 		{
 			//We already indexed the maximum number of keywords.
 			//We do not index anymore but we still send a success..
@@ -1452,7 +1452,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ (const byte *pby
 			CKadTag* pTag = byteIO.ReadTag();
 			if(pTag)
 			{
-				if (!pTag->m_name.Compare(TAG_SOURCETYPE))
+			if (!pTag->m_name.Compare(TAG_SOURCETYPE))   ///snow:比较特别的处理
 				{
 					if( pEntry->m_bSource == false )
 					{
@@ -1528,9 +1528,9 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ (const byte *pby
 		throw;
 	}
 
-	if( pEntry->m_bSource == true )
+	if( pEntry->m_bSource == true )   ///snow:在处理TAG_SOURCETYPE时m_bSource=true
 	{
-		if( pIndexed->AddSources(uFile, uTarget, pEntry, uLoad ) )
+	if( pIndexed->AddSources(uFile, uTarget, pEntry, uLoad ) )     ///snow:核心动作
 			bFlag = true;
 		else
 		{
