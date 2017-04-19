@@ -2166,7 +2166,7 @@ bool CemuleApp::IsTraceLog(LPCTSTR keyword)
     LPCTSTR keywords[]=
 	{
 	    //_T("CAsyncSocketEx_Workflow"),
-		//_T("PacketData")//,
+		_T("PacketData"),
 //		_T("StreamData"),
 		//_T("KadBinaryTree"),
 		//_T("KadIndexData")

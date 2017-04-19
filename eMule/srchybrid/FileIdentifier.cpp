@@ -19,7 +19,9 @@
 #include "otherfunctions.h"
 #include "safefile.h"
 #include "knownfile.h"
+#include "emule.h"
 #include "log.h"
+
 
 // File size       Data parts      ED2K parts      ED2K part hashs		AICH part hashs
 // -------------------------------------------------------------------------------------------
