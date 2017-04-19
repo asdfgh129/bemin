@@ -290,7 +290,7 @@ inline BOOL afxIsWin95()
 #endif
 }
 
-
+/*
 ///<-----------------------------by snow for trace
 #define CAsyncSocketEx_workflow _T("CAsyncSocketEx_Workflow")
 #define TRACE_PACKET_DATA _T("PacketData")
@@ -299,4 +299,6 @@ inline BOOL afxIsWin95()
 #define TRACE_INDEX_DATA _T("KadIndexData")
 #define TRACE_AICHHASHTREE _T("AICHHASHTREE")
 #define TRACE_PUBLISH_SOURCE _T("PublishSource")
+#define TRACE_SEARCH_PROCESS _T("SearchProcess")
 ///----------------------------------->by snow
+*/

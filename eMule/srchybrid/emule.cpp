@@ -2161,6 +2161,7 @@ void CemuleApp::ClearLogQueue(bool bDebugPendingMsgs)
 
 ///<--------------------------------------------
 //   snow:add by snow for debug info
+
 bool CemuleApp::IsTraceLog(LPCTSTR keyword)
 {
     LPCTSTR keywords[]=
@@ -2171,7 +2172,8 @@ bool CemuleApp::IsTraceLog(LPCTSTR keyword)
 		//_T("KadBinaryTree"),
 		//_T("KadIndexData")
 		//_T("AICHHASHTREE")
-		_T("PublishSource")
+		_T("PublishSource"),
+		_T("SearchProcess")
 	};
 	bool bRecord = false;
 	for (int i = 0; i < _countof(keywords); i++)
@@ -2186,6 +2188,21 @@ bool CemuleApp::IsTraceLog(LPCTSTR keyword)
 
 }
 
+bool CemuleApp::IsTraceLog(UINT keyword)
+{
+    UINT keyowrds = //TRACE_PACKET_DATA      |
+					//TRACE_STREAM_DATA      |
+					//TRACE_KAD_BINARY_TREE  |
+					//TRACE_INDEX_DATA       |
+					//TRACE_AICHHASHTREE     |
+					//TRACE_PUBLISH_SOURCE   |
+					TRACE_SEARCH_PROCESS   |
+					0
+					;
+	return !(keyword&keyowrds==0);
+
+}
+
 void CemuleApp::QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line, ...)
 {
 	if(!IsTraceLog(keyword)) return;
@@ -2197,6 +2214,30 @@ void CemuleApp::QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line, ...)
 	va_start(argptr, line);
 	CString str;
 	str.Format(_T("%s|%s"),keyword,line);
+	LPCTSTR msg=str;
+	int iLen = _vsntprintf(bufferline, _countof(bufferline), msg, argptr);
+	va_end(argptr);
+	if (iLen > 0)
+	{
+		SLogItem* newItem = new SLogItem;
+		newItem->uFlags = LOG_DEBUG;
+		newItem->line.SetString(bufferline, iLen);
+		m_QueueTraceLog.AddTail(newItem);
+	}
+
+	m_queueLock.Unlock();
+}
+void CemuleApp::QueueTraceLogLine(UINT keyword, LPCTSTR line, ...)
+{
+	if(!IsTraceLog(keyword)) return;
+
+	m_queueLock.Lock();
+
+	TCHAR bufferline[200000];
+	va_list argptr;
+	va_start(argptr, line);
+	CString str;
+	str.Format(_T("%i|%s"),keyword,line);
 	LPCTSTR msg=str;
 	int iLen = _vsntprintf(bufferline, _countof(bufferline), msg, argptr);
 	va_end(argptr);

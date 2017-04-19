@@ -5188,7 +5188,7 @@ void CPartFile::UpdateFileRatingCommentAvail(bool bForceUpdate)
 	for (POSITION pos = srclist.GetHeadPosition(); pos != NULL;)
 	{
 		const CUpDownClient* cur_src = srclist.GetNext(pos);
-		if (!m_bHasComment && cur_src->HasFileComment())
+        if (!m_bHasComment && cur_src->HasFileComment())
 			m_bHasComment = true;
 		if (cur_src->HasFileRating())
 		{
@@ -5450,7 +5450,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 	//      completed before starting to download other one.
 	//  
 	// The frequency criterion defines several zones: very rare, rare, almost rare,
-	// and common. Inside each zone, the criteria have a specific ‘weight’, used 
+	// and common. Inside each zone, the criteria have a specific ‘weight? used 
 	// to calculate the priority of chunks. The chunk(s) with the highest 
 	// priority (highest=0, lowest=0xffff) is/are selected first.
 	//  
@@ -5756,7 +5756,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
                             sender->m_lastPartAsked = tempLastPartAsked = cur_chunk.part;
                             //AddDebugLogLine(DLP_VERYLOW, false, _T("Chunk number %i selected. Rank: %u"), cur_chunk.part, cur_chunk.rank);
 
-							// Remark: this list might be reused up to ‘*count’ times
+							// Remark: this list might be reused up to ?count?times
 							chunksList.RemoveAt(cur_pos);
 							break; // exit loop for()
 						}  

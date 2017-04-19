@@ -779,7 +779,7 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 										DebugSend("KADEMLIA2_SEARCH_RES", uIP, uPort);
 									byIO.WriteByte(KADEMLIA2_SEARCH_RES);
 									byIO.WriteUInt128(Kademlia::CKademlia::GetPrefs()->GetKadID());
-									byIO.WriteUInt128(uKeyID);
+                                    byIO.WriteUInt128(uKeyID);     
 									byIO.WriteUInt16(0);
 									DEBUG_ONLY(DebugLog(_T("Sent %u keyword search results in one packet to avoid fragmentation"), iUnsentCount)); 
 									iUnsentCount = 0;   ///snow:packet已全部发送

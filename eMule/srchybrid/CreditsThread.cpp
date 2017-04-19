@@ -518,7 +518,7 @@ void CCreditsThread::InitText()
 	m_arCredits.Add(_T("S:05"));	
 	m_arCredits.Add(_T("01:06:Basque: TXiKi"));
 	m_arCredits.Add(_T("S:05"));	
-	m_arCredits.Add(_T("01:06:Breton: KAD-Korvigelloù an Drouizig"));
+	m_arCredits.Add(_T("01:06:Breton: KAD-Korvigello?an Drouizig"));
 	m_arCredits.Add(_T("S:05"));	
 	m_arCredits.Add(_T("01:06:Bulgarian: DapKo, Dumper"));
 	m_arCredits.Add(_T("S:05"));	

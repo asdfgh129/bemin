@@ -165,7 +165,7 @@ Channel* CIrcChannelTabCtrl::NewChannel(const CString& sName, Channel::EType eTy
 
 #ifdef DEBUG_IRC_TEXT
 			if (eType == Channel::ctStatus) {
-				pChannel->m_wndTitle.AddLine(_T("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ^°1234567890!\"§$%&/()=?´`²³{[]}ß\\צהüײִÜ+*~#',.-;:_"));
+				pChannel->m_wndTitle.AddLine(_T("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ^?234567890!\"?%&/()=?´`²³{[]}ß\\צהüײִÜ+*~#',.-;:_"));
 			}
 #endif
 

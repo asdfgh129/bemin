@@ -190,7 +190,9 @@ public:
 
 	///snow:add by snow to trace --------->
 	void			QueueTraceLogLine(LPCTSTR keyword, LPCTSTR line,...);
+	void			QueueTraceLogLine(UINT keyword, LPCTSTR line,...);
 	bool            IsTraceLog(LPCTSTR keyword);
+	bool            IsTraceLog(UINT keyword);
     //void			QueueDebugLogLineEx(UINT uFlags, LPCTSTR line,...);
     void			HandleTraceLogQueue();
     void			ClearTraceLogQueue(bool bDebugPendingMsgs = false);
@@ -255,3 +257,15 @@ public:
 protected:
 	HICON m_hIcon;
 };
+
+///snow:<-----------------------------------------------------------  add by snow
+#define CAsyncSocketEx_workflow 0x01  //_T("CAsyncSocketEx_Workflow")
+#define TRACE_PACKET_DATA 0x02  //_T("PacketData")
+#define TRACE_STREAM_DATA 0x04  //_T("StreamData")
+#define TRACE_KAD_BINARY_TREE 0x08  //_T("KadBinaryTree")
+#define TRACE_INDEX_DATA 0x10    //_T("KadIndexData")
+#define TRACE_AICHHASHTREE 0x20  //_T("AICHHASHTREE")
+#define TRACE_PUBLISH_SOURCE 0x40   //_T("PublishSource")
+#define TRACE_SEARCH_PROCESS  0x80   // _T("SearchProcess")
+
+///snow:---------------------------------------------------------------> add by snow

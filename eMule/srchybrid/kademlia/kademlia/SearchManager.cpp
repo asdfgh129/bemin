@@ -123,6 +123,8 @@ bool CSearchManager::StartSearch(CSearch* pSearch)
 ///snow: CSearchResultsWnd::DoNewKadSearch()中调用，对搜索关键字进行分析
 CSearch* CSearchManager::PrepareFindKeywords(LPCTSTR szKeyword, UINT uSearchTermsSize, LPBYTE pucSearchTermsData)
 {
+
+theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|szKeyword:%s|uSearchTermsSize:%i|pucSearchTermsData:%s"),__FUNCTION__,__LINE__,szKeyword,uSearchTermsSize,ByteToHexStr((uchar*)pucSearchTermsData,uSearchTermsSize).GetBuffer(0));  ///snow:add by snow
 	// Create a keyword search object.
 	CSearch *pSearch = new CSearch;
 	try

@@ -1013,9 +1013,10 @@ static void AddAndAttr(UINT uTag, UINT uOpr, uint64 ullVal)
 		s_SearchExpr2.m_aExpr.InsertAt(0, CSearchAttr(SEARCHOPTOK_AND));
 }
 
+///snow:pData为传出参数，在函数中通过CSearchExprTarget对象target进行写入操作
 bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSupports64Bit, bool* pbPacketUsing64Bit)
 {
-CStringA strFileType;   ///snow:处理文件类型
+	CStringA strFileType;   ///snow:处理文件类型
 	if (pParams->strFileType == ED2KFTSTR_ARCHIVE){
 		// eDonkeyHybrid 0.48 uses type "Pro" for archives files
 		// www.filedonkey.com uses type "Pro" for archives files
@@ -1036,7 +1037,7 @@ CStringA strFileType;   ///snow:处理文件类型
 	if (pParams->eType == SearchTypeKademlia)
 	{
 		ASSERT( !pParams->strKeyword.IsEmpty() );
-		s_strCurKadKeywordA = StrToUtf8(pParams->strKeyword);
+		s_strCurKadKeywordA = StrToUtf8(pParams->strKeyword);   ///snow:将搜索关键字转换为UTF8格式
 	}
 	if (pParams->strBooleanExpr.IsEmpty())
 		pParams->strBooleanExpr = pParams->strExpression;
@@ -1050,9 +1051,16 @@ CStringA strFileType;   ///snow:处理文件类型
 	s_SearchExpr.m_aExpr.RemoveAll();
 	if (!pParams->strBooleanExpr.IsEmpty())
 	{
+		///snow:对搜索关键字进行分析，分析后的结果写入到s_SearchExpr中
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|s_SearchExpr.m_aExpr.GetCount(): %i"),__FUNCTION__,__LINE__,s_SearchExpr.m_aExpr.GetCount());  ///snow:add by snow
+
 	    LexInit(pParams->strBooleanExpr, true);
 	    int iParseResult = yyparse();
 	    LexFree();
+
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|s_SearchExpr.m_aExpr.GetCount(): %i"),__FUNCTION__,__LINE__,s_SearchExpr.m_aExpr.GetCount());  ///snow:add by snow
+
+		///snow:错误处理
 	    if (g_astrParserErrors.GetSize() > 0)
 		{
 		    s_SearchExpr.m_aExpr.RemoveAll();
@@ -1078,6 +1086,7 @@ CStringA strFileType;   ///snow:处理文件类型
 	//}
 
 	// create ed2k search expression
+	///snow:在后面针对target的写入操作都实际写入到pData中
 	CSearchExprTarget target(pData, utf8strRaw, bTargetSupports64Bit, pbPacketUsing64Bit);
 
 	s_SearchExpr2.m_aExpr.RemoveAll();
@@ -1125,11 +1134,15 @@ CStringA strFileType;   ///snow:处理文件类型
 		s_SearchExpr.Add(&s_SearchExpr2);
 	}
 
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|s_SearchExpr.m_aExpr.GetCount(): %i"),__FUNCTION__,__LINE__,s_SearchExpr.m_aExpr.GetCount());  ///snow:add by snow
+
 	if (thePrefs.GetVerbose())
 	{
 		s_strSearchTree.Empty();
 		DumpSearchTree(s_SearchExpr, true);
 		DebugLog(_T("Search Expr: %s"), s_strSearchTree);
+
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|Search Expr: %s"),__FUNCTION__,__LINE__,s_strSearchTree);  ///snow:add by snow
 	}
 
 	for (int j = 0; j < s_SearchExpr.m_aExpr.GetCount(); j++)
@@ -1187,6 +1200,9 @@ CStringA strFileType;   ///snow:处理文件类型
 
 	if (thePrefs.GetDebugServerSearchesLevel() > 0)
 		Debug(_T("Search Data: %s\n"), target.GetDebugString());
+
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|Search Expr: Search Data: %s\n"),__FUNCTION__,__LINE__,target.GetDebugString());  ///snow:add by snow
+
 	s_SearchExpr.m_aExpr.RemoveAll();
 	s_SearchExpr2.m_aExpr.RemoveAll();
 	return true;
@@ -1391,7 +1407,10 @@ bool CSearchResultsWnd::DoNewKadSearch(SSearchParams* pParams)
 		return false;
 
 	int iPos = 0;
-	pParams->strKeyword = pParams->strExpression.Tokenize(_T(" "), iPos);
+	///snow:对搜索关键字按空格分割
+	pParams->strKeyword = pParams->strExpression.Tokenize(_T(" "), iPos);  
+
+	///snow:去除搜索关键字中的双引号
 	if (!pParams->strKeyword.IsEmpty() && pParams->strKeyword.GetAt(0) == _T('\"'))
 	{
 		// remove leading and possibly trailing quotes, if they terminate properly (otherwise the keyword is later handled as invalid)
@@ -1425,6 +1444,7 @@ bool CSearchResultsWnd::DoNewKadSearch(SSearchParams* pParams)
 	Kademlia::CSearch* pSearch = NULL;
 	try
 	{
+	///snow:发起搜索
 		pSearch = Kademlia::CSearchManager::PrepareFindKeywords(pParams->strKeyword, uSearchTermsSize, pSearchTermsData);   ///snow:分析搜索关键字
 		delete[] pSearchTermsData;
 		if (!pSearch){
