@@ -244,11 +244,13 @@ void CPacketTracking::InTrackListCleanup(){
 	DebugLog(_T("Cleaned up Kad Incoming Requests Tracklist, entries before: %u, after %u"), dbgOldSize, m_liTrackPacketsIn.GetCount());
 }
 
+
+///snow:CKademliaUDPListener::Process_KADEMLIA2_HELLO_REQ()和SendLegacyChallenge()调用
 void CPacketTracking::AddLegacyChallenge(CUInt128 uContactID, CUInt128 uChallengeID, uint32 uIP, uint8 byOpcode){
 	TrackChallenge_Struct sTrack = {uIP, ::GetTickCount(), byOpcode, uContactID, uChallengeID};
 	listChallengeRequests.AddHead(sTrack);
 	while (!listChallengeRequests.IsEmpty()){
-		if (::GetTickCount() - listChallengeRequests.GetTail().dwInserted > SEC2MS(180)){
+		if (::GetTickCount() - listChallengeRequests.GetTail().dwInserted > SEC2MS(180)){  ///snow:列表的最后 一个节点存储如果超过180秒，从列表删除
 			DEBUG_ONLY( DebugLog(_T("Challenge timed out, client not verified - %s"), ipstr(ntohl(listChallengeRequests.GetTail().uIP))) ); 
 			listChallengeRequests.RemoveTail();
 		}

@@ -121,10 +121,11 @@ bool CSearchManager::StartSearch(CSearch* pSearch)
 }
 
 ///snow: CSearchResultsWnd::DoNewKadSearch()中调用，对搜索关键字进行分析
+///snow:参数szKeyword是第一个空格前的关键字，pucSearchTermsData存放的是后续的关键字，uSearchTermsSize是pucSearchTermsData的长度
 CSearch* CSearchManager::PrepareFindKeywords(LPCTSTR szKeyword, UINT uSearchTermsSize, LPBYTE pucSearchTermsData)
 {
 
-theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|szKeyword:%s|uSearchTermsSize:%i|pucSearchTermsData:%s"),__FUNCTION__,__LINE__,szKeyword,uSearchTermsSize,ByteToHexStr((uchar*)pucSearchTermsData,uSearchTermsSize).GetBuffer(0));  ///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|szKeyword:%s|uSearchTermsSize:%i|pucSearchTermsData:%s"),__FUNCTION__,__LINE__,szKeyword,uSearchTermsSize,ByteToHexStr((uchar*)pucSearchTermsData,uSearchTermsSize).GetBuffer(0));  ///snow:add by snow
 	// Create a keyword search object.
 	CSearch *pSearch = new CSearch;
 	try
@@ -133,6 +134,9 @@ theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|szKeyword
 		pSearch->SetSearchTypes(CSearch::KEYWORD);  ///snow:CLookupHistory::m_uType=CSearch::m_uType=CSearch::KEYWORD=3
 
 		// Make sure we have a keyword list.
+		///snow:szKeyword是搜索关键字中的第一个空格前的关键字，但可能含有下列字符，所以还是需要分割
+		///snow:eg.:搜索关键字为 "visual_studio 2015 cn iso"，则szKeyword="visual_studio"，pucSearchTermsData中存储的则是"2015 cn iso"
+		///snow:而"visual_studio"还可分割为"visual"、"studio"
 		GetWords(szKeyword, &pSearch->m_listWords);   ///snow:用_T(" ()[]{}<>,._-!?:;\\/\"")中的字符对关键字进行分割，存入m_listWords
 		if (pSearch->m_listWords.size() == 0)
 		{
@@ -141,10 +145,10 @@ theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|szKeyword
 		}
 
 		// Get the targetID based on the primary keyword.
-		CKadTagValueString wstrKeyword = pSearch->m_listWords.front();
-		KadGetKeywordHash(wstrKeyword, &pSearch->m_uTarget);  ///snow:对第一个关键字取Hash值，存入m_uTarget
+		CKadTagValueString wstrKeyword = pSearch->m_listWords.front();  ///snow:对szKeyword分割后的第一个关键字，在上面的例子中，wstrKeyword="visual"
+		KadGetKeywordHash(wstrKeyword, &pSearch->m_uTarget);  ///snow:对第一个关键字取Hash值，存入m_uTarget，依上面，则是"visual"的md4 Hash值
 
-		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|wstrKeyword:%s|pSearch->m_uTarget(Hex):%s|pSearch->m_uTarget:%s"),__FUNCTION__,__LINE__,wstrKeyword.GetBuffer(0),pSearch->m_uTarget.ToHexString().GetBuffer(0),pSearch->m_uTarget.ToBinaryString().GetBuffer(0));  ///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|wstrKeyword:%s|m_listWords.size：%i|pSearch->m_uTarget(Hex):%s|pSearch->m_uTarget:%s"),__FUNCTION__,__LINE__,wstrKeyword.GetBuffer(0),pSearch->m_listWords.size(),pSearch->m_uTarget.ToHexString().GetBuffer(0),pSearch->m_uTarget.ToBinaryString().GetBuffer(0));  ///snow:add by snow
 
 		// Verify that we are not already searching for this target.
 		///snow:已存在与当前m_uTarget相同的搜索
@@ -156,13 +160,13 @@ theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|szKeyword
 			throw strError;
 		}
 
-		///snow:对m_uSearchTermsDataSize、m_pucSearchTermsData进行赋值
+		///snow:对m_uSearchTermsDataSize、m_pucSearchTermsData进行赋值，存储的是第一个空格后续的关键字
 		pSearch->SetSearchTermData( uSearchTermsSize, pucSearchTermsData );
 		pSearch->SetGUIName(szKeyword);
 		// Inc our searchID
 		pSearch->m_uSearchID = ++m_uNextID;
 		// Insert search into map.
-		m_mapSearches[pSearch->m_uTarget] = pSearch;
+		m_mapSearches[pSearch->m_uTarget] = pSearch; ///snow:索引为分割后的第一个关键字的Hash值
 		// Start search.
 		pSearch->Go();
 	}
@@ -593,6 +597,7 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &uTarget, const uint8 u
 void CSearchManager::ProcessResponse(const CUInt128 &uTarget, uint32 uFromIP, uint16 uFromPort, ContactList *plistResults)
 {
 	// We got a response to a kad lookup.
+///snow:验证返回信息包的节点是否在m_mapSearches中，表示是否是我们向它发出请求，如果不是，则可能是骚扰信息
 	CSearch *pSearch = NULL;
 	SearchMap::const_iterator itSearchMap= m_mapSearches.find(uTarget);
 	if (itSearchMap != m_mapSearches.end())

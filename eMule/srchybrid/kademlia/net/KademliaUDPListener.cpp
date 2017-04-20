@@ -227,12 +227,12 @@ void CKademliaUDPListener::SendPublishSourcePacket(CContact* pContact, const CUI
 	if (pContact->GetVersion() >= 6/*>48b*/) // obfuscated?
 	{
 		CUInt128 uClientID = pContact->GetClientID();
-		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pContact->GetIPAddress()));  ///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
 		SendPacket(byPacket, uLen,  pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetUDPKey(), &uClientID);
 	}
 	else
 	{
-		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pContact->GetIPAddress()));  ///snow:add by snow
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
 		SendPacket(byPacket, uLen,  pContact->GetIPAddress(), pContact->GetUDPPort(), 0, NULL);
 	}
 }
@@ -805,11 +805,13 @@ void CKademliaUDPListener::Process_KADEMLIA2_RES (const byte *pbyPacketData, uin
 	fileIO.ReadUInt128(&uTarget);
 	uint8 uNumContacts = fileIO.ReadUInt8();
 
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uTarget:%s| uNumContacts: %i|uLenPacket:%i\n"),__FUNCTION__,__LINE__,uTarget.ToHexString().GetBuffer(0),uNumContacts,uLenPacket);  ///snow:add by snow
+
 	// is this one of our legacy challenge packets?
 	CUInt128 uContactID;
-	if (IsLegacyChallenge(uTarget, uIP, KADEMLIA2_REQ, uContactID)){
+	if (IsLegacyChallenge(uTarget, uIP, KADEMLIA2_REQ, uContactID)){  ///snow:在处理对方发来的KADEMLIA2_HELLO_REQ时添加到listChallengeRequests
 		// yup it is, set the contact as verified
-		if (!CKademlia::GetRoutingZone()->VerifyContact(uContactID, uIP)){
+		if (!CKademlia::GetRoutingZone()->VerifyContact(uContactID, uIP)){   ///snow:设置该Contact为已验证状态，m_bIPVerified =true
 			DebugLogWarning(_T("Kad: KADEMLIA2_RES: Unable to find valid sender in routing table (sender: %s)"), ipstr(ntohl(uIP)));
 		}
 		else
@@ -842,7 +844,10 @@ void CKademliaUDPListener::Process_KADEMLIA2_RES (const byte *pbyPacketData, uin
 			uint16 uUDPPortResult = fileIO.ReadUInt16();
 			uint16 uTCPPortResult = fileIO.ReadUInt16();
 			uint8 uVersion = fileIO.ReadUInt8();
-			uint32 uhostIPResult = ntohl(uIPResult);
+			uint32 uhostIPResult = ntohl(uIPResult);  ///snow:网络字节序转换为主机字节序
+
+			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uIDResult:%s|IP: %i|TCP Port:%i|UDP Port:%i|uVersion:%i"),__FUNCTION__,__LINE__,uIDResult.ToHexString().GetBuffer(0),ipstr(ntohl(uIPResult)),uTCPPortResult,uUDPPortResult,uVersion);  ///snow:add by snow
+
 			if (uVersion > 1) // Kad1 nodes are no longer accepted and ignored
 			{
 				if (::IsGoodIPPort(uhostIPResult, uUDPPortResult))
@@ -861,7 +866,10 @@ void CKademliaUDPListener::Process_KADEMLIA2_RES (const byte *pbyPacketData, uin
 							bool bWasAdded = pRoutingZone->AddUnfiltered(uIDResult, uIPResult, uUDPPortResult, uTCPPortResult, uVersion, 0, bVerified, false, false, false);
 							CContact* pTemp = new CContact(uIDResult, uIPResult, uUDPPortResult, uTCPPortResult, uTarget, uVersion, 0, false);
 							if (bWasAdded || pRoutingZone->IsAcceptableContact(pTemp))
+								{
 								pResults->push_back(pTemp);
+								theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|Add to Result List,pResults count:%i"),__FUNCTION__,__LINE__,pResults->size());  ///snow:add by snow
+								}
 							else
 							{
 								nIgnoredCount++;
@@ -875,7 +883,10 @@ void CKademliaUDPListener::Process_KADEMLIA2_RES (const byte *pbyPacketData, uin
 						AddDebugLogLine(false, _T("Ignored kad contact (IP=%s:%u) - Bad port (Kad2_Res)"), ipstr(uhostIPResult), uUDPPortResult);
 				}
 				else if (::thePrefs.GetLogFilteredIPs())
+					{
 					AddDebugLogLine(false, _T("Ignored kad contact (IP=%s) - Bad IP"), ipstr(uhostIPResult));
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|Ignored kad contact (IP=%s) - Bad IP"),__FUNCTION__,__LINE__,ipstr(uhostIPResult));  ///snow:add by snow
+					}
 			}
 		}
 	}

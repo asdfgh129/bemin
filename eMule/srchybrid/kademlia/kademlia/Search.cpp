@@ -180,20 +180,18 @@ CSearch::~CSearch()
 void CSearch::Go()
 {
 	// Start with a lot of possible contacts, this is a fallback in case search stalls due to dead contacts
-	if (m_mapPossible.empty())  ///snow:如果m_mapPossible为空，根据m_uTarget取最近的50个节点，存入m_mapPossible
+	if (m_mapPossible.empty())  ///snow:如果m_mapPossible为空，根据m_uTarget取离m_uTarget距离最近的50个节点，存入m_mapPossible
 	{
 		CUInt128 uDistance(CKademlia::GetPrefs()->GetKadID());
 		uDistance.Xor(m_uTarget);
 		CKademlia::GetRoutingZone()->GetClosestTo(3, m_uTarget, uDistance, 50, &m_mapPossible, true, true);
-
-		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|m_mapPossible.count:%i"),__FUNCTION__,__LINE__,m_mapPossible.size());  ///snow:add by snow
-
+		
 		for (ContactMap::iterator itContactMap = m_mapPossible.begin(); itContactMap != m_mapPossible.end(); ++itContactMap)
 			///snow:将这些准备对其发起搜索的联系人添加到历史列表m_aHistoryEntries
 			m_pLookupHistory->ContactReceived(itContactMap->second, NULL, itContactMap->first, false);
 		theApp.emuledlg->kademliawnd->UpdateSearchGraph(m_pLookupHistory);
 	}
-	if (!m_mapPossible.empty())  ///snow:存在最接近的联系人
+	if (!m_mapPossible.empty())  ///snow:存在最接近m_uTarget的联系人节点
 	{
 		//Lets keep our contact list entries in mind to dec the inUse flag.
 		for (ContactMap::iterator itContactMap = m_mapPossible.begin(); itContactMap != m_mapPossible.end(); ++itContactMap)
@@ -209,6 +207,8 @@ void CSearch::Go()
 		else
 			iCount = min(ALPHA_QUERY, (int)m_mapPossible.size());  ///snow:对最多3个节点进行搜索
 
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|m_mapPossible.count:%i|m_mapInUse.size:%i|m_mapTried.size:%i"),__FUNCTION__,__LINE__,m_mapPossible.size(),m_mapInUse.size(),m_mapTried.size());  ///snow:add by snow
+
 		ContactMap::iterator itContactMap2 = m_mapPossible.begin();
 		// Send initial packets to start the search.
 		for (int iIndex=0; iIndex<iCount; iIndex++)
@@ -219,10 +219,14 @@ void CSearch::Go()
 			// Send the KadID so other side can check if I think it has the right KadID. (Saftey net)
 			///snow:发送对方的KadID是为了让对方验证我们是否拥有正确的对方ID
 			// Send request
+			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|准备向IP:%s的节点发起SendFindVaule!"),__FUNCTION__,__LINE__,ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
 			SendFindValue(pContact);   ///snow:向该联系人发送数据包
 			++itContactMap2;
 		}
 	}
+
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|m_mapTried.size:%i"),__FUNCTION__,__LINE__,m_mapTried.size());  ///snow:add by snow
+
 	// Update search for the GUI
 	theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 }
@@ -351,7 +355,7 @@ void CSearch::JumpStart()
 			// Did we get a response from this node, if so, try to store or get info.
 			if(m_mapResponded.count(m_mapPossible.begin()->first) > 0)  ///snow:该联系人也已经回应了
 			{
-				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pContact ClientID:%s|pContact IP:%s"),__FUNCTION__,__LINE__,pContact->GetClientID().ToHexString(),ipstr(pContact->GetIPAddress()));  ///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pContact ClientID:%s|pContact IP:%s"),__FUNCTION__,__LINE__,pContact->GetClientID().ToHexString(),ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
 
 				StorePacket();   ///snow:名字上看是将Packet存储起来，实际是发送搜索请求数据包，跟SendFindValue()有什么区别?
 				///snow:SendFindValue()发送的opcode是KADEMLIA2_REQ，应该是搜索更接近的联系人
@@ -373,6 +377,7 @@ void CSearch::JumpStart()
 	}
 }
 
+///snow:决定是SendFindValue还是JumpStart
 void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *plistResults)
 {
 	// Remember the contacts to be deleted when finished
@@ -603,7 +608,7 @@ void CSearch::StorePacket()
 						if (pFromContact->GetVersion() >= 6){ /*48b*/
 							CUInt128 uClientID = pFromContact->GetClientID();
 
-							theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+							theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 
 							CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA2_SEARCH_SOURCE_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 						}
@@ -624,7 +629,7 @@ void CSearch::StorePacket()
 					if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 						DebugSend("KADEMLIA_SEARCH_REQ(File)", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
 		
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA_SEARCH_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 				}
 				// Inc total request answers
@@ -675,7 +680,7 @@ void CSearch::StorePacket()
 					if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 						DebugSend("KADEMLIA2_SEARCH_KEY_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
 					CUInt128 uClientID = pFromContact->GetClientID();
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA2_SEARCH_KEY_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 
 				}
@@ -683,7 +688,7 @@ void CSearch::StorePacket()
 				{
 					if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 						DebugSend("KADEMLIA2_SEARCH_KEY_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA2_SEARCH_KEY_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 					ASSERT( CKadUDPKey(0) == pFromContact->GetUDPKey() );
 				}
@@ -691,7 +696,7 @@ void CSearch::StorePacket()
 				{
 					if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 						DebugSend("KADEMLIA_SEARCH_REQ(KEYWORD)", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA_SEARCH_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 				}
 				// Inc total request answers
@@ -720,11 +725,11 @@ void CSearch::StorePacket()
 						if (pFromContact->GetVersion() >= 6){ /*48b*/
 							CUInt128 uClientID = pFromContact->GetClientID();
 
-							theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+							theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 							CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA2_SEARCH_NOTES_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 						}
 						else {
-							theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+							theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 							CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA2_SEARCH_NOTES_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 							ASSERT( CKadUDPKey(0) == pFromContact->GetUDPKey() );
 						}
@@ -740,7 +745,7 @@ void CSearch::StorePacket()
 					m_pfileSearchTerms.WriteUInt128(&CKademlia::GetPrefs()->GetKadID());
 					if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 						DebugSend("KADEMLIA_SEARCH_NOTES_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA_SEARCH_NOTES_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 				}
 				// Inc total request answers
@@ -847,7 +852,7 @@ void CSearch::StorePacket()
 
 					// Send packet
 					///snow:向回应的联系人发布源信息包，不是调用SendPacket()
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|m_uTarget:%s|uID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,m_uTarget.ToHexString(),uID.ToHexString().GetBuffer(0),ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|m_uTarget:%s|uID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,m_uTarget.ToHexString(),uID.ToHexString().GetBuffer(0),ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPublishSourcePacket(pFromContact, m_uTarget, uID, listTag);
 					// Inc total request answers
 					m_uTotalRequestAnswers++;
@@ -919,7 +924,7 @@ void CSearch::StorePacket()
 							DebugSend("KADEMLIA2_PUBLISH_KEY_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
 						CUInt128 uClientID = pFromContact->GetClientID();
 
-                        theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+                        theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 						CKademlia::GetUDPListener()->SendPacket( byPacket, sizeof(byPacket)-byIO.GetAvailable(), KADEMLIA2_PUBLISH_KEY_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 
 					}	
@@ -927,7 +932,7 @@ void CSearch::StorePacket()
 					{
 						if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 							DebugSend("KADEMLIA2_PUBLISH_KEY_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
-						theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+						theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 						CKademlia::GetUDPListener()->SendPacket( byPacket, sizeof(byPacket)-byIO.GetAvailable(), KADEMLIA2_PUBLISH_KEY_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 						ASSERT( CKadUDPKey(0) == pFromContact->GetUDPKey() );
 					}
@@ -973,14 +978,14 @@ void CSearch::StorePacket()
 						if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 							DebugSend("KADEMLIA2_PUBLISH_NOTES_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
 						CUInt128 uClientID = pFromContact->GetClientID();
-						theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+						theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 						CKademlia::GetUDPListener()->SendPacket( byPacket, sizeof(byPacket)-byIO.GetAvailable(), KADEMLIA2_PUBLISH_NOTES_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 					}
 					else if (pFromContact->GetVersion() >= 2/*47a*/)
 					{
 						if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 							DebugSend("KADEMLIA2_PUBLISH_NOTES_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
-						theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+						theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 						CKademlia::GetUDPListener()->SendPacket( byPacket, sizeof(byPacket)-byIO.GetAvailable(), KADEMLIA2_PUBLISH_NOTES_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 						ASSERT( CKadUDPKey(0) == pFromContact->GetUDPKey() );
 					}
@@ -1022,11 +1027,11 @@ void CSearch::StorePacket()
 					DebugSend("KADEMLIA_FINDBUDDY_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
 				if (pFromContact->GetVersion() >= 6){ /*48b*/
 					CUInt128 uClientID = pFromContact->GetClientID();
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA_FINDBUDDY_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 				}
 				else {
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA_FINDBUDDY_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 					ASSERT( CKadUDPKey(0) == pFromContact->GetUDPKey() );
 				}
@@ -1060,11 +1065,11 @@ void CSearch::StorePacket()
 					DebugSend("KADEMLIA_CALLBACK_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
 				if (pFromContact->GetVersion() >= 6){ /*48b*/
 					CUInt128 uClientID = pFromContact->GetClientID();
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pFromContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket( &fileIO, KADEMLIA_CALLBACK_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 				}
 				else {
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pFromContact->GetIPAddress()));  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pFromContact->GetIPAddress())));  ///snow:add by snow
 					CKademlia::GetUDPListener()->SendPacket( &fileIO, KADEMLIA_CALLBACK_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), 0, NULL);
 					ASSERT( CKadUDPKey(0) == pFromContact->GetUDPKey() );
 				}
@@ -1498,7 +1503,7 @@ void CSearch::SendFindValue(CContact* pContact, bool bReAskMore)
 		// Make sure we are not in the process of stopping.
 		if(m_bStoping)
 			return;
-		CSafeMemFile fileIO(33);  ///snow:33个字节：第一个字节是希望返回的联系人数目，第2-17个字节是拟搜索目标hash，第18-33个字节是对方KadID
+		CSafeMemFile fileIO(33);  ///snow:33个字节：第一个字节是希望返回的联系人数目（KADEMLIA_FIND_VALUE=2），第2-17个字节是拟搜索目标hash，第18-33个字节是对方KadID
 		// The number of returned contacts is based on the type of search.
 		uint8 byContactCount = GetRequestContactCount();
 		if (bReAskMore)   ///snow:默认false
@@ -1506,7 +1511,7 @@ void CSearch::SendFindValue(CContact* pContact, bool bReAskMore)
 			if (pRequestedMoreNodesContact == NULL)
 			{
 				pRequestedMoreNodesContact = pContact;
-				ASSERT( byContactCount == KADEMLIA_FIND_VALUE);
+				ASSERT( byContactCount == KADEMLIA_FIND_VALUE);   ///snow:返回2个联系人节点
 				byContactCount = KADEMLIA_FIND_VALUE_MORE;
 			}
 			else
@@ -1533,13 +1538,13 @@ void CSearch::SendFindValue(CContact* pContact, bool bReAskMore)
 			if (pContact->GetVersion() >= 6){ /*48b*/  ///snow:之后的版本支持UDPKey
 				CUInt128 uClientID = pContact->GetClientID();
 
-				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|m_uTarget:%s|pContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString().GetBuffer(0),m_uTarget.ToHexString().GetBuffer(0),ipstr(pContact->GetIPAddress()));  ///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|m_uTarget:%s|pContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString().GetBuffer(0),m_uTarget.ToHexString().GetBuffer(0),ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
 
 				CKademlia::GetUDPListener()->SendPacket(&fileIO, KADEMLIA2_REQ, pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetUDPKey(), &uClientID);
 			}
 			else {    ///snow:不支持UDPKey，一般是版本4
 
-				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|m_uTarget:%s|pContact IP:%s"),__FUNCTION__,__LINE__,m_uTarget.ToHexString().GetBuffer(0),ipstr(pContact->GetIPAddress()));  ///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|m_uTarget:%s|pContact IP:%s"),__FUNCTION__,__LINE__,m_uTarget.ToHexString().GetBuffer(0),ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
 
 				CKademlia::GetUDPListener()->SendPacket(&fileIO, KADEMLIA2_REQ, pContact->GetIPAddress(), pContact->GetUDPPort(), 0, NULL);
 				ASSERT( CKadUDPKey(0) == pContact->GetUDPKey() );

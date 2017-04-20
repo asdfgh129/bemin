@@ -1135,7 +1135,7 @@ bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSu
 		s_SearchExpr.Add(&s_SearchExpr2);
 	}
 
-	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|s_SearchExpr.m_aExpr.GetCount(): %i"),__FUNCTION__,__LINE__,s_SearchExpr.m_aExpr.GetCount());  ///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|s_SearchExpr.m_aExpr.GetCount(): %i|s_SearchExpr2.m_aExpr.GetCount()"),__FUNCTION__,__LINE__,s_SearchExpr.m_aExpr.GetCount(),s_SearchExpr2.m_aExpr.GetCount());  ///snow:add by snow
 
 	if (thePrefs.GetVerbose())
 	{
@@ -1150,16 +1150,20 @@ bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSu
 	{
 		const CSearchAttr& rSearchAttr = s_SearchExpr.m_aExpr[j];
 		const CStringA& rstrA = rSearchAttr.m_str;
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|rstrA:%s|rSearchAttr.m_iTag:%i|rSearchAttr.m_uIntegerOperator:%i"),__FUNCTION__,__LINE__,rSearchAttr.m_str,rSearchAttr.m_iTag,rSearchAttr.m_uIntegerOperator);  ///snow:add by snow
 		if (rstrA == SEARCHOPTOK_AND)
 		{
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i"),__FUNCTION__,__LINE__);///snow:add by snow
 			target.WriteBooleanAND();
 		}
 		else if (rstrA == SEARCHOPTOK_OR)
 		{
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i"),__FUNCTION__,__LINE__);///snow:add by snow
 			target.WriteBooleanOR();
 		}
 		else if (rstrA == SEARCHOPTOK_NOT)
 		{
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i"),__FUNCTION__,__LINE__);///snow:add by snow
 			target.WriteBooleanNOT();
 		}
 		else if (rSearchAttr.m_iTag == FT_FILESIZE			||
@@ -1169,6 +1173,7 @@ bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSu
 				 rSearchAttr.m_iTag == FT_MEDIA_BITRATE		||
 				 rSearchAttr.m_iTag == FT_MEDIA_LENGTH)
 		{
+			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i"),__FUNCTION__,__LINE__);///snow:add by snow
 			// 11-Sep-2005 []: Kad comparison operators where changed to match the ED2K operators. For backward
 			// compatibility with old Kad nodes, we map ">=val" and "<=val" to ">val-1" and "<val+1". This way,
 			// the older Kad nodes will perform a ">=val" and "<=val".
@@ -1189,12 +1194,14 @@ bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSu
 				 rSearchAttr.m_iTag == FT_MEDIA_ARTIST)
 		{
 			ASSERT( rSearchAttr.m_uIntegerOperator == ED2K_SEARCH_OP_EQUAL );
+			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i"),__FUNCTION__,__LINE__);///snow:add by snow
 			target.WriteMetaDataSearchParam(rSearchAttr.m_iTag, OptUtf8ToStr(rSearchAttr.m_str));
 		}
 		else
 		{
 			ASSERT( rSearchAttr.m_iTag == FT_FILENAME );
 			ASSERT( rSearchAttr.m_uIntegerOperator == ED2K_SEARCH_OP_EQUAL );
+			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i"),__FUNCTION__,__LINE__);///snow:add by snow
 			target.WriteMetaDataSearchParam(OptUtf8ToStr(rstrA));
 		}
 	}
@@ -1408,7 +1415,7 @@ bool CSearchResultsWnd::DoNewKadSearch(SSearchParams* pParams)
 		return false;
 
 	int iPos = 0;
-	///snow:对搜索关键字按空格分割
+	///snow:取搜索关键字第一个空格前的关键字，iPos是起始位置，找到空格后，将第一个空格的位置赋于iPos
 	pParams->strKeyword = pParams->strExpression.Tokenize(_T(" "), iPos);  
 
 	///snow:去除搜索关键字中的双引号
@@ -1421,7 +1428,7 @@ bool CSearchResultsWnd::DoNewKadSearch(SSearchParams* pParams)
 		else if (pParams->strExpression.Find(_T('\"'), 1) > pParams->strKeyword.GetLength())
 			pParams->strKeyword = pParams->strKeyword.Mid(1, pParams->strKeyword.GetLength() - 1);
 	}
-	pParams->strKeyword.Trim();
+	pParams->strKeyword.Trim();   ///snow:删除关键字中的空格
 
 	CSafeMemFile data(100);
 	///snow:根据pParams构造SearchPacket

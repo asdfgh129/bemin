@@ -748,7 +748,7 @@ int CUDPSocket::SendTo(BYTE* lpBuf, int nBufLen, uint32 dwIP, uint16 nPort)
 	// NOTE: *** This function is invoked from a *different* thread!
 
 		///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(dwIP),nPort,nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0),TrimZero((uchar*)lpBuf,nBufLen).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(dwIP)),ntohs(nPort),nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0),TrimZero((uchar*)lpBuf,nBufLen).GetBuffer(0));
 
 	int iResult = CAsyncSocket::SendTo(lpBuf, nBufLen, nPort, ipstr(dwIP));
 	if (iResult == SOCKET_ERROR) {
@@ -809,7 +809,7 @@ void CUDPSocket::SendPacket(Packet* packet, CServer* pServer, uint16 nSpecialPor
 		uRawPacketSize = packet->size + 2;
 
 		///snow:add by snow
-		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(pServer->GetIP()),pServer->GetPort(),uRawPacketSize,GetOpcodeStr(packet->opcode,CLIENT2SERVERUDP).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0),TrimZero((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0));
+		theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pServer->GetIP())),ntohs(pServer->GetPort()),uRawPacketSize,GetOpcodeStr(packet->opcode,CLIENT2SERVERUDP).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0),TrimZero((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0));
 
 
 
@@ -824,7 +824,7 @@ void CUDPSocket::SendPacket(Packet* packet, CServer* pServer, uint16 nSpecialPor
 			nPort = pServer->GetObfuscationPortUDP();
 
 			///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(pServer->GetIP()),nPort,uRawPacketSize,GetOpcodeStr(packet->opcode,CLIENT2SERVERUDP).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0),TrimZero((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(pServer->GetIP())),ntohs(nPort),uRawPacketSize,GetOpcodeStr(packet->opcode,CLIENT2SERVERUDP).GetBuffer(0),GetProtocolStr(packet->prot).GetBuffer(0),ByteToHexStr((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0),TrimZero((uchar*)pRawPacket,uRawPacketSize).GetBuffer(0));
 
 		}
 		else
