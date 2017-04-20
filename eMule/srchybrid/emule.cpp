@@ -2199,7 +2199,8 @@ bool CemuleApp::IsTraceLog(UINT keyword)
 					TRACE_SEARCH_PROCESS   |
 					0
 					;
-	return !(keyword&keyowrds==0);
+	bool result = (keyword & keyowrds) ==0;
+	return !result;
 
 }
 

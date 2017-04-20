@@ -587,7 +587,7 @@ bool CClientUDPSocket::SendPacket(Packet* packet, uint32 dwIP, uint16 nPort, boo
 	newpending->nReceiverVerifyKey = nReceiverVerifyKey;
 
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(dwIP)),nPort,newpending->packet->size,(bKad?GetKadOpcodeStr(newpending->packet->opcode).GetBuffer(0):GetOpcodeStr(newpending->packet->opcode,CLIENT2CLIENTExUDP).GetBuffer(0)),(bKad?_T("Kademlia"):_T("UDP")),ByteToHexStr((uchar*)newpending->packet->pBuffer,newpending->packet->size).GetBuffer(0),TrimZero((uchar*)newpending->packet->pBuffer,newpending->packet->size).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA|TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:%s|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(dwIP)),nPort,newpending->packet->size,(bKad?GetKadOpcodeStr(newpending->packet->opcode).GetBuffer(0):GetOpcodeStr(newpending->packet->opcode,CLIENT2CLIENTExUDP).GetBuffer(0)),(bKad?_T("Kademlia"):_T("UDP")),ByteToHexStr((uchar*)newpending->packet->pBuffer,newpending->packet->size).GetBuffer(0),TrimZero((uchar*)newpending->packet->pBuffer,newpending->packet->size).GetBuffer(0));
 
 #ifdef _DEBUG
 	if (newpending->packet->size > UDP_KAD_MAXFRAGMENT)

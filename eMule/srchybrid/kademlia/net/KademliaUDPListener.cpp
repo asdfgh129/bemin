@@ -227,10 +227,14 @@ void CKademliaUDPListener::SendPublishSourcePacket(CContact* pContact, const CUI
 	if (pContact->GetVersion() >= 6/*>48b*/) // obfuscated?
 	{
 		CUInt128 uClientID = pContact->GetClientID();
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uClientID:%s|pContact IP:%s"),__FUNCTION__,__LINE__,uClientID.ToHexString(),ipstr(pContact->GetIPAddress()));  ///snow:add by snow
 		SendPacket(byPacket, uLen,  pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetUDPKey(), &uClientID);
 	}
 	else
+	{
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pFromContact IP:%s"),__FUNCTION__,__LINE__,ipstr(pContact->GetIPAddress()));  ///snow:add by snow
 		SendPacket(byPacket, uLen,  pContact->GetIPAddress(), pContact->GetUDPPort(), 0, NULL);
+	}
 }
 
 void CKademliaUDPListener::ProcessPacket(const byte* pbyData, uint32 uLenData, uint32 uIP, uint16 uUDPPort, bool bValidReceiverKey, CKadUDPKey senderUDPKey)
@@ -259,7 +263,7 @@ void CKademliaUDPListener::ProcessPacket(const byte* pbyData, uint32 uLenData, u
 	//	CMiscUtils::debugHexDump(pbyPacketData, uLenPacket);
 
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_PACKET_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:KademliaUDP|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(uIP)), ntohs(uUDPPort),uLenPacket,GetKadOpcodeStr(byOpcode).GetBuffer(0),ByteToHexStr((uchar*)pbyPacketData,uLenPacket).GetBuffer(0),TrimZero((uchar*)pbyPacketData,uLenPacket).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_PACKET_DATA|TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:%s|Protocol:KademliaUDP|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(uIP)), ntohs(uUDPPort),uLenPacket,GetKadOpcodeStr(byOpcode).GetBuffer(0),ByteToHexStr((uchar*)pbyPacketData,uLenPacket).GetBuffer(0),TrimZero((uchar*)pbyPacketData,uLenPacket).GetBuffer(0));
 
 
 	switch (byOpcode)

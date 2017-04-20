@@ -1051,9 +1051,10 @@ bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSu
 	s_SearchExpr.m_aExpr.RemoveAll();
 	if (!pParams->strBooleanExpr.IsEmpty())
 	{
-		///snow:对搜索关键字进行分析，分析后的结果写入到s_SearchExpr中
-	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|s_SearchExpr.m_aExpr.GetCount(): %i"),__FUNCTION__,__LINE__,s_SearchExpr.m_aExpr.GetCount());  ///snow:add by snow
+		
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|s_SearchExpr.m_aExpr.GetCount(): %i"),__FUNCTION__,__LINE__,s_SearchExpr.m_aExpr.GetCount());  ///snow:add by snow
 
+		///snow:对搜索关键字进行分析，分析后的结果写入到s_SearchExpr中
 	    LexInit(pParams->strBooleanExpr, true);
 	    int iParseResult = yyparse();
 	    LexFree();
@@ -1201,7 +1202,7 @@ bool GetSearchPacket(CSafeMemFile* pData, SSearchParams* pParams, bool bTargetSu
 	if (thePrefs.GetDebugServerSearchesLevel() > 0)
 		Debug(_T("Search Data: %s\n"), target.GetDebugString());
 
-	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|Search Expr: Search Data: %s\n"),__FUNCTION__,__LINE__,target.GetDebugString());  ///snow:add by snow
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|Search Data: %s\n"),__FUNCTION__,__LINE__,target.GetDebugString());  ///snow:add by snow
 
 	s_SearchExpr.m_aExpr.RemoveAll();
 	s_SearchExpr2.m_aExpr.RemoveAll();

@@ -144,6 +144,8 @@ theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|szKeyword
 		CKadTagValueString wstrKeyword = pSearch->m_listWords.front();
 		KadGetKeywordHash(wstrKeyword, &pSearch->m_uTarget);  ///snow:对第一个关键字取Hash值，存入m_uTarget
 
+		theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|wstrKeyword:%s|pSearch->m_uTarget(Hex):%s|pSearch->m_uTarget:%s"),__FUNCTION__,__LINE__,wstrKeyword.GetBuffer(0),pSearch->m_uTarget.ToHexString().GetBuffer(0),pSearch->m_uTarget.ToBinaryString().GetBuffer(0));  ///snow:add by snow
+
 		// Verify that we are not already searching for this target.
 		///snow:已存在与当前m_uTarget相同的搜索
 		if (AlreadySearchingFor(pSearch->m_uTarget))
