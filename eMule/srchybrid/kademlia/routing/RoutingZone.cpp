@@ -709,6 +709,8 @@ CContact* CRoutingZone::GetRandomContact(uint32 nMaxType, uint32 nMinKadVersion)
 }
 
 ///snow:最近的联系人总是与目标结点的位最大程度的一致(从高位往低位匹配(因为CUInt128定义了最高位是0位))，如果本结点是叶子结点，则就是结点中存储的联系人，如果不是，则按位索引分支结点，直到叶子结点
+///snow:GetClosestTo()中参数uDistance则代表的是从RoutingZone顶点开始，根据uDistance的值按位索引查找叶子结点
+///snow:m_uTarget参数则是为了计算查找出的待定节点与目标节点的距离，然后将距离值作为索引写入ContactMap
 void CRoutingZone::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, const CUInt128 &uDistance, uint32 uMaxRequired, ContactMap *pmapResult, bool bEmptyFirst, bool bInUse) const
 {
 	///snow:如果是叶子结点，直接搜索

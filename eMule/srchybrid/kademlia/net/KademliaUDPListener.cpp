@@ -1258,6 +1258,9 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_RES (const byte *pbyPacketDa
 	// Total results.
 	uint16 uCount = byteIO.ReadUInt16();
 	CUInt128 uAnswer;
+
+	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uSource:%s|uTarget£º%s|uCount:%i"),__FUNCTION__,__LINE__,uSource.ToHexString(),uTarget.ToHexString(),uCount);  ///snow:add by snow
+
 	while( uCount > 0 )
 	{
 		// What is the answer
@@ -1273,6 +1276,9 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_RES (const byte *pbyPacketDa
 		try
 		{
 			byteIO.ReadTagList(pTags, true);
+
+			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uAnswer:%s|Tags£º%s"),__FUNCTION__,__LINE__,uAnswer.ToHexString(),PrintKagTags(pTags).GetBuffer(0));  ///snow:add by snow
+
 		}
 		catch(...)
 		{

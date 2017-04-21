@@ -37,6 +37,7 @@ there client on the eMule forum..
 namespace Kademlia { class CKadTagValueString; }
 void KadTagStrMakeLower(Kademlia::CKadTagValueString &rstr);
 int KadTagStrCompareNoCase(LPCWSTR dst, LPCWSTR src);
+CString PrintKagTags(TagList * pTags); ///snow:add by snow
 
 namespace Kademlia
 {

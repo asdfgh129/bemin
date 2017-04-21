@@ -166,7 +166,7 @@ CSearch* CSearchManager::PrepareFindKeywords(LPCTSTR szKeyword, UINT uSearchTerm
 		// Inc our searchID
 		pSearch->m_uSearchID = ++m_uNextID;
 		// Insert search into map.
-		m_mapSearches[pSearch->m_uTarget] = pSearch; ///snow:索引为分割后的第一个关键字的Hash值
+		m_mapSearches[pSearch->m_uTarget] = pSearch; ///snow:添加到m_mapSearches中，索引为分割后的第一个关键字的Hash值
 		// Start search.
 		pSearch->Go();
 	}
@@ -323,7 +323,7 @@ void CSearchManager::GetWords(LPCTSTR sz, WordList *plistWords)
 		plistWords->pop_back();
 }
 
-///snow:在CKademlia::Process()中调用，遍历m_mapSearches，针对其中的每个CSearch对象，根据其SearchType，分别作预处理，主要是进行是否还在存活期判断，然后调用CSearch::JumpStart
+///snow:在CKademlia::Process()中调用，属于定时检查，遍历m_mapSearches，针对其中的每个CSearch对象，根据其SearchType，分别作预处理，主要是进行是否还在存活期判断，然后调用CSearch::JumpStart
 void CSearchManager::JumpStart()  ///snow:本函数主要进行存活期的判断
 {
 	// Find any searches that has stalled and jumpstart them.
@@ -353,7 +353,7 @@ void CSearchManager::JumpStart()  ///snow:本函数主要进行存活期的判断
 				}
 			case CSearch::KEYWORD:
 				{
-					if (itSearchMap->second->m_tCreated + SEARCHKEYWORD_LIFETIME < tNow)
+					if (itSearchMap->second->m_tCreated + SEARCHKEYWORD_LIFETIME < tNow)  ///snow:搜索超时了
 					{
 						// Tell GUI that search ended   ///snow:更新GUI界面
 						if (theApp.emuledlg && theApp.emuledlg->searchwnd)
@@ -363,7 +363,7 @@ void CSearchManager::JumpStart()  ///snow:本函数主要进行存活期的判断
 						//Don't do anything after this.. We are already at the next entry.
 						continue;
 					}
-					else if (itSearchMap->second->GetAnswers() >= SEARCHKEYWORD_TOTAL || itSearchMap->second->m_tCreated + SEARCHKEYWORD_LIFETIME - SEC(20) < tNow)   ///snow:离过期还有20秒，不再进行搜索，准备停止
+					else if (itSearchMap->second->GetAnswers() >= SEARCHKEYWORD_TOTAL || itSearchMap->second->m_tCreated + SEARCHKEYWORD_LIFETIME - SEC(20) < tNow)   ///snow:离过期还有20秒，或返回的信息超过300条，不再进行搜索，准备停止
 						itSearchMap->second->PrepareToStop();
 					else
 						itSearchMap->second->JumpStart();

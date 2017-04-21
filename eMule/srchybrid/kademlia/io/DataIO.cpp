@@ -581,3 +581,74 @@ int KadTagStrCompareNoCase(LPCWSTR dst, LPCWSTR src)
 	while (d != L'\0' && (d == s));
     return (int)(d - s);
 }
+///snow:<--------------------------------------------------------------------------------------------add by snow
+CString PrintKagTags(TagList * pTags)
+{
+	CKadTag* pTag;
+	char *pcName = NULL;
+	byte byType = 0;
+	uint16 uLenName = 0;
+	CString strOutput;
+	strOutput.Format(_T("Tags count:%i\n"),pTags->size());
+	for (TagList::const_iterator itTagList = pTags->begin(); itTagList != pTags->end(); ++itTagList)
+	{
+		pTag = *itTagList;
+		uint8 uType;
+		if (pTag->m_type == 0xFE)
+		{
+			if (pTag->GetInt() <= 0xFF)
+				uType = TAGTYPE_UINT8;
+			else if (pTag->GetInt() <= 0xFFFF)
+				uType = TAGTYPE_UINT16;
+			else if (pTag->GetInt() <= 0xFFFFFFFF)
+				uType = TAGTYPE_UINT32;
+			else
+				uType = TAGTYPE_UINT64;
+		}
+		else
+			uType = pTag->m_type;
+
+		//byType = ReadByte();
+		//uLenName = ReadUInt16();
+		pcName = new char[uLenName+1];
+		pcName[uLenName] = 0;
+		//ReadArray(pcName, uLenName);
+
+		switch (uType)
+		{
+		case TAGTYPE_HASH:
+			// Do NOT use this to transfer any tags for at least half a year!!
+			WriteHash(pTag->GetHash());
+			ASSERT(0);
+			break;
+		case TAGTYPE_STRING:
+			{
+				CUnicodeToUTF8 utf8(pTag->GetStr());
+				WriteUInt16((uint16)utf8.GetLength());
+				WriteArray(utf8, utf8.GetLength());
+				break;
+			}
+		case TAGTYPE_UINT64:
+			WriteUInt64(pTag->GetInt());
+			break;
+		case TAGTYPE_UINT32:
+			WriteUInt32((uint32)pTag->GetInt());
+			break;
+		case TAGTYPE_UINT16:
+			WriteUInt16((uint16)pTag->GetInt());
+			break;
+		case TAGTYPE_UINT8:
+			WriteUInt8((uint8)pTag->GetInt());
+			break;
+		case TAGTYPE_FLOAT32:
+			WriteFloat(pTag->GetFloat());
+			break;
+		case TAGTYPE_BSOB:
+			WriteBsob(pTag->GetBsob(), pTag->GetBsobSize());
+			break;
+		}
+	}
+		
+	return strOutput;
+}
+///snow:---------------------------------------------------------------------->add by snow

@@ -177,6 +177,7 @@ CSearch::~CSearch()
 }
 
 ///snow:三个地方发起调用：CSearchManager::StartSearch、PrepareFindKeywords、PrepareLookup
+///snow:查找距离目标最近的50个节点，添加到m_mapPossible和m_mapInUse中，然后取前三个联系人，添加到m_mapTried中，发起SendFindValue
 void CSearch::Go()
 {
 	// Start with a lot of possible contacts, this is a fallback in case search stalls due to dead contacts
@@ -185,6 +186,11 @@ void CSearch::Go()
 		CUInt128 uDistance(CKademlia::GetPrefs()->GetKadID());
 		uDistance.Xor(m_uTarget);
 		CKademlia::GetRoutingZone()->GetClosestTo(3, m_uTarget, uDistance, 50, &m_mapPossible, true, true);
+
+		///snow:m_uTarget值代表的是目标节点的KadID，uDistance.Xor(m_uTarget)的值代表的是本机到目标节点的距离
+		///snow:GetClosestTo()中参数uDistance则代表的是从RoutingZone顶点开始，根据uDistance的值按位索引查找叶子结点
+		///snow:m_uTarget参数则是为了计算查找出的待定节点与目标节点的距离，然后将距离值作为索引写入ContactMap
+		///ContactMap中的索引不是节点的KadID，而是到本机KadID的距离（uDistance）
 		
 		for (ContactMap::iterator itContactMap = m_mapPossible.begin(); itContactMap != m_mapPossible.end(); ++itContactMap)
 			///snow:将这些准备对其发起搜索的联系人添加到历史列表m_aHistoryEntries
@@ -219,7 +225,7 @@ void CSearch::Go()
 			// Send the KadID so other side can check if I think it has the right KadID. (Saftey net)
 			///snow:发送对方的KadID是为了让对方验证我们是否拥有正确的对方ID
 			// Send request
-			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|准备向IP:%s的节点发起SendFindVaule!"),__FUNCTION__,__LINE__,ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
+			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|准备向IP:%s，距离为：%s的节点(第%i个)发起SendFindVaule!"),__FUNCTION__,__LINE__,ipstr(ntohl(pContact->GetIPAddress())),binary(itContactMap2->first.Get32BitChunk(0)).GetBuffer(0),m_mapTried.size());  ///snow:add by snow
 			SendFindValue(pContact);   ///snow:向该联系人发送数据包
 			++itContactMap2;
 		}
@@ -295,6 +301,7 @@ void CSearch::JumpStart()
 		return;
 
 	// If we ran out of contacts, stop search.
+	///snow:两种情况m_mapPossible中的元素会减少，一是本函数后面的代码会删除m_mapPossible中的所有发起StorePacket的元素，二是ProcessResponse()中m_uType==NOTE时，会进行m_mapPossible.clear()
 	if (m_mapPossible.empty())
 	{
 		PrepareToStop();
@@ -308,15 +315,15 @@ void CSearch::JumpStart()
 	bool bLookupCloserNodes = false;
 
 	///snow:m_mapTried在三个地方添加值：Go()、JumpStart()、ProcessResponse()，
-	///snow:pRequestedMoreNodesContact在SendFindValue()参数bReAskMore=true时被赋值
-	if (pRequestedMoreNodesContact == NULL && GetRequestContactCount() == KADEMLIA_FIND_VALUE && m_mapTried.size() >= 3*KADEMLIA_FIND_VALUE)
+	///snow:pRequestedMoreNodesContact在SendFindValue()参数bReAskMore=true时被赋值，在本语句块后面的代码中以true调用，之后再执行本函数时，本语句块将不再被执行
+	if (pRequestedMoreNodesContact == NULL && GetRequestContactCount() == KADEMLIA_FIND_VALUE && m_mapTried.size() >= 3*KADEMLIA_FIND_VALUE)  ///snow:m_mapTried中有6个以上节点
 	{
 		///snow:对m_mapTried中的前两个联系人进行判断，他们是否有回应过请求
 		ContactMap::const_iterator itContactMap = m_mapTried.begin();
 		bLookupCloserNodes = true;
 		for (uint32 i = 0; i < KADEMLIA_FIND_VALUE; i++)
 		{
-			if (m_mapResponded.count(itContactMap->first) > 0)   ///snow:m_mapResponded在ProcessResponse()中被赋值，表示有联系人回应了
+			if (m_mapResponded.count(itContactMap->first) > 0)   ///snow:m_mapResponded在ProcessResponse()中被赋值，表示有联系人回应了，这里并未判断联系人是否回应了更近的联系人，未对bProvidedCloserContacts值进行检查
 			{
 				bLookupCloserNodes = false;
 				break;
@@ -325,15 +332,15 @@ void CSearch::JumpStart()
 		}
 		if (bLookupCloserNodes)  ///snow：在前两个联系人没有回应的情况下
 		{
-			while (itContactMap != m_mapTried.end())   ///snow:从第三个联系人开始，直到最后一个联系人，发送搜索请求，bReAskMore=true
+			while (itContactMap != m_mapTried.end())   ///snow:从m_mapTried的第三个联系人开始，直到最后一个联系人，向之前有过回应的节点发送搜索请求，bReAskMore=true
 			{
-				if (m_mapResponded.count(itContactMap->first) > 0)
+				if (m_mapResponded.count(itContactMap->first) > 0)   ///snow:没有回应过的不发
 				{
 					DEBUG_ONLY( DebugLogWarning(_T("Best KADEMLIA_FIND_VALUE nodes for LookUp (%s) were unreachable or dead, reasking closest for more"), GetGUIName()) );
 					
-					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i"),__FUNCTION__,__LINE__);  ///snow:add by snow
+					theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|准备向IP:%s，距离为：%s的节点(第%i个)发起SendFindVaule，bReAskMore=true!"),__FUNCTION__,__LINE__,ipstr(ntohl(itContactMap->second->GetIPAddress())),binary(itContactMap->first.Get32BitChunk(0)).GetBuffer(0),m_mapTried.size());  ///snow:add by snow
 					
-					SendFindValue(itContactMap->second, true);
+					SendFindValue(itContactMap->second, true);   ///snow:bReAskMore=true,pRequestedMoreNodesContact将被赋值=itContactMap->second
 					return;
 				}
 				itContactMap++;
@@ -345,9 +352,10 @@ void CSearch::JumpStart()
 	while(!m_mapPossible.empty())   ///snow:在两个地方被赋值，Go()中GetClosestTo()和ProcessResponse()中回应的联系人 m_mapPossible[uDistance] = pContact;
 
 	{
-		///snow:遍历m_mapPossible，从第一个开始，用后删除，直到整个列表为空
+		///snow:遍历m_mapPossible，从第一个开始，如果该联系人已在m_mapTried中，且已经回应过本机的请求，则发起StorePacket，然后删除该联系人，继续下一个；如果该联系人不在m_mapTried，则将其添加到m_mapTried中，发起SendFindVaule，跳出循环，等待下一次的定时执行
 		// Get a contact closest to our target.
 		CContact* pContact = m_mapPossible.begin()->second;  ///snow:从m_mapPossible中取出第一个联系人，发起StorePacket()后被删除
+		///snow:因为之前发起Go的时候，从m_mapPossible的开头发起，且未从m_mapPossible移除，所以m_mapPossible开头的联系人一般是在m_mapTried中的
 
 		// Have we already tried to contact this node.
 		if (m_mapTried.count(m_mapPossible.begin()->first) > 0)  ///snow:m_mapTried中已存在该联系人
@@ -355,7 +363,7 @@ void CSearch::JumpStart()
 			// Did we get a response from this node, if so, try to store or get info.
 			if(m_mapResponded.count(m_mapPossible.begin()->first) > 0)  ///snow:该联系人也已经回应了
 			{
-				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|pContact ClientID:%s|pContact IP:%s"),__FUNCTION__,__LINE__,pContact->GetClientID().ToHexString(),ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
+				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|准备向ClientID:%s，IP:%s的Contact发起StorePacket"),__FUNCTION__,__LINE__,pContact->GetClientID().ToHexString(),ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
 
 				StorePacket();   ///snow:名字上看是将Packet存储起来，实际是发送搜索请求数据包，跟SendFindValue()有什么区别?
 				///snow:SendFindValue()发送的opcode是KADEMLIA2_REQ，应该是搜索更接近的联系人
@@ -371,13 +379,14 @@ void CSearch::JumpStart()
 			m_mapTried[m_mapPossible.begin()->first] = pContact;
 			// Send the KadID so other side can check if I think it has the right KadID. (Saftey net)
 			// Send request
+			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|准备向IP:%s，距离为：%s的节点(第%i个)发起SendFindVaule!"),__FUNCTION__,__LINE__,ipstr(ntohl(pContact->GetIPAddress())),binary(m_mapPossible.begin()->first.Get32BitChunk(0)).GetBuffer(0),m_mapTried.size());  ///snow:add by snow
 			SendFindValue(pContact);
 			break;///snow:跳出循环，等下一次JumpStart()执行时，就会执行上面的if语句块
 		}
 	}
 }
 
-///snow:决定是SendFindValue还是JumpStart
+///snow:判断是否找到了更接近目标的节点并检查是否重复IP或同一个子网下IP，如果符合条件则添加到m_mapPossible、m_mapBest、m_mapTried和m_mapResponded中，并发起SendFindValue
 void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *plistResults)
 {
 	// Remember the contacts to be deleted when finished
@@ -465,6 +474,8 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 				CUInt128 uDistance(pContact->GetClientID());
 				uDistance.Xor(m_uTarget);
 
+				theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|回应的联系人的距离:%s，IP:%s"),__FUNCTION__,__LINE__,binary(uDistance.Get32BitChunk(0)).GetBuffer(0),ipstr(ntohl(pContact->GetIPAddress())));  ///snow:add by snow
+
 				if (uDistance < uFromDistance)   ///snow:找到更接近目标的联系人
 					bProvidedCloserContacts = true;
 
@@ -477,6 +488,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 				if (m_mapTried.count(uDistance) > 0)
 					continue;
 
+				///snow:检查是否重复IP或同一个子网下IP
 				// we only accept unique IPs in the answer, having multiple IDs pointing to one IP in the routing tables
 				// is no longer allowed since 0.49a anyway
 				if (mapReceivedIPs.count(pContact->GetIPAddress()) > 0){
@@ -513,13 +525,13 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 				if (uDistance < uFromDistance)
 				{
 					// The top APLPHA_QUERY of results are used to determine if we send a request.
-					bool bTop = false;
+					bool bTop = false;   ///snow:指示新找到的联系人是否被添加了
 					if (m_mapBest.size() < ALPHA_QUERY)   ///snow:m_mapBest列表中的联系人少于3个，则将新搜索到的联系人添加到m_mapBest中
 					{
 						bTop = true;
 						m_mapBest[uDistance] = pContact;
 					}
-					else
+					else  ///snow:m_mapBest已经有三个联系人了
 					{
 						ContactMap::iterator itContactMapBest = m_mapBest.end();
 						itContactMapBest--;
@@ -530,6 +542,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 							m_mapBest[uDistance] = pContact;
 							bTop = true;
 						}
+						///snow:如果新找到的联系人距离目标节点的距离没有更近，则bTop=false
 					}
 
 					if(bTop)   ///snow:新的联系人被添加了
@@ -539,6 +552,8 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 						m_mapTried[uDistance] = pContact;  ///snow:添加到m_mapTried
 						// Send the KadID so other side can check if I think it has the right KadID. (Saftey net)
 						// Send request
+
+						theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|准备向IP:%s，距离为：%s的节点(第%i个)发起SendFindVaule!"),__FUNCTION__,__LINE__,ipstr(ntohl(pContact->GetIPAddress())),binary(uDistance.Get32BitChunk(0)).GetBuffer(0),m_mapTried.size());  ///snow:add by snow
 						SendFindValue(pContact);
 					}
 				}///snow:end if (uDistance < uFromDistance)
@@ -546,7 +561,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, ContactList *pli
 
 			// Add to list of people who responded
 			///snow:添加到有回应联系人列表中
-			m_mapResponded[uFromDistance] = bProvidedCloserContacts;
+			m_mapResponded[uFromDistance] = bProvidedCloserContacts;   ///是否返回了更接近目标的联系人
 
 			// Complete node search, just increase the answers and update the GUI
 			if( m_uType == NODECOMPLETE || m_uType == NODESPECIAL)
@@ -577,7 +592,7 @@ void CSearch::StorePacket()
 	if (uFromDistance < m_uClosestDistantFound || m_uClosestDistantFound == 0)
 		m_uClosestDistantFound = uFromDistance;   ///snow:除了赋初值外，只在这里赋值，保留最近的距离
 	// Make sure this is a valid Node to store too.
-	///snow:回应的联系人不是LAnIP,距离的第一位是如果不是0，表示距离有点远
+	///snow:回应的联系人不是LAnIP,距离前7位如果不是0，表示距离有点远
 	if(uFromDistance.Get32BitChunk(0) > SEARCHTOLERANCE/*0x1 00 00 00*/ && !::IsLANIP(ntohl(pFromContact->GetIPAddress())))
 		return;
 	m_pLookupHistory->ContactAskedKeyword(pFromContact);  ///snow:主要是更新pFromContact的m_dwAskedSearchItemTime
@@ -587,7 +602,7 @@ void CSearch::StorePacket()
 	///snow:根据pFromContact的Version构造准备发送的信息包，调用UDPListener发送
 	switch(m_uType)
 	{
-		case FILE:
+		case FILE:   ///snow；CPartFile::Process()中发起
 			{
 				CSafeMemFile m_pfileSearchTerms;
 				m_pfileSearchTerms.WriteUInt128(&m_uTarget);
@@ -638,7 +653,7 @@ void CSearch::StorePacket()
 				theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 				break;
 			}
-		case KEYWORD:
+		case KEYWORD:   ///snow:CSearchManager::PrepareFindKeywords
 			{
 				//JOHNTODO -- We cannot precreate these packets as we do not know
 				// before hand if we are talking to Kad1.0 or Kad2.0..
@@ -658,6 +673,7 @@ void CSearch::StorePacket()
 						// Start position range (0x8000 to 0xFFFF)
 						m_pfileSearchTerms.WriteUInt16((uint16)0x8000);
 						m_pfileSearchTerms.Write(m_pucSearchTermsData, m_uSearchTermsDataSize);
+						///snow:例子：8F5CE24EAC96671915F7760AA24010C3(m_uTarget:visual) 0080(0x8000) 010B0073747564696F2032303135(m_pucSearchTermsData:01 0B00(11字节）Studio 2015 )
 					}
 				}
 				else
@@ -705,7 +721,7 @@ void CSearch::StorePacket()
 				theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 				break;
 			}
-		case NOTES:
+		case NOTES:   ///snow:CCommentDialog::OnBnClickedSearchKad()和CCommentDialogLst::OnBnClickedSearchKad()中发起
 			{
 				// Write complete packet
 				CSafeMemFile m_pfileSearchTerms;
@@ -754,7 +770,7 @@ void CSearch::StorePacket()
 				theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 				break;
 			}
-		case STOREFILE:   ///snow:将自己的资源发布到网络节点上
+		case STOREFILE:   ///snow:CSharedFileList::Publish()中发起，将自己的资源发布到网络节点上
 			{
 				// Try to store yourself as a source to a Node.
 				// As a safe guard, check to see if we already stored to the Max Nodes
@@ -866,7 +882,7 @@ void CSearch::StorePacket()
 					PrepareToStop();
 				break;
 			}
-		case STOREKEYWORD:
+		case STOREKEYWORD:   ///snow:CSharedFileList::Publish()中发起
 			{
 				// Try to store keywords to a Node.
 				// As a safe guard, check to see if we already stored to the Max Nodes
@@ -945,7 +961,7 @@ void CSearch::StorePacket()
 				theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 				break;
 			}
-		case STORENOTES:
+		case STORENOTES:    ///snow:CSharedFileList::Publish()中发起
 			{
 				// Find file we are storing info about.
 				uchar ucharFileid[16];
@@ -1003,7 +1019,7 @@ void CSearch::StorePacket()
 					PrepareToStop();
 				break;
 			}
-		case FINDBUDDY:
+		case FINDBUDDY:   ///snow:CClientList::Process()中发起
 			{
 				// Send a buddy request as we are firewalled.
 				// As a safe guard, check to see if we already requested the Max Nodes
@@ -1041,7 +1057,7 @@ void CSearch::StorePacket()
 				theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 				break;
 			}
-		case FINDSOURCE:
+		case FINDSOURCE:   ///snow:CUpDownClient::TryToConnect()中发起
 			{
 				// Try to find if this is a buddy to someone we want to contact.
 				// As a safe guard, check to see if we already requested the Max Nodes
@@ -1079,7 +1095,7 @@ void CSearch::StorePacket()
 				theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 				break;
 			}
-		case NODESPECIAL:
+		case NODESPECIAL:   ///snow:CSearchManager::FindNodeSpecial()中发起
 			{
 				// we are looking for the IP of a given nodeid, so we just check if we 0 distance and if so, report the
 				// tip to the requester
@@ -1494,6 +1510,7 @@ void CSearch::ProcessResultKeyword(const CUInt128 &uAnswer, TagList *plistInfo, 
 		    3, TAG_SOURCES, uAvailability);
 }
 
+///snow:构造查找更近的目标节点信息包并发送
 void CSearch::SendFindValue(CContact* pContact, bool bReAskMore)
 {
 	// Found a Node that we think has contacts closer to our target.

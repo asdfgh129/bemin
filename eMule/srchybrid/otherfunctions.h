@@ -437,6 +437,8 @@ void ByteToHexStr(const unsigned char* source, char* dest, int sourceLen);
 CString ByteToHexStr(const unsigned char* source, int sourceLen);
 void Byte2HexStr( const char *sSrc,  char *sDest, int nSrcLen );
 void HexStrToByte(const char* source, unsigned char* dest, int sourceLen);
+CString binary(UINT32 int32);
+CString FormatTime(time_t time1);
 CString TrimZero(const unsigned char* source,int sourceLen);
 
 CString GetProtocolStr(int protocol);

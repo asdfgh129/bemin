@@ -4142,6 +4142,49 @@ void HexStrToByte(const char* source, unsigned char* dest, int sourceLen)
     return ;
 }
 
+CString FormatTime(time_t time1)
+{
+	struct tm tm1;
+
+
+#ifdef WIN32
+	tm1 = *localtime(&time1);
+#else
+	localtime_r(&time1, &tm1 );
+#endif
+	CString strTime;
+	strTime.Format(_T("%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d"),
+		tm1.tm_year+1900, tm1.tm_mon+1, tm1.tm_mday,
+		tm1.tm_hour, tm1.tm_min,tm1.tm_sec);
+	return strTime;
+}
+
+CString binary(UINT32 int32)
+{
+//	    std::string result;
+//    while (number>=1)
+//    {
+//        if (number % 2 == 0)
+//            result.append("0");
+//        else
+//            result.append("1");
+//// (number % 2 == 0) ? result.append("0") : result.append("1");
+////result += (number % 2 == 0) ? "0" : "1";
+//        number = number >> 1;
+//    }
+//    
+//    std::reverse(std::begin(result), std::end(result));
+//	CString str(result);
+//	return str;
+
+	char *str =new char[33];
+	itoa(int32,str,2);
+	CString binStr(str);
+	delete str;
+	return binStr;
+
+}
+
 CString TrimZero(const unsigned char* source,int sourceLen)
 {
 

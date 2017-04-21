@@ -236,6 +236,7 @@ CContact *CRoutingBin::GetOldest()
 }
 
 ///snow:最近的联系人总是保存在最左边的子树，当到达叶子结点时，最近的联系人就是本结点中存储的联系人了
+///snow:m_uTarget参数则是为了计算查找出的待定节点与目标节点的距离，然后将距离值作为索引写入ContactMap
 void CRoutingBin::GetClosestTo(uint32 uMaxType, const CUInt128 &uTarget, uint32 uMaxRequired, ContactMap *pmapResult, bool bEmptyFirst, bool bInUse)
 {
 	// Empty list if requested.    ///snow:是否先清空目标结果列表
