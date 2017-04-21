@@ -970,8 +970,8 @@ SSearchTerm* CKademliaUDPListener::CreateSearchExpressionTree(CSafeMemFile& file
 	}
 	iLevel++;
 
-	uint8 uOp = fileIO.ReadUInt8();
-	if (uOp == 0x00)
+	uint8 uOp = fileIO.ReadUInt8();   ///snow:第一个字节是type:boolean、string、Meta tag
+	if (uOp == 0x00)   ///snow:逻辑符
 	{
 		uint8 uBoolOp = fileIO.ReadUInt8();
 		if (uBoolOp == 0x00) // AND
@@ -1147,19 +1147,19 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ (const byte *pbyPack
 {
 	CSafeMemFile fileIO( pbyPacketData, uLenPacket);
 	CUInt128 uTarget;
-	fileIO.ReadUInt128(&uTarget);
+	fileIO.ReadUInt128(&uTarget);  ///snow:第一关键字的MD4 Hash
 	uint16 uStartPosition = fileIO.ReadUInt16();
-	bool uRestrictive = ((uStartPosition & 0x8000) == 0x8000); ///snow:第1位是标志位
-	uStartPosition = uStartPosition & 0x7FFF;  ///snow:后15位是真正的值
+	bool uRestrictive = ((uStartPosition & 0x8000) == 0x8000); ///snow:第1位是标志位，指示搜索关键字第一个空格后是否有关键字
+	uStartPosition = uStartPosition & 0x7FFF;  ///snow:后15位是真正的值  ///snow:实际没有启用start position？参见storepacket()
 	SSearchTerm* pSearchTerms = NULL;
-	if (uRestrictive)
+	if (uRestrictive)    ///snow:m_uSearchTermsDataSize!=0,m_pucSearchTermsData中有内容
 	{
 		try    ///snow:构造搜索表达式
 		{
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)
 			s_pstrDbgSearchExpr = (thePrefs.GetDebugServerSearchesLevel() > 0) ? new CString : NULL;
 #endif
-			pSearchTerms = CreateSearchExpressionTree(fileIO, 0);
+			pSearchTerms = CreateSearchExpressionTree(fileIO, 0);   ///snow:读取m_pucSearchTermsData
 			if (s_pstrDbgSearchExpr)
 			{
 				Debug(_T("KadSearchTerm=%s\n"), *s_pstrDbgSearchExpr);

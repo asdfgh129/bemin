@@ -710,7 +710,7 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 		return;
 	}
 
-	///snow:先从m_mapKeyword中查找是否存在与uKeyID值相同的条目，如果找到，则遍历该Key对应的mapSource，针对每条mapSource条目，再遍历mapSource中的各个Entry，在Entry中搜索是否存在满足符合搜索表达式的SourceID
+	///snow:先从m_mapKeyword中查找是否存在与uKeyID值相同的条目，如果找到，则遍历该Key对应的mapSource，针对每条mapSource条目，再遍历mapSource中的各个Entry，在Entry中搜索是否存在满足符合搜索表达式的SourceID；如果没找到，执行clean()。
 	KeyHash* pCurrKeyHash;
 	if(m_mapKeyword.Lookup(CCKey(uKeyID.GetData()), pCurrKeyHash))  ///snow:存在对应的Key条目
 	{
@@ -807,7 +807,7 @@ void CIndexed::SendValidKeywordResult(const CUInt128& uKeyID, const SSearchTerm*
 		// LOGTODO: Remove Log
 		//DebugLog(_T("Kad Keyword search Result Request: Send %u trusted and %u untrusted results"), dbgResultsTrusted, dbgResultsUntrusted);
 
-		if(iUnsentCount > 0)   ///有未发送的packet，字节数还未达到最大帧字节数，但已经没有搜索结果了
+		if(iUnsentCount > 0)   ///有未发送的packet，最后一个包：字节数还未达到最大帧字节数，但已经没有搜索结果了
 		{
 			uint32 uLen = sizeof(byPacket)-byIO.GetAvailable();
 			PokeUInt16(pbyCountPos, (uint16)iUnsentCount);

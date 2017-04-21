@@ -671,9 +671,10 @@ void CSearch::StorePacket()
 					{
 						// JOHNTODO - Need to add ability to change start position.
 						// Start position range (0x8000 to 0xFFFF)
+						///snow:实际没有启用start position？
 						m_pfileSearchTerms.WriteUInt16((uint16)0x8000);
 						m_pfileSearchTerms.Write(m_pucSearchTermsData, m_uSearchTermsDataSize);
-						///snow:例子：8F5CE24EAC96671915F7760AA24010C3(m_uTarget:visual) 0080(0x8000) 010B0073747564696F2032303135(m_pucSearchTermsData:01 0B00(11字节）Studio 2015 )
+						///snow:例子：8F5CE24EAC96671915F7760AA24010C3(m_uTarget:visual) 0080(0x8000) 010B0073747564696F2032303135(m_pucSearchTermsData:01(String) 0B00(11字节）Studio 2015 )
 					}
 				}
 				else
