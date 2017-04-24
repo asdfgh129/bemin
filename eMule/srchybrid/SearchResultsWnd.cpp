@@ -1365,7 +1365,7 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams* pParams)
 	if (pParams->eType == SearchTypeEd2kGlobal && theApp.serverconnect->IsUDPSocketAvailable())    ///snow:全局服务器搜索
 	{
 		// set timeout timer for local server
-	m_uTimerLocalServer = SetTimer(TimerServerTimeout, 50000, NULL);  ///snow:每5秒触发一次WM_TIMER，m_uTimerLocalServer=1，OnTimer()被调用
+		m_uTimerLocalServer = SetTimer(TimerServerTimeout, 50000, NULL);  ///snow:每5秒触发一次WM_TIMER，m_uTimerLocalServer=1，OnTimer()被调用
 
 		if (thePrefs.GetUseServerPriorities())
 			theApp.serverlist->ResetSearchServerPos();
