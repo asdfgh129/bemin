@@ -561,6 +561,9 @@ void CSearchResultsWnd::DownloadSelected()
 	DownloadSelected(thePrefs.AddNewFilesPaused());
 }
 
+
+
+///snow:下载选择的文件:参数bPaused为thePrefs.AddNewFilesPaused()，在选项-->Files-->Add new file to download in pause mode中选定，默认为false
 void CSearchResultsWnd::DownloadSelected(bool bPaused)
 {
 	CWaitCursor curWait;
@@ -574,13 +577,13 @@ void CSearchResultsWnd::DownloadSelected(bool bPaused)
 			const CSearchFile* sel_file = (CSearchFile*)searchlistctrl.GetItemData(iIndex);
 
 			// get parent
-			const CSearchFile* parent;
+			const CSearchFile* parent;   ///snow:下载的文件有可能是同一文件但不同文件名，所以有一个相同的Hash，这些文件就组成一个组，有一个共同的父键
 			if (sel_file->GetListParent() != NULL)
 				parent = sel_file->GetListParent();
 			else
 				parent = sel_file;
 
-			if (parent->IsComplete() == 0 && parent->GetSourceCount() >= 50)
+			if (parent->IsComplete() == 0 && parent->GetSourceCount() >= 50)   ///snow:没有完整的源且不完整源大于50
 			{
 				CString strMsg;
 				strMsg.Format(GetResString(IDS_ASKDLINCOMPLETE), sel_file->GetFileName());
@@ -592,7 +595,7 @@ void CSearchResultsWnd::DownloadSelected(bool bPaused)
 			// create new DL-queue entry with all properties of parent (e.g. already received sources!)
 			// but with the filename of the selected listview item.
 			CSearchFile tempFile(parent);
-			tempFile.SetFileName(sel_file->GetFileName());
+			tempFile.SetFileName(sel_file->GetFileName());   ///snow:因为不同文件名，所以以选择的文件名替换掉组名
 			tempFile.SetStrTagValue(FT_FILENAME, sel_file->GetFileName());
 			theApp.downloadqueue->AddSearchToDownload(&tempFile, bPaused, GetSelectedCat());
 

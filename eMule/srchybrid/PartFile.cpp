@@ -83,6 +83,7 @@ CPartFile::CPartFile(UINT ucat)
 	m_category=ucat;
 }
 
+///snow:初始化m_kadNotes、m_FileIdentifier（SetMD4Hash、SetAICHHash）、m_pAICHRecoveryHashSet、Tags、m_category，然后CreatePartFile
 CPartFile::CPartFile(CSearchFile* searchresult, UINT cat)
 {
 	Init();
@@ -425,6 +426,7 @@ void CPartFile::CreatePartFile(UINT cat)
 		return;
 	}
 
+	///snow:决定PartFile的路径和文件名，根据路径里的文件数，决定文件名，文件名为3位序数，如001、002等，以及PartMet
 	// decide which tempfolder to use
 	CString tempdirtouse=theApp.downloadqueue->GetOptimalTempDir(cat,GetFileSize());
 
@@ -443,11 +445,13 @@ void CPartFile::CreatePartFile(UINT cat)
 	CTag* partnametag = new CTag(FT_PARTFILENAME,RemoveFileExtension(m_partmetfilename));
 	taglist.Add(partnametag);
 	
+	///snow:Gap_Struct包括两个成员:start和end
 	Gap_Struct* gap = new Gap_Struct;
 	gap->start = 0;
 	gap->end = m_nFileSize - (uint64)1;
 	gaplist.AddTail(gap);
 
+	///snow:新建Part文件
 	CString partfull(RemoveFileExtension(m_fullname));
 	SetFilePath(partfull);
 	if (!m_hpartfile.Open(partfull,CFile::modeCreate|CFile::modeReadWrite|CFile::shareDenyWrite|CFile::osSequentialScan)){
@@ -455,7 +459,10 @@ void CPartFile::CreatePartFile(UINT cat)
 		SetStatus(PS_ERROR);
 	}
 	else{
-		if (thePrefs.GetSparsePartFiles()){
+		if (thePrefs.GetSparsePartFiles()){   ///snow:sparse:稀疏的，WIndows VISTA的一种文件格式WINDOWS中的稀疏文件
+
+		/*稀疏文件(Sparse File), 指的是文件中出现大量的0数据，这些数据对我们用处不大，但是却一样的占用我们的空间，针对此，WINNT 3.51中的NTFS文件系统对此进行了优化，那些无用的0字节被用一定的算法压缩起来，使得这些0字节不再占用那么多的空间，在你声明一个很大的稀疏文件时(例如 100GB)，这个文件实际上并不需要占用这么大的空间，因为里面大都是无用的0数据，那么，NTFS对稀疏文件的压缩算法可以释放这些无用的0字节空间，可以说这是对磁盘占用空间以及效率的一种优化，记住，FAT32上并不支持稀疏文件的压缩（至少我在自己机子上测试得出如此结论）。*/
+
 			DWORD dwReturnedBytes = 0;
 			if (!DeviceIoControl(m_hpartfile.m_hFile, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &dwReturnedBytes, NULL))
 			{

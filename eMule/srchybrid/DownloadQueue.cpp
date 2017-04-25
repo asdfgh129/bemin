@@ -163,12 +163,13 @@ CDownloadQueue::~CDownloadQueue(){
 	m_srcwnd.DestroyWindow(); // just to avoid a MFC warning
 }
 
+///snow:参数paused同CSearchResultsWnd::DownloadSelected()，参数cat为the currently selected tab in the tab control.搜索Tab页的索引，在CPartFile构造函数中使用
 void CDownloadQueue::AddSearchToDownload(CSearchFile* toadd, uint8 paused, int cat)
 {
-	if (toadd->GetFileSize()== (uint64)0 || IsFileExisting(toadd->GetFileHash()))
+	if (toadd->GetFileSize()== (uint64)0 || IsFileExisting(toadd->GetFileHash()))   ///snow:文件长度为0或已存在下载
 		return;
 
-	if (toadd->GetFileSize() > OLD_MAX_EMULE_FILE_SIZE && !thePrefs.CanFSHandleLargeFiles(cat)){
+	if (toadd->GetFileSize() > OLD_MAX_EMULE_FILE_SIZE && !thePrefs.CanFSHandleLargeFiles(cat)){   ///snow:文件大于4G，但存储下载文件目录的卷是FAT文件格式
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FSCANTHANDLEFILE));
 		return;
 	}
@@ -179,10 +180,11 @@ void CDownloadQueue::AddSearchToDownload(CSearchFile* toadd, uint8 paused, int c
 		return;
 	}
 
-	if (paused == 2)
+	if (paused == 2)   ///snow:缺省默认值为2
 		paused = (uint8)thePrefs.AddNewFilesPaused();
 	AddDownload(newfile, (paused==1));
 
+	///snow:添加Source，问题是什么时候用？
 	// If the search result is from OP_GLOBSEARCHRES there may also be a source
 	if (toadd->GetClientID() && toadd->GetClientPort()){
 		CSafeMemFile sources(1+4+2);
@@ -326,6 +328,7 @@ void CDownloadQueue::AddToResolved( CPartFile* pFile, SUnresolvedHostname* pUH )
 		m_srcwnd.AddToResolve( pFile->GetFileHash(), pUH->strHostname, pUH->nPort, pUH->strURL);
 }
 
+///snow:添加到filelist，调用CDownloadListCtrl::AddFile()
 void CDownloadQueue::AddDownload(CPartFile* newfile,bool paused) {
 	// Barry - Add in paused mode if required
 	if (paused)

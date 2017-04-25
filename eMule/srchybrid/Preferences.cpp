@@ -2869,7 +2869,7 @@ bool CPreferences::IsDynUpEnabled()	{
 bool CPreferences::CanFSHandleLargeFiles(int nForCat)	{
 	bool bResult = false;
 	for (int i = 0; i != tempdir.GetCount(); i++){
-		if (!IsFileOnFATVolume(tempdir.GetAt(i))){
+		if (!IsFileOnFATVolume(tempdir.GetAt(i))){   ///snow:FAT文件格式
 			bResult = true;
 			break;
 		}
