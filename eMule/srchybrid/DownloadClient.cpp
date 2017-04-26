@@ -1414,18 +1414,18 @@ int CUpDownClient::unzip(Pending_Block_Struct* block, const BYTE* zipped, uint32
 
 uint32 CUpDownClient::CalculateDownloadRate(){
 	// Patch By BadWolf - Accurate datarate Calculation
-	TransferredData newitem = {m_nDownDataRateMS,::GetTickCount()};
+	TransferredData newitem = {m_nDownDataRateMS,::GetTickCount()};   ///snow:ProcessBlockPacket()中m_nDownDataRateMS += uTransferredFileDataSize
 	m_AvarageDDR_list.AddTail(newitem);
 	m_nSumForAvgDownDataRate += m_nDownDataRateMS;
-	m_nDownDataRateMS = 0;
+	m_nDownDataRateMS = 0;  ///snow:数据已添加到m_nSumForAvgDownDataRate中，置0
 
-	while (m_AvarageDDR_list.GetCount()>500)
+	while (m_AvarageDDR_list.GetCount()>500)   ///snow:超过500个了，把最后一个去掉
 		m_nSumForAvgDownDataRate -= m_AvarageDDR_list.RemoveHead().datalen;
 	
 	if(m_AvarageDDR_list.GetCount() > 1){
-		DWORD dwDuration = m_AvarageDDR_list.GetTail().timestamp - m_AvarageDDR_list.GetHead().timestamp;
+		DWORD dwDuration = m_AvarageDDR_list.GetTail().timestamp - m_AvarageDDR_list.GetHead().timestamp;   ///snow: 经历的时间
 		if (dwDuration)
-			m_nDownDatarate = (UINT)(1000U * (ULONGLONG)m_nSumForAvgDownDataRate / dwDuration);
+			m_nDownDatarate = (UINT)(1000U * (ULONGLONG)m_nSumForAvgDownDataRate / dwDuration);   ///snow:速率
 	}
 	else
 		m_nDownDatarate = 0;

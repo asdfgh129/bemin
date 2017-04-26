@@ -902,6 +902,7 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 			20); // PENDING: Hard coded min pLowestPingAllowed
 		// ZZ:UploadSpeedSense <--
 
+		///snow:处理上传下载队列
         theApp.uploadqueue->Process();
 		theApp.downloadqueue->Process();
 		if (thePrefs.ShowOverhead()){

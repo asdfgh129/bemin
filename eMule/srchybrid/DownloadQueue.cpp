@@ -220,6 +220,8 @@ void CDownloadQueue::AddSearchToDownload(CSearchFile* toadd, uint8 paused, int c
 	}
 }
 
+
+///snow:CCollectionViewDialog::DownloadSelected()中调用
 void CDownloadQueue::AddSearchToDownload(CString link, uint8 paused, int cat)
 {
 	CPartFile* newfile = new CPartFile(link, cat);
@@ -367,10 +369,12 @@ bool CDownloadQueue::IsFileExisting(const uchar* fileid, bool bLogWarnings) cons
 	return false;
 }
 
+///snow:CUploadQueue::UploadTimer()中调用
 void CDownloadQueue::Process(){
 	
 	ProcessLocalRequests(); // send src requests to local server
 
+	///snow:选择下载速度，50-200之间
 	uint32 downspeed = 0;
     uint64 maxDownload = thePrefs.GetMaxDownloadInBytesPerSec(true);
 	if (maxDownload != UNLIMITED*1024 && datarate > 1500){
@@ -381,7 +385,8 @@ void CDownloadQueue::Process(){
 			downspeed = 200;
 	}
 
-	while(avarage_dr_list.GetCount()>0 && (GetTickCount() - avarage_dr_list.GetHead().timestamp > 10*1000) )
+	///snow:avarage_dr_list起什么作用呢？一个CList<TransferredData>，包含两个成员变量：datalen和timestamp，计算平均下载速度
+	while(avarage_dr_list.GetCount()>0 && (GetTickCount() - avarage_dr_list.GetHead().timestamp > 10*1000) ) ///snow:自开始计时超过10秒了，把10秒前的统计数据去除
 		m_datarateMS-=avarage_dr_list.RemoveHead().datalen;
 	
 	if (avarage_dr_list.GetCount()>1){
@@ -391,12 +396,13 @@ void CDownloadQueue::Process(){
 	}
 
 	uint32 datarateX=0;
-	udcounter++;
+	udcounter++;   ///snow:它又起什么作用呢？定时器每100ms调用Process()一次，udcounter++，udcounter应该是计时用，每0.5秒进行服务器列表统计，每一秒发送一个UDPPakcet
 
 	theStats.m_fGlobalDone = 0;
 	theStats.m_fGlobalSize = 0;
 	theStats.m_dwOverallStatus=0;
 	//filelist is already sorted by prio, therefore I removed all the extra loops..
+	///snow:遍历filelist，调用CPartFile::Process()
 	for (POSITION pos = filelist.GetHeadPosition();pos != 0;){
 		CPartFile* cur_file = filelist.GetNext(pos);
 
@@ -404,13 +410,13 @@ void CDownloadQueue::Process(){
 		theStats.m_fGlobalDone += (uint64)cur_file->GetCompletedSize();
 		theStats.m_fGlobalSize += (uint64)cur_file->GetFileSize();
 		
-		if (cur_file->GetTransferringSrcCount()>0)
+		if (cur_file->GetTransferringSrcCount()>0)   ///snow:m_anStates[DS_DOWNLOADING]
 			theStats.m_dwOverallStatus  |= STATE_DOWNLOADING;
 		if (cur_file->GetStatus()==PS_ERROR)
 			theStats.m_dwOverallStatus  |= STATE_ERROROUS;
 
 
-		if (cur_file->GetStatus() == PS_READY || cur_file->GetStatus() == PS_EMPTY){
+		if (cur_file->GetStatus() == PS_READY || cur_file->GetStatus() == PS_EMPTY){   ///snow:什么时候赋值呢？CPartFile::Init()中置为PS_EMPTY
 			datarateX += cur_file->Process(downspeed, udcounter);
 		}
 		else{
@@ -423,7 +429,7 @@ void CDownloadQueue::Process(){
 	avarage_dr_list.AddTail(newitem);
 	m_datarateMS+=datarateX;
 
-	if (udcounter == 5){
+	if (udcounter == 5){   ///snow:定时器调用Process()5次了
 		if (theApp.serverconnect->IsUDPSocketAvailable()){
 		    if((!lastudpstattime) || (::GetTickCount() - lastudpstattime) > UDPSERVERSTATTIME){
 			    lastudpstattime = ::GetTickCount();
@@ -432,7 +438,7 @@ void CDownloadQueue::Process(){
 	    }
 	}
 
-	if (udcounter == 10){
+	if (udcounter == 10){  ///snow:定时器调用Process()10次了，重新开始计时
 		udcounter = 0;
 		if (theApp.serverconnect->IsUDPSocketAvailable()){
 			if ((!lastudpsearchtime) || (::GetTickCount() - lastudpsearchtime) > UDPSERVERREASKTIME)

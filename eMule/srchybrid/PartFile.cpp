@@ -459,7 +459,7 @@ void CPartFile::CreatePartFile(UINT cat)
 		SetStatus(PS_ERROR);
 	}
 	else{
-		if (thePrefs.GetSparsePartFiles()){   ///snow:sparse:稀疏的，WIndows VISTA的一种文件格式WINDOWS中的稀疏文件
+		if (thePrefs.GetSparsePartFiles()){   ///snow:sparse:稀疏的，NTFS的一种文件格式WINDOWS中的稀疏文件
 
 		/*稀疏文件(Sparse File), 指的是文件中出现大量的0数据，这些数据对我们用处不大，但是却一样的占用我们的空间，针对此，WINNT 3.51中的NTFS文件系统对此进行了优化，那些无用的0字节被用一定的算法压缩起来，使得这些0字节不再占用那么多的空间，在你声明一个很大的稀疏文件时(例如 100GB)，这个文件实际上并不需要占用这么大的空间，因为里面大都是无用的0数据，那么，NTFS对稀疏文件的压缩算法可以释放这些无用的0字节空间，可以说这是对磁盘占用空间以及效率的一种优化，记住，FAT32上并不支持稀疏文件的压缩（至少我在自己机子上测试得出如此结论）。*/
 
@@ -2494,6 +2494,7 @@ EPartFileStatus CPartFile::GetStatus(bool ignorepause) const
 		return PS_INSUFFICIENT;
 }
 
+///snow:CUpDownClient::SetDownloadState()中调用
 void CPartFile::AddDownloadingSource(CUpDownClient* client){
 	POSITION pos = m_downloadingSourceList.Find(client); // to be sure
 	if(pos == NULL){
@@ -2510,12 +2511,13 @@ void CPartFile::RemoveDownloadingSource(CUpDownClient* client){
 	}
 }
 
+///snow:CDownloadQueue::Process()中调用，参数reducedownload：下载速度控制，参数icounter:0-10之间，表示是计时开始后第几次调用，每100ms调用一次
 uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 {
 	if (thePrefs.m_iDbgHeap >= 2)
 		ASSERT_VALID(this);
 
-	UINT nOldTransSourceCount = GetSrcStatisticsValue(DS_DOWNLOADING);
+	UINT nOldTransSourceCount = GetSrcStatisticsValue(DS_DOWNLOADING);   ///snow:nOldTransSourceCount=m_anStates[0]
 	DWORD dwCurTick = ::GetTickCount();
 	if (dwCurTick < m_nLastBufferFlushTime)
 	{
@@ -2528,7 +2530,7 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 	{
 		// Avoid flushing while copying preview file
 		if (!m_bPreviewing)
-			FlushBuffer();
+			FlushBuffer();   ///snow:SetStatus(PS_READY)
 	}
 
 	datarate = 0;
@@ -2537,20 +2539,20 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 	if(icounter < 10)
 	{
 		uint32 cur_datarate;
-		for(POSITION pos = m_downloadingSourceList.GetHeadPosition();pos!=0;)
+		for(POSITION pos = m_downloadingSourceList.GetHeadPosition();pos!=0;)    ///snow:AddDownloadingSource()中添加到队尾
 		{
 			CUpDownClient* cur_src = m_downloadingSourceList.GetNext(pos);
 			if (thePrefs.m_iDbgHeap >= 2)
 				ASSERT_VALID( cur_src );
-			if(cur_src && cur_src->GetDownloadState() == DS_DOWNLOADING)
+			if(cur_src && cur_src->GetDownloadState() == DS_DOWNLOADING)   ///snow:正从该客户端处下载
 			{
 				ASSERT( cur_src->socket );
 				if (cur_src->socket)
 				{
 					cur_src->CheckDownloadTimeout();
-					cur_datarate = cur_src->CalculateDownloadRate();
+					cur_datarate = cur_src->CalculateDownloadRate();  ///snow:计算从该客户端下载的速度
 					datarate+=cur_datarate;
-					if(reducedownload)
+					if(reducedownload)  ///snow:下载速度，控制下载速度
 					{
 						uint32 limit = reducedownload*cur_datarate/1000;
 						if(limit<1000 && reducedownload == 200)
@@ -2608,13 +2610,13 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 			{
 				net_stats[0]++;
 				if(cur_src->GetKadPort())
-					net_stats[2]++;
+					net_stats[2]++;   ///snow:双网都连通
 			}
 			if (cur_src->GetKadPort())
-				net_stats[1]++;
+				net_stats[1]++;    ///snow:Kad连通
 
 			ASSERT( nCountForState < sizeof(m_anStates)/sizeof(m_anStates[0]) );
-			m_anStates[nCountForState]++;
+			m_anStates[nCountForState]++;    、///snow:总共15种状态
 
 			switch (cur_src->GetDownloadState())
 			{
