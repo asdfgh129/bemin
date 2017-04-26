@@ -554,7 +554,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE* packet, uint32 size, UINT opcod
 					client->ProcessFileStatus(false, &data, file);
 					break;
 				}
-				case OP_STARTUPLOADREQ:
+				case OP_STARTUPLOADREQ:   ////snow:CUpDownClient::SendStartupLoadReq()发出
 				{
 					if (thePrefs.GetDebugClientTCPLevel() > 0)
 						DebugRecv("OP_StartUpLoadReq", client, (size >= 16) ? packet : NULL);
@@ -571,7 +571,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE* packet, uint32 size, UINT opcod
 								client->SetCommentDirty();
 							client->SetUploadFileID(reqfile);
 							client->SendCommentInfo(reqfile);
-							theApp.uploadqueue->AddClientToQueue(client);
+							theApp.uploadqueue->AddClientToQueue(client);///snow:发出OP_ACCEPTUPLOADREQ
 						}
 						else
 							client->CheckFailedFileIdReqs(packet);
@@ -586,7 +586,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE* packet, uint32 size, UINT opcod
 					client->ProcessEdonkeyQueueRank(packet, size);
 					break;
 				}
-				case OP_ACCEPTUPLOADREQ:
+				case OP_ACCEPTUPLOADREQ:   ///snow:OP_STARTUOLOADREQ的回应，AddClientToQueue()发出
 				{
 					if (thePrefs.GetDebugClientTCPLevel() > 0){
 						DebugRecv("OP_AcceptUploadReq", client, (size >= 16) ? packet : NULL);

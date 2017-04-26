@@ -1737,7 +1737,7 @@ void CUpDownClient::ConnectionEstablished()
 		case DS_WAITCALLBACKKAD:
 			m_bReaskPending = false;
 			SetDownloadState(DS_CONNECTED);
-			SendFileRequest();
+			SendFileRequest(); ///snow:发出文件名请求OP_REQUESTFILENAME-->OP_REQFILENAMEANSWER-->ProcessFileInfo()-->SendHashSetRequest()\SendStartupLoadReq-->OP_HASHSETREQUEST\OP_STARTUPLOADREQ-->AddClientToQueue()->OP_ACCEPTUPLOADREQ-->ProcessAcceptUpload()-->StartDownload()-->SetDownloadState(DS_DOWNLOADING),SendBlockRequests()
 			break;
 	}
 

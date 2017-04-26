@@ -213,6 +213,7 @@ bool CUpDownClient::Compare(const CUpDownClient* tocomp, bool bIgnoreUserhash) c
 // Return bool is not if you asked or not..
 // false = Client was deleted!
 // true = client was not deleted!
+///snow:CPartFile::Process()中调用
 bool CUpDownClient::AskForDownload()
 {
 
@@ -481,6 +482,7 @@ void CUpDownClient::SendFileRequest()
     SetLastAskedTime();
 }
 
+///snow:ProcessFileInfo()、ProcessFileStatus()、ProcessHashSet()中调用
 void CUpDownClient::SendStartupLoadReq()
 {
 	if (socket==NULL || reqfile==NULL)
@@ -500,7 +502,7 @@ void CUpDownClient::SendStartupLoadReq()
 	SetDownloadState(DS_ONQUEUE);
 	SendPacket(packet, true);
 }
-
+///snow:CClientReqSocket::ProcessPacket():case OP_REQFILENAMEANSWER、CClientReqSocket::ProcessExtPacket():case OP_MULTIPACKETANSWER_EXT2-->OP_REQFILENAMEANSWER
 void CUpDownClient::ProcessFileInfo(CSafeMemFile* data, CPartFile* file)
 {
 	if (file==NULL)
@@ -803,6 +805,8 @@ void CUpDownClient::SetDownloadState(EDownloadState nNewState, LPCTSTR pszReason
 	}
 }
 
+
+///snow:CClientReqSocket::ProcessPacket():case OP_HASHSETANSWER、CClientReqSocket::ProcessExtPacket():case OP_HASHSETANSWER2
 void CUpDownClient::ProcessHashSet(const uchar* packet, uint32 size, bool bFileIdentifiers)
 {
 	CSafeMemFile data(packet, size);
@@ -2170,6 +2174,7 @@ void CUpDownClient::SetRequestFile(CPartFile* pReqFile)
 	reqfile = pReqFile;
 }
 
+//snow:CClientReqSocket::ProcessPacket() case OP_ACCEPTUPLOADREQ:
 void CUpDownClient::ProcessAcceptUpload()
 {
 	m_fQueueRankPending = 1;

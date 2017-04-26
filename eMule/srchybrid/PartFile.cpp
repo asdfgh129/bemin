@@ -2573,7 +2573,7 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 			}
 		}
 	}
-	else
+	else  ///snow:icounter=10
 	{
 		bool downloadingbefore=m_anStates[DS_DOWNLOADING]>0;
 		// -khaos--+++> Moved this here, otherwise we were setting our permanent variables to 0 every tenth of a second...
@@ -2582,7 +2582,7 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 		memset(net_stats,0,sizeof(net_stats));
 		UINT nCountForState;
 
-		for (POSITION pos = srclist.GetHeadPosition(); pos != NULL;)
+		for (POSITION pos = srclist.GetHeadPosition(); pos != NULL;)  ///snow:AddSource()->CDownloadQueue::CheckAndAddSource()
 		{
 			CUpDownClient* cur_src = srclist.GetNext(pos);
 			if (thePrefs.m_iDbgHeap >= 2)
@@ -2616,7 +2616,7 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 				net_stats[1]++;    ///snow:Kad连通
 
 			ASSERT( nCountForState < sizeof(m_anStates)/sizeof(m_anStates[0]) );
-			m_anStates[nCountForState]++;    、///snow:总共15种状态
+			m_anStates[nCountForState]++;    ///snow:总共15种状态
 
 			switch (cur_src->GetDownloadState())
 			{
