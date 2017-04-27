@@ -108,6 +108,7 @@ CUploadQueue::~CUploadQueue(){
  *
  * @return address of the highest ranking client.
  */
+///snow: 在上传等待队列中查找信誉最高的Client,AddUpNextClient()中调用
 CUpDownClient* CUploadQueue::FindBestClientInQueue()
 {
 	POSITION toadd = 0;
@@ -179,23 +180,24 @@ void CUploadQueue::InsertInUploadingList(CUpDownClient* newclient)
 	//Lets make sure any client that is added to the list has this flag reset!
 	newclient->m_bAddNextConnect = false;
     // Add it last
-    theApp.uploadBandwidthThrottler->AddToStandardList(uploadinglist.GetCount(), newclient->GetFileUploadSocket());
-	uploadinglist.AddTail(newclient);
-    newclient->SetSlotNumber(uploadinglist.GetCount());
+	theApp.uploadBandwidthThrottler->AddToStandardList(uploadinglist.GetCount(), newclient->GetFileUploadSocket());  ///snow:上传文件是加入StandardList
+	uploadinglist.AddTail(newclient);   ///snow:添加到uploadinglist
+	newclient->SetSlotNumber(uploadinglist.GetCount());///snow:一个client一个solt
 }
 
 
-///snow:AddClientToQueue()和Process()中调用
+///snow:AddClientToQueue()和Process()中调用,AddClientToQueue()中三种情况directadd均不为0,Process()中directadd为0
 bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient* directadd){
 	CUpDownClient* newclient = NULL;
 	// select next client or use given client
+	///snow:如果directadd不为NULL，则准备为directadd上传；否则，从队列中取出一个信誉最好的客户端，准备上传
 	if (!directadd)
 	{
         newclient = FindBestClientInQueue();
 
         if(newclient)
 		{
-		    RemoveFromWaitingQueue(newclient, true);
+			RemoveFromWaitingQueue(newclient, true);  ///snow:从队列中取出，准备上传
 		    theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
         }
 	}
@@ -225,21 +227,21 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient* directadd){
 	{
 		newclient->SetUploadState(US_CONNECTING);
 		if (!newclient->TryToConnect(true))
-			return false;
+			return false;   ///snow:等待连接建立后再处理，这边先返回
 	}
-	else
+	else  ///snow:已建立连接，发送准备上传信息包，并设置上传状态
 	{
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugSend("OP__AcceptUploadReq", newclient);
 		Packet* packet = new Packet(OP_ACCEPTUPLOADREQ,0);
 		theStats.AddUpDataOverheadFileRequest(packet->size);
-		newclient->SendPacket(packet, true);
+		newclient->SendPacket(packet, true);  ///snow:对方收到信息包后，会发送一个请求文件块的信息包
 		newclient->SetUploadState(US_UPLOADING);
 	}
 	newclient->SetUpStartTime();
 	newclient->ResetSessionUp();
 
-    InsertInUploadingList(newclient);
+	InsertInUploadingList(newclient);  ///snow:添加到上传列表
 
     m_nLastStartUpload = ::GetTickCount();
 	
@@ -329,7 +331,7 @@ void CUploadQueue::Process() {
 
 	if (ForceNewClient()){
         // There's not enough open uploads. Open another one.
-        AddUpNextClient(_T("Not enough open upload slots for current ul speed"));
+		AddUpNextClient(_T("Not enough open upload slots for current ul speed")); ///snow:没有传入client参数，从waitinglist中取client
 	}
 
     // The loop that feeds the upload slots with data.
@@ -562,8 +564,9 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client, bool bIgnoreTimelimit
 		CUpDownClient* cur_client= waitinglist.GetAt(pos2);
 		if (cur_client == client)
 		{	
-			if (client->m_bAddNextConnect && AcceptNewClient(client->m_bAddNextConnect))
+			if (client->m_bAddNextConnect && AcceptNewClient(client->m_bAddNextConnect))   ///snow:m_bAddNextConnect在FindBestClientInQueue()中置为true
 			{
+				///snow:对lowid用户，如果它们是第二次连接成功，则优先为它们上传，因为它们无法回呼TryToConnect
 				//Special care is given to lowID clients that missed their upload slot
 				//due to the saving bandwidth on callbacks.
 				if(thePrefs.GetLogUlDlEvents())
@@ -581,7 +584,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client, bool bIgnoreTimelimit
 			theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
 			return;			
 		}
-		else if ( client->Compare(cur_client) ) 
+		else if ( client->Compare(cur_client) )   ///snow:同IP、Port、Hash等
 		{
 			theApp.clientlist->AddTrackClient(client); // in any case keep track of this client
 
@@ -647,8 +650,8 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client, bool bIgnoreTimelimit
 		reqfile->statistic.AddRequest();
 
 	// emule collection will bypass the queue
-	if (reqfile != NULL && CCollection::HasCollectionExtention(reqfile->GetFileName()) && reqfile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE
-		&& !client->IsDownloading() && client->socket != NULL && client->socket->IsConnected())
+	if (reqfile != NULL && CCollection::HasCollectionExtention(reqfile->GetFileName()) && reqfile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE  
+		&& !client->IsDownloading() && client->socket != NULL && client->socket->IsConnected())   ///snow:文件扩展名是.emulecollection文件小于50K
 	{
 		client->SetCollectionUploadSlot(true);
 		RemoveFromWaitingQueue(client, true);
@@ -690,7 +693,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client, bool bIgnoreTimelimit
 	else
 	{
 		m_bStatisticsWaitingListDirty = true;
-		waitinglist.AddTail(client);
+		waitinglist.AddTail(client);    ///snow:添加到waitinglist，并设置状态为US_ONUPLOADQUEUE
 		client->SetUploadState(US_ONUPLOADQUEUE);
 		theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client,true);
 		theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
