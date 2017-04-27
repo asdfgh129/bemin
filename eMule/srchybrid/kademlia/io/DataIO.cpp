@@ -585,7 +585,7 @@ int KadTagStrCompareNoCase(LPCWSTR dst, LPCWSTR src)
 CString PrintKagTags(TagList * plistInfo)
 {
 	CString strOutput;
-	strOutput.Format(_T("Tags count:%i\n"),pTags->size());
+	strOutput.Format(_T("Tags count:%i\n"),plistInfo->size());
 
 ///snow:处理回应报文中的TagList信息
 	for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
@@ -619,37 +619,37 @@ CString PrintKagTags(TagList * plistInfo)
 		else if (!pTag->m_name.Compare(TAG_MEDIA_TITLE))
 			strOutput.AppendFormat(_T("MEDIA_TITLE:%s  |  "),pTag->GetStr());
 		else if (!pTag->m_name.Compare(TAG_MEDIA_LENGTH))
-			strOutput.AppendFormat(_T("MEDIA_LENGTH:%i  |  "), (uint32)pTag->GetInt();
+			strOutput.AppendFormat(_T("MEDIA_LENGTH:%i  |  "), (uint32)pTag->GetInt());
 		else if (!pTag->m_name.Compare(TAG_MEDIA_BITRATE))
-			strOutput.AppendFormat(_T("MEDIA_BITRATE:%i  |  "), (uint32)pTag->GetInt();
+			strOutput.AppendFormat(_T("MEDIA_BITRATE:%i  |  "), (uint32)pTag->GetInt());
 		else if (!pTag->m_name.Compare(TAG_MEDIA_CODEC))
-			strOutput.AppendFormat(_T("MEDIA_CODEC:%s  |  "), pTag->GetStr();
+			strOutput.AppendFormat(_T("MEDIA_CODEC:%s  |  "), pTag->GetStr());
 		else if (!pTag->m_name.Compare(TAG_SOURCES))
 		{
 			// Some rouge client was setting a invalid availability, just set it to 0
-			strOutput.AppendFormat(_T("SOURCES:%i  |  "), (uint32)pTag->GetInt();
-			if( uAvailability > 65500 )
-				uAvailability = 0;
+			strOutput.AppendFormat(_T("SOURCES:%i  |  "), (uint32)pTag->GetInt());
+			//if( uAvailability > 65500 )
+			//	uAvailability = 0;
 		}
 		else if (!pTag->m_name.Compare(TAG_PUBLISHINFO))
 		{
-			if (uFromKadVersion >= KADEMLIA_VERSION6_49aBETA)
-			{
+			//if (uFromKadVersion >= KADEMLIA_VERSION6_49aBETA)
+			//{
 				// we don't keep this as tag, but as a member property of the searchfile, as we only need its informations
 				// in the search list and don't want to carry the tag over when downloading the file (and maybe even wrongly publishing it)
-				strOutput.AppendFormat(_T("PUBLISHINFO:%i  |  "), (uint32)pTag->GetInt();
+				strOutput.AppendFormat(_T("PUBLISHINFO:%i  |  "), (uint32)pTag->GetInt());
 /*#ifdef _DEBUG
 				uint32 byDifferentNames = (uPublishInfo & 0xFF000000) >> 24;
 				uint32 byPublishersKnown = (uPublishInfo & 0x00FF0000) >> 16;
 				uint32 wTrustValue = uPublishInfo & 0x0000FFFF;
 				DebugLog(_T("Received PublishInfoTag: %u different names, %u Publishers, %.2f Trustvalue"), byDifferentNames, byPublishersKnown, (float)wTrustValue / 100.0f);  
 #endif*/	
-			}
+			//}
 
 		}
 		else if (!pTag->m_name.Compare(TAG_KADAICHHASHRESULT))
 		{
-			strOutput.AppendFormat(_T("KADAICHHASHRESULT:暂略  |  ")
+			strOutput.AppendFormat(_T("KADAICHHASHRESULT:暂略  |  "));
 		}
 		delete pTag;
 	}  ///snow:end for  报文中的Taglist信息处理完毕

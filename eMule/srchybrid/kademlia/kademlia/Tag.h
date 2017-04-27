@@ -34,10 +34,15 @@ there client on the eMule forum..
 #include "../../otherfunctions.h"
 
 // forward declarations
-namespace Kademlia { class CKadTagValueString; }
+namespace Kademlia 
+{ 
+	class CKadTagValueString;
+	
+}
 void KadTagStrMakeLower(Kademlia::CKadTagValueString &rstr);
 int KadTagStrCompareNoCase(LPCWSTR dst, LPCWSTR src);
-CString PrintKagTags(TagList * pTags); ///snow:add by snow
+CString PrintKagTags(Kademlia::TagList * pTags); ///snow:add by snow
+
 
 namespace Kademlia
 {

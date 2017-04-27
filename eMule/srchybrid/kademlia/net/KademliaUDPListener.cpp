@@ -1277,7 +1277,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_RES (const byte *pbyPacketDa
 		{
 			byteIO.ReadTagList(pTags, true);
 
-			theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uAnswer:%s|Tags£º%s"),__FUNCTION__,__LINE__,uAnswer.ToHexString(),PrintKagTags(pTags).GetBuffer(0));  ///snow:add by snow
+		//	theApp.QueueTraceLogLine(TRACE_SEARCH_PROCESS,_T("Function:%hs|Line:%i|uAnswer:%s|Tags£º%s"),__FUNCTION__,__LINE__,uAnswer.ToHexString(),PrintKagTags(pTags).GetBuffer(0));  ///snow:add by snow
 
 		}
 		catch(...)
