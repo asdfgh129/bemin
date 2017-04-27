@@ -1057,6 +1057,8 @@ void CUpDownClient::SendBlockRequests()
 		   The requests will still not exceed 180k, but may be smaller to
 		   fill a gap.
 */
+
+///snow:CClientReqSocket::ProcessPacket()和ProcessExtPacket()中调用，处理四种OPCode:SENDINGPART、OP_COMPRESSEDPART、OP_SENDINGPART_I64、OP_COMPRESSEDPART_I64
 void CUpDownClient::ProcessBlockPacket(const uchar *packet, uint32 size, bool packed, bool bI64Offsets)
 {
 	if (!bI64Offsets) {

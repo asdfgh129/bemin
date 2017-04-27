@@ -188,7 +188,7 @@ int CEncryptedStreamSocket::Send(const void* lpBuf, int nBufLen, int nFlags){
 		// handshakedata was delayed to put it into one frame with the first paypload to the server
 		// do so now with the payload attached
 		int nRes = SendNegotiatingData(lpBuf, nBufLen, nBufLen);///snow:这里的调用发生在Negotiate()调用SendNegotiatingData之后，是第二次调用SendNegotiatingData，这次将真正的发送出数据
-		ASSERT( nRes != SOCKET_ERROR );
+		ASSERT( nRes != SOCKET_ERROR );   ///snow:如果SendNegotiatingData()时发生SOCKET_ERROR，则必定触发本断言！难道SendNegotiatingData()一定不会发生SOCKET_ERROR？？
 		(void)nRes;
 		return nBufLen;	// report a full send, even if we didn't for some reason - the data is know in our buffer and will be handled later
 	}
@@ -818,6 +818,7 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 	if (!bDelaySend)  
 		result = CAsyncSocketEx::Send(pBuffer, nBufLen);
 
+
 		///snow:在Negotiate()中调用：
 	///snow:m_NegotiatingState = ONS_BASIC_SERVER_DELAYEDSENDING;
 	///snow:SendNegotiatingData(fileResponse.GetBuffer(), (uint32)fileResponse.GetLength(), 0, true);
@@ -826,7 +827,7 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 		m_pfiSendBuffer = new CSafeMemFile(128);
 		m_pfiSendBuffer->Write(pBuffer, nBufLen);
 		free(pBuffer);
-		return result;
+		return result;   ///snow:这里有个疑问，如果result==SOCKET_ERROR，那么返回的必定是SOCKET_ERROR，则调用
     }
 	else {
 		if (result < nBufLen){   ///snow:没发送完，还剩有数据，写入m_pfiSendBuffer

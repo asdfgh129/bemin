@@ -450,7 +450,7 @@ void CDownloadQueue::Process(){
 
 // ZZ:DownloadManager -->
     if((!m_dwLastA4AFtime) || (::GetTickCount() - m_dwLastA4AFtime) > MIN2MS(8)) {
-        theApp.clientlist->ProcessA4AFClients();
+		theApp.clientlist->ProcessA4AFClients();   ///snow:A4AF:ask for another file
         m_dwLastA4AFtime = ::GetTickCount();
     }
 // <-- ZZ:DownloadManager

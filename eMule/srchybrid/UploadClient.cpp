@@ -640,9 +640,11 @@ void CUpDownClient::SetUploadFileID(CKnownFile* newreqfile)
 		oldreqfile->RemoveUploadingClient(this);
 }
 
+
+///snow:处理OP_REQUESTPARTS
 void CUpDownClient::AddReqBlock(Requested_Block_Struct* reqblock)
 {
-    if(GetUploadState() != US_UPLOADING) {
+if(GetUploadState() != US_UPLOADING) {   ///snow:CUploadQueue::AddUpNextClient()中赋值：newclient->SetUploadState(US_CONNECTING);
         if(thePrefs.GetLogUlDlEvents())
             AddDebugLogLine(DLP_LOW, false, _T("UploadClient: Client tried to add req block when not in upload slot! Prevented req blocks from being added. %s"), DbgGetClientInfo());
 		delete reqblock;
@@ -662,6 +664,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct* reqblock)
 			ASSERT( false );
 	}
 
+	///snow:检查两个队列：m_DoneBlocks_list和m_BlockRequests_queue是否已存在要求下载的Block
     for (POSITION pos = m_DoneBlocks_list.GetHeadPosition(); pos != 0; ){
         const Requested_Block_Struct* cur_reqblock = m_DoneBlocks_list.GetNext(pos);
         if (reqblock->StartOffset == cur_reqblock->StartOffset && reqblock->EndOffset == cur_reqblock->EndOffset){

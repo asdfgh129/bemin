@@ -184,6 +184,8 @@ void CUploadQueue::InsertInUploadingList(CUpDownClient* newclient)
     newclient->SetSlotNumber(uploadinglist.GetCount());
 }
 
+
+///snow:AddClientToQueue()和Process()中调用
 bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient* directadd){
 	CUpDownClient* newclient = NULL;
 	// select next client or use given client
@@ -218,6 +220,7 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient* directadd){
 	}
 
 	// tell the client that we are now ready to upload
+	///snow:准备上传，但与请求下载的客户端的连接已断开
 	if (!newclient->socket || !newclient->socket->IsConnected())
 	{
 		newclient->SetUploadState(US_CONNECTING);
@@ -521,6 +524,7 @@ CUpDownClient* CUploadQueue::GetWaitingClientByIP(uint32 dwIP){
  *
  * @param bIgnoreTimelimit don't check time limit to possibly ban the client.
  */
+///snow:在 CClientReqSocket::ProcessPacket()中处理OP_STARTUPLOADREQ时调用和SendOutOfPartReqsAndAddToWaitingQueue()中调用
 void CUploadQueue::AddClientToQueue(CUpDownClient* client, bool bIgnoreTimelimit)
 {
 	//This is to keep users from abusing the limits we put on lowID callbacks.
@@ -669,7 +673,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client, bool bIgnoreTimelimit
         // then block client from getting on queue
 		return;
 	}
-	if (client->IsDownloading())
+	if (client->IsDownloading())   ///snow:对方客户端已经在下载
 	{
 		// he's already downloading and wants probably only another file
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
@@ -690,7 +694,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient* client, bool bIgnoreTimelimit
 		client->SetUploadState(US_ONUPLOADQUEUE);
 		theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client,true);
 		theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
-		client->SendRankingInfo();
+		client->SendRankingInfo();  ///snow:对客户端进行信誉评级
 	}
 }
 

@@ -561,7 +561,7 @@ int CClientUDPSocket::SendTo(char* lpBuf,int nBufLen,uint32 dwIP, uint16 nPort){
 	// NOTE: *** This function is invoked from a *different* thread!
 
 	///snow:add by snow
-	theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(ntohl(dwIP)),nPort,nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0),TrimZero((uchar*)lpBuf,nBufLen).GetBuffer(0));
+	theApp.QueueTraceLogLine(TRACE_STREAM_DATA,_T("Function:%hs|Line:%i|Socket:|IP:%s|Port:%i|Size:%i|Opcode:|Protocol:|Content(Hex):%s|Content:%s"),__FUNCTION__,__LINE__,ipstr(dwIP),nPort,nBufLen,ByteToHexStr((uchar*)lpBuf,nBufLen).GetBuffer(0),TrimZero((uchar*)lpBuf,nBufLen).GetBuffer(0));
 
 	uint32 result = CAsyncSocket::SendTo(lpBuf,nBufLen,nPort,ipstr(dwIP));
 	if (result == (uint32)SOCKET_ERROR){
