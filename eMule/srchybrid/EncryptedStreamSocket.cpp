@@ -827,7 +827,8 @@ int CEncryptedStreamSocket::SendNegotiatingData(const void* lpBuf, uint32 nBufLe
 		m_pfiSendBuffer = new CSafeMemFile(128);
 		m_pfiSendBuffer->Write(pBuffer, nBufLen);
 		free(pBuffer);
-		return result;   ///snow:这里有个疑问，如果result==SOCKET_ERROR，那么返回的必定是SOCKET_ERROR，则调用
+		return result;   ///snow:这里有个疑问，如果result==SOCKET_ERROR，那么返回的必定是SOCKET_ERROR，则调用的Send()中ASSERT( nRes != SOCKET_ERROR );必定触发中断，也就是说如果这个时候发生SOCKET_ERROR是程序出了问题！！很奇怪的是:同样的代码，在VS2008中编译运行正常，而在VS2008 SP1中却频繁出现了SOCKET_ERROR，触发了中断，通过GetLastError，发现错误的原因是：ID10054：远程主机强迫关闭了一个现有的连接，不知是不是SP1的原因？？还有会不会是防火墙？按道理应该不会是防火墙，哪能保证人家不开防火墙？！
+
     }
 	else {
 		if (result < nBufLen){   ///snow:没发送完，还剩有数据，写入m_pfiSendBuffer

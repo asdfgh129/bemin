@@ -2849,7 +2849,7 @@ bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16
 
 void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 serverport, bool bWithObfuscationAndHash)
 {
-	UINT count = sources->ReadUInt8();
+	UINT count = sources->ReadUInt8();   ///snow:¶ÁÈ¡SourceÊý
 
 	UINT debug_lowiddropped = 0;
 	UINT debug_possiblesources = 0;
@@ -2910,6 +2910,7 @@ void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 server
 			//	AddDebugLogLine(false, _T("Ignored source (IP=%s) received from server"), ipstr(userid));
 			continue;
 		}
+
 
 		if( GetMaxSources() > this->GetSourceCount() )
 		{
