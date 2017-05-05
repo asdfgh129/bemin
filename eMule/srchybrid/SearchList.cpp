@@ -467,6 +467,7 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 	}
 	SearchList* list = GetSearchListForID(toadd->GetSearchID());
 
+	///snow:对文件名进行检查
 	// Spamfilter: Calculate the filename without any used keywords (and seperators) for later use
 	CString strNameWithoutKeyword;
 	CString strName = toadd->GetFileName();
@@ -497,12 +498,14 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 	for (POSITION pos = list->GetHeadPosition(); pos != NULL; )
 	{
 		CSearchFile* parent = list->GetNext(pos);
-		if (   parent->GetListParent() == NULL
+		if (   parent->GetListParent() == NULL    ///snow:不是子记录，没有父记录；如果不是，则跳过处理下一条
 			&& md4cmp(parent->GetFileHash(), toadd->GetFileHash()) == 0)
 		{
 
 			// if this parent does not yet have any child entries, create one child entry 
 			// which is equal to the current parent entry (needed for GUI when expanding the child list).
+			///snow:搜索记录中文件尚未有同ID，不同文件名，即目前只有一个文件的情况下，现在发现了第二个文件，那么需要把第一个发现的文件也转变为子文件，复制该Parent记录为child记录，设置Parent为parent，修改原parent的child数
+			///snow:上面的理解可能有误，什么情况下ListChildCount为0呢？
 			if (parent->GetListChildCount() == 0)
 			{
 				CSearchFile* child = new CSearchFile(parent);
@@ -510,7 +513,7 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 				int iSources = parent->GetIntTagValue(FT_SOURCES);
 				if (iSources == 0)
 					iSources = 1;
-				child->SetListChildCount(iSources);
+				child->SetListChildCount(iSources);   ///snow:为什么设置为1 呢？
 				list->AddTail(child);
 				parent->SetListChildCount(1);
 			}
@@ -530,7 +533,7 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 			uint32 uCompleteSources = (uint32)-1;
 			bool bHasCompleteSources = toadd->GetIntTagValue(FT_COMPLETE_SOURCES, uCompleteSources);
 
-			bool bFound = false;
+			bool bFound = false;   ///snow:标记同一parent的不同child
 			if (thePrefs.GetDebugSearchResultDetailLevel() >= 1)
 			{
 				; // for debugging: do not merge search results
@@ -538,10 +541,11 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 			else
 			{
 				// check if that parent already has a child with same filename as the new search result entry
+				///snow:再次遍历list，找出同一parent下的同名的child记录，这个时候toadd还没被添加到list中 
 				for (POSITION pos2 = list->GetHeadPosition(); pos2 != NULL && !bFound; )
 				{
 					CSearchFile* child = list->GetNext(pos2);
-					if (    child != toadd													// not the same object
+					if (    child != toadd	///snow:不是同一块内存区域												// not the same object
 						&& child->GetListParent() == parent								// is a child of our result (one filehash)
 						&& toadd->GetFileName().CompareNoCase(child->GetFileName()) == 0)	// same name
 					{
@@ -549,6 +553,7 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 
 						// add properties of new search result entry to the already available child entry (with same filename)
 						// ed2k: use the sum of all values, kad: use the max. values
+						///snow:parent记录下的ChildCount指的是不同文件名的数量，child记录则指的是FT_SOURCES，ed2k使用的是所有Sources的总和，Kad使用的则是最大值
 						if (toadd->IsKademlia()) {
 							if (uAvail > child->GetListChildCount())
 								child->SetListChildCount(uAvail);
@@ -556,10 +561,11 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 						else {
 							child->AddListChildCount(uAvail);
 						}
-						child->AddSources(uAvail);
+						child->AddSources(uAvail);   ///snow:只更改FT_SOURCES Tag 的数量
 						if (bHasCompleteSources)
 							child->AddCompleteSources(uCompleteSources);
 
+						///snow:检查AICH Hash
 						// Check AICH Hash - if they differ, clear it (see KademliaSearchKeyword)
 						//					 if we didn't have a hash yet, take it over
 						if (toadd->GetFileIdentifier().HasAICHHash())
@@ -583,7 +589,7 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 					}
 				}
 			}
-			if (!bFound)
+			if (!bFound)   ///snow:没有发现同一parent的同一文件名的不同child记录
 			{
 				// the parent which we had found does not yet have a child with that new search result's entry name,
 				// add the new entry as a new child
@@ -594,6 +600,8 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 				list->AddHead(toadd);
 			}
 
+			///snow:KAD返回的记录哪来的serverIP和Port?在CSearchFile构造函数的最后一段代码中赋值，由参数nServerIP和nServerPort传入，从KAD网传回的搜索记录中没有这两个值，在构造时这两个值是0
+			///snow:处理m_aClients
 			// copy possible available sources from new search result entry to parent
 			if (toadd->GetClientID() && toadd->GetClientPort())
 			{
@@ -618,6 +626,7 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 				}
 			}
 
+			///snow:处理m_aServers
 			// copy possible available servers from new search result entry to parent
 			// will be used in future
 			if (toadd->GetClientServerIP() && toadd->GetClientServerPort())
@@ -680,13 +689,14 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 						uAllChildsCompleteSourceCount += child->GetCompleteSourceCount();
 					}
 
+					///snow:选取源数最多的Entry为bestEntry
 					if (bestEntry == NULL)
 						bestEntry = child;
 					else if (child->GetListChildCount() > bestEntry->GetListChildCount())
 						bestEntry = child;
 				}
 			}
-			if (bestEntry)
+			if (bestEntry)    ///snow:以bestEntry的值对parent进行赋值
 			{
 				parent->SetFileSize(bestEntry->GetFileSize());
 				parent->SetFileName(bestEntry->GetFileName());
@@ -720,6 +730,7 @@ bool CSearchList::AddToList(CSearchFile* toadd, bool bClientResponse, uint32 dwF
 		}
 	}
 	
+	///snow:在list中尚没有同一fileHash的搜索记录，将toadd添加到队尾
 	// no bounded result found yet -> add as parent to list
 	toadd->SetListParent(NULL);
 	UINT uAvail = 0;
@@ -832,6 +843,7 @@ void CSearchList::KademliaSearchKeyword(uint32 searchID, const Kademlia::CUInt12
 	CSafeMemFile* temp = new CSafeMemFile(250);
 	Kademlia::CKeyEntry verifierEntry;
 
+	///snow:处理搜索记录，过程与CSearchFile的构造函数类似
 	verifierEntry.m_uKeyID.SetValue(*fileID);
 	uchar fileid[16];
 	fileID->ToByteArray(fileid);
@@ -938,7 +950,7 @@ void CSearchList::KademliaSearchKeyword(uint32 searchID, const Kademlia::CUInt12
 		}
 		else if (raAICHHashs.GetCount() > 1)
 			DEBUG_ONLY( DebugLog(_T("Received multiple (%u) AICH Hashs for search result %s, ignoring AICH"), raAICHHashs.GetCount(), tempFile->GetFileName()) );
-		AddToList(tempFile);
+		AddToList(tempFile);   ///snow:添加到CSearchFileList中，处理同ED2K搜索
 	}
 	else
 	{

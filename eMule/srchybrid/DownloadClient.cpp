@@ -660,6 +660,7 @@ void CUpDownClient::ProcessFileStatus(bool bUdpPacket, CSafeMemFile* data, CPart
 	reqfile->UpdatePartsInfo();
 }
 
+///snow:将该file添加到client的m_OtherRequests_list中，同时将client添加到file的A4AFsrclist中
 bool CUpDownClient::AddRequestForAnotherFile(CPartFile* file){
 	for (POSITION pos = m_OtherNoNeeded_list.GetHeadPosition();pos != 0;){
 		if (m_OtherNoNeeded_list.GetNext(pos) == file)

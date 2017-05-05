@@ -313,6 +313,7 @@ CSearchFile::CSearchFile(CFileDataIO* in_data, bool bOptUTF8,
 
 	///snow:添加服务器到CSimpleArray<SServer> m_aServers中
 	///snow:应该是两个用途，1、把服务器添加到服务器列表中  2、spam过滤
+	///snow:对应的处理代码在CSearchList::AddToList()中
 	m_nClientServerIP = nServerIP;
 	m_nClientServerPort = nServerPort;
 	if (m_nClientServerIP && m_nClientServerPort){

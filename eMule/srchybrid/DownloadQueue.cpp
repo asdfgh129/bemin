@@ -53,8 +53,8 @@ CDownloadQueue::CDownloadQueue()
 	datarate = 0;
 	cur_udpserver = 0;
 	lastfile = 0;
-	lastcheckdiskspacetime = 0;
-	lastudpsearchtime = 0;
+	lastcheckdiskspacetime = 0;   ///snow:检查磁盘时间，防止磁盘已满
+	lastudpsearchtime = 0;        ///snow:UDP搜索时间
 	lastudpstattime = 0;
 	SetLastKademliaFileRequest();
 	udcounter = 0;
@@ -67,16 +67,19 @@ CDownloadQueue::CDownloadQueue()
     m_dwLastA4AFtime = 0; // ZZ:DownloadManager
 }
 
+///snow:将下载中的PartFile加入共享列表，提供他人下载。问题：PartFile中的已下载的区块的信息更新是怎么处理的？是连下载边更新，还是等人家提请下载了，再核实有没有需要的块？
 void CDownloadQueue::AddPartFilesToShare()
 {
-	for (POSITION pos = filelist.GetHeadPosition(); pos != 0; )
+	for (POSITION pos = filelist.GetHeadPosition(); pos != 0; )    ///snow:filelist中存放着所有的下载中的partfile
 	{
 		CPartFile* cur_file = filelist.GetNext(pos);
-		if (cur_file->GetStatus(true) == PS_READY)
-			theApp.sharedfiles->SafeAddKFile(cur_file, true);
+		if (cur_file->GetStatus(true) == PS_READY)       ///snow:只有状态是PS_READY的才添加，那么哪些情况是PS_READY呢？
+			theApp.sharedfiles->SafeAddKFile(cur_file, true);   ///snow:调用CSharedFileList::SafeAddKFile()
 	}
 }
 
+
+///snow:加载临时目录中的所有partfile，如果加载失败，尝试加载.bak文件
 void CDownloadQueue::Init(){
 	// find all part files, read & hash them if needed and store into a list
 	CFileFind ff;
@@ -88,14 +91,14 @@ void CDownloadQueue::Init(){
 		searchPath += _T("\\*.part.met");
 
 		//check all part.met files
-		bool end = !ff.FindFile(searchPath, 0);
-		while (!end){
-			end = !ff.FindNextFile();
+		bool end = !ff.FindFile(searchPath, 0);     ///snow:如果存在文件，ff返回第一个文件
+		while (!end){                     ///snow:目录中存在文件
+			end = !ff.FindNextFile();     ///snow:目录中是否还有文件
 			if (ff.IsDirectory())
 				continue;
 			CPartFile* toadd = new CPartFile();
 			EPartFileLoadResult eResult = toadd->LoadPartFile(thePrefs.GetTempDir(i), ff.GetFileName());
-			if (eResult == PLR_FAILED_METFILE_CORRUPT)
+			if (eResult == PLR_FAILED_METFILE_CORRUPT)   ///snow:发生错误了，是Met文件被破坏了
 			{
 				// .met file is corrupted, try to load the latest backup of this file
 				delete toadd;
@@ -121,6 +124,7 @@ void CDownloadQueue::Init(){
 		}
 		ff.Close();
 
+		///snow:处理扩展名是backup的文件，估计是以前版本的partfile，处理流程同上
 		//try recovering any part.met files
 		searchPath += _T(".backup");
 		end = !ff.FindFile(searchPath, 0);
@@ -163,7 +167,7 @@ CDownloadQueue::~CDownloadQueue(){
 	m_srcwnd.DestroyWindow(); // just to avoid a MFC warning
 }
 
-///snow:参数paused同CSearchResultsWnd::DownloadSelected()，参数cat为the currently selected tab in the tab control.搜索Tab页的索引，在CPartFile构造函数中使用
+///snow:参数paused同CSearchResultsWnd::DownloadSelected()，参数cat为下载分类，在CPartFile构造函数中使用
 void CDownloadQueue::AddSearchToDownload(CSearchFile* toadd, uint8 paused, int cat)
 {
 	if (toadd->GetFileSize()== (uint64)0 || IsFileExisting(toadd->GetFileHash()))   ///snow:文件长度为0或已存在下载
@@ -175,7 +179,7 @@ void CDownloadQueue::AddSearchToDownload(CSearchFile* toadd, uint8 paused, int c
 	}
 
 	CPartFile* newfile = new CPartFile(toadd,cat);
-	if (newfile->GetStatus() == PS_ERROR){
+	if (newfile->GetStatus() == PS_ERROR){    ///snow:状态为错误
 		delete newfile;
 		return;
 	}
@@ -184,16 +188,19 @@ void CDownloadQueue::AddSearchToDownload(CSearchFile* toadd, uint8 paused, int c
 		paused = (uint8)thePrefs.AddNewFilesPaused();
 	AddDownload(newfile, (paused==1));
 
-	///snow:添加Source，问题是什么时候用？
+	///snow:这里应该跟踪一下ID、Port和m_aClients什么时候添加到搜索列表中？
+	///snow:在CSearchFile的构造函数中从报文中读取
+
+	///snow:添加Source，问题是什么时候用？应该是下载的时候根据source中的IP、ID、Port等信息发起下载请求
 	// If the search result is from OP_GLOBSEARCHRES there may also be a source
-	if (toadd->GetClientID() && toadd->GetClientPort()){
+	if (toadd->GetClientID() && toadd->GetClientPort()){   ///snow:搜索记录中包含有ID和Port
 		CSafeMemFile sources(1+4+2);
 		try{
 			sources.WriteUInt8(1);
 			sources.WriteUInt32(toadd->GetClientID());
 			sources.WriteUInt16(toadd->GetClientPort());
 		    sources.SeekToBegin();
-		    newfile->AddSources(&sources, toadd->GetClientServerIP(), toadd->GetClientServerPort(), false);
+			newfile->AddSources(&sources, toadd->GetClientServerIP(), toadd->GetClientServerPort(), false);   ///snow:取的是服务器的IP、Port，向服务器发起请求
 		}
 		catch(CFileException* error){
 			ASSERT(0);
@@ -201,8 +208,9 @@ void CDownloadQueue::AddSearchToDownload(CSearchFile* toadd, uint8 paused, int c
 		}
 	}
 
+	///snow:搜索记录中包含的客户端列表，全部添加到source中
 	// Add more sources which were found via global UDP search
-	const CSimpleArray<CSearchFile::SClient>& aClients = toadd->GetClients();
+	const CSimpleArray<CSearchFile::SClient>& aClients = toadd->GetClients();    ///snow:返回的是CSearchFile对象toadd的m_aClients，在CSearchList::AddToList()中处理
 	for (int i = 0; i < aClients.GetSize(); i++){
 		CSafeMemFile sources(1+4+2);
 		try{
@@ -235,11 +243,15 @@ void CDownloadQueue::AddSearchToDownload(CString link, uint8 paused, int cat)
 	AddDownload(newfile, (paused==1));
 }
 
+///snow:"选项"-->"文件"-->"当文件完成时开始下载下一个暂停的文件"、"同一分类优先"、"仅在相同的分类中"
+///snow:参数cat为下载的分类，可以在下载时指定
 void CDownloadQueue::StartNextFileIfPrefs(int cat) {
     if (thePrefs.StartNextFile())
 		StartNextFile((thePrefs.StartNextFile() > 1?cat:-1), (thePrefs.StartNextFile()!=3));
 }
 
+
+///snow:开始下载暂停的下一文件
 void CDownloadQueue::StartNextFile(int cat, bool force){
 
 	CPartFile*  pfile = NULL;
@@ -278,6 +290,8 @@ void CDownloadQueue::StartNextFile(int cat, bool force){
 	if (pfile) pfile->ResumeFile();
 }
 
+
+///snow:从ed2k链接开始下载文件
 void CDownloadQueue::AddFileLinkToDownload(CED2KFileLink* pLink, int cat)
 {
 	CPartFile* newfile = new CPartFile(pLink, cat);
@@ -496,12 +510,14 @@ bool CDownloadQueue::IsPartFile(const CKnownFile* file) const
 	return false;
 }
 
+///snow:partfile添加source时调用，kademliasearchfile时也调用
 bool CDownloadQueue::CheckAndAddSource(CPartFile* sender,CUpDownClient* source){
 	if (sender->IsStopped()){
 		delete source;
 		return false;
 	}
 
+	///snow:排除本机
 	if (source->HasValidHash())
 	{
 		if(!md4cmp(source->GetUserHash(), thePrefs.GetUserHash()))
@@ -512,6 +528,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile* sender,CUpDownClient* source){
 			return false;
 		}
 	}
+	///snow:对source进行过滤，排除死源
 	// filter sources which are known to be temporarily dead/useless
 	if (theApp.clientlist->m_globDeadSourceList.IsDeadSource(source) || sender->m_DeadSourceList.IsDeadSource(source)){
 		//if (thePrefs.GetLogFilteredIPs())
@@ -521,6 +538,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile* sender,CUpDownClient* source){
 		return false;
 	}
 
+	///snow:没达到加密要求
 	// filter sources which are incompatible with our encryption setting (one requires it, and the other one doesn't supports it)
 	if ( (source->RequiresCryptLayer() && (!thePrefs.IsClientCryptLayerSupported() || !source->HasValidHash())) || (thePrefs.IsClientCryptLayerRequired() && (!source->SupportsCryptLayer() || !source->HasValidHash())))
 	{
@@ -535,6 +553,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile* sender,CUpDownClient* source){
 	// "Filter LAN IPs" and/or "IPfilter" is not required here, because it was already done in parent functions
 
 	// uses this only for temp. clients
+	///snow:检查是否已存在该client
 	for (POSITION pos = filelist.GetHeadPosition();pos != 0;){
 		CPartFile* cur_file = filelist.GetNext(pos);
 		for (POSITION pos2 = cur_file->srclist.GetHeadPosition();pos2 != 0; ){
@@ -545,6 +564,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile* sender,CUpDownClient* source){
 					return false;
 				}
 				// set request for this source
+				///snow:sender中没有该source，将该sender添加到source的m_OtherRequests_list中，同时将source添加到sender的A4AFsrclist中
 				if (cur_client->AddRequestForAnotherFile(sender)){
 					theApp.emuledlg->transferwnd->GetDownloadList()->AddSource(sender,cur_client,true);
 					delete source;
@@ -732,6 +752,7 @@ bool CDownloadQueue::RemoveSource(CUpDownClient* toremove, bool bDoStatsUpdate)
 	return bRemovedSrcFromPartFile;
 }
 
+///snow:从filelist中删除指定文件
 void CDownloadQueue::RemoveFile(CPartFile* toremove)
 {
 	RemoveLocalServerRequest(toremove);
@@ -747,6 +768,8 @@ void CDownloadQueue::RemoveFile(CPartFile* toremove)
 	ExportPartMetFilesOverview();
 }
 
+
+///snow:清空filelist
 void CDownloadQueue::DeleteAll(){
 	POSITION pos;
 	for (pos = filelist.GetHeadPosition();pos != 0;){

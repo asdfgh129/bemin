@@ -2816,7 +2816,7 @@ bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16
 	// MOD Note: Do not change this part - Merkur
 	if (theApp.serverconnect->IsConnected())
 	{
-		if(theApp.serverconnect->IsLowID())
+		if(theApp.serverconnect->IsLowID())   ///snow:本机是低ID
 		{
 			if(theApp.serverconnect->GetClientID() == userid && theApp.serverconnect->GetCurrentServer()->GetIP() == serverip && theApp.serverconnect->GetCurrentServer()->GetPort() == serverport )
 				return false;
@@ -2824,7 +2824,8 @@ bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16
 				return false;
 		}
 		else
-		{
+		{ 
+			///snow:是服务器ID?
 			if(theApp.serverconnect->GetClientID() == userid && thePrefs.GetPort() == port)
 				return false;
 		}
