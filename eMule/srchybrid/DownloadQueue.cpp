@@ -617,7 +617,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile* sender,CUpDownClient* source){
 
 bool CDownloadQueue::CheckAndAddKnownSource(CPartFile* sender,CUpDownClient* source, bool bIgnoreGlobDeadList){
 	if (sender->IsStopped())
-		return false;
+		return false;  ///snow:与CheckAndAddSource不同的是，这里不delete source（下同），也不检查是否是本机IP
 	
 	// filter sources which are known to be temporarily dead/useless
 	if ( (theApp.clientlist->m_globDeadSourceList.IsDeadSource(source) && !bIgnoreGlobDeadList) || sender->m_DeadSourceList.IsDeadSource(source)){
@@ -715,6 +715,8 @@ bool CDownloadQueue::RemoveSource(CUpDownClient* toremove, bool bDoStatsUpdate)
 	
 	// remove this source on all files in the downloadqueue who link this source
 	// pretty slow but no way arround, maybe using a Map is better, but that's slower on other parts
+
+	///snow:删除m_OtherRequests_list中的partfile的A4AFsrclist中的toremove
 	POSITION pos3, pos4;
 	for(pos3 = toremove->m_OtherRequests_list.GetHeadPosition();(pos4=pos3)!=NULL;)
 	{
@@ -727,6 +729,7 @@ bool CDownloadQueue::RemoveSource(CUpDownClient* toremove, bool bDoStatsUpdate)
 			toremove->m_OtherRequests_list.RemoveAt(pos4);
 		}
 	}
+	///snow:删除m_OtherNoNeeded_list里的partfile的A4AFsrclist中的toremove
 	for(pos3 = toremove->m_OtherNoNeeded_list.GetHeadPosition();(pos4=pos3)!=NULL;)
 	{
 		toremove->m_OtherNoNeeded_list.GetNext(pos3);				
