@@ -857,7 +857,7 @@ bool CDownloadQueue::SendNextUDPPacket()
 
 	CServer* pConnectedServer = theApp.serverconnect->GetCurrentServer();
 	if (pConnectedServer)
-		pConnectedServer = theApp.serverlist->GetServerByAddress(pConnectedServer->GetAddress(), pConnectedServer->GetPort());
+		pConnectedServer = theApp.serverlist->GetServerByAddress(pConnectedServer->GetAddress(), pConnectedServer->GetPort());   ///snow:这边的写法有点奇怪，为什么要两次取值呢？
 
 	if (!cur_udpserver)
 	{
@@ -866,7 +866,7 @@ bool CDownloadQueue::SendNextUDPPacket()
 				continue;
 			if (cur_udpserver->GetFailedCount() >= thePrefs.GetDeadServerRetries())
 				continue;
-			break;
+			break;    ///snow:既不是pConnectedServer，失败次数也未达到设置次数
 		}
 		if (cur_udpserver == NULL) {
 			StopUDPRequests();
