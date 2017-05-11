@@ -990,6 +990,7 @@ bool CDownloadQueue::SendNextUDPPacket()
 	if (!bSentPacket && dataGlobGetSources.GetLength() > 0)
 		SendGlobGetSourcesUDPPacket(&dataGlobGetSources, bGetSources2Packet, iFiles, iLargeFiles);
 
+	///snow:每个服务器一个周期最多发35个UDP Packet，如果达到35个了，则把filelist中后35个调到队头来，同时定位到后一个服务器
 	// send max 35 UDP request to one server per interval
 	// if we have more than 35 files, we rotate the list and use it as queue
 	if (m_cRequestsSentToServer >= MAX_REQUESTS_PER_SERVER)
