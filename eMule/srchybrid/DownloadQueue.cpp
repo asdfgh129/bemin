@@ -1034,6 +1034,8 @@ void CDownloadQueue::StopUDPRequests()
 	m_iSearchedServers = 0;
 }
 
+
+///snow:对下载队列中的文件进行堆排序
 bool CDownloadQueue::CompareParts(POSITION pos1, POSITION pos2){
 	CPartFile* file1 = filelist.GetAt(pos1);
 	CPartFile* file2 = filelist.GetAt(pos2);
@@ -1086,12 +1088,15 @@ void CDownloadQueue::SortByPriority()
 	}
 }
 
+
+///snow:检查磁盘空间
 void CDownloadQueue::CheckDiskspaceTimed()
 {
 	if ((!lastcheckdiskspacetime) || (::GetTickCount() - lastcheckdiskspacetime) > DISKSPACERECHECKTIME)
 		CheckDiskspace();
 }
 
+///snow:当磁盘空间不足时，暂停下载那些需要增加空间或增加的空间会超出磁盘剩余空间的，对已经暂停的，发生错误的，正在完成的，已经完成的四类文件不加处理
 void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 {
 	lastcheckdiskspacetime = ::GetTickCount();
@@ -1124,8 +1129,9 @@ void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 	uint64 nTotalAvailableSpaceMain = bNotEnoughSpaceLeft ? 0 : GetFreeDiskSpaceX(thePrefs.GetTempDir());
 
 	// 'bNotEnoughSpaceLeft' - avoid worse case, if we already had 'disk full'
-	if (thePrefs.GetMinFreeDiskSpace() == 0)
+	if (thePrefs.GetMinFreeDiskSpace() == 0)   
 	{
+	///snow:没有设定最小磁盘空间，比较下载文件需要的空间与剩余的磁盘空间
 		for( POSITION pos1 = filelist.GetHeadPosition(); pos1 != NULL; )
 		{
 			CPartFile* cur_file = filelist.GetNext(pos1);
@@ -1143,8 +1149,10 @@ void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 			}
 
 			// Pause the file only if it would grow in size and would exceed the currently available free space
+
+			///snow:如果下载的文件不再需要新的磁盘空间，无需暂停
 			uint64 nSpaceToGo = cur_file->GetNeededSpace();
-			if (nSpaceToGo <= nTotalAvailableSpace)
+			if (nSpaceToGo <= nTotalAvailableSpace)   ///snow:还有空间可供下载
 			{
 				nTotalAvailableSpace -= nSpaceToGo;
 				cur_file->ResumeFileInsufficient();
@@ -1153,7 +1161,7 @@ void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 				cur_file->PauseFile(true/*bInsufficient*/);
 		}
 	}
-	else
+	else   ///snow:设定了最小磁盘空间，比较的是可用磁盘空间与最小磁盘空间
 	{
 		for( POSITION pos1 = filelist.GetHeadPosition(); pos1 != NULL; )
 		{
@@ -1170,12 +1178,12 @@ void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 			uint64 nTotalAvailableSpace = bNotEnoughSpaceLeft ? 0 : 
 				((thePrefs.GetTempDirCount()==1)?nTotalAvailableSpaceMain:GetFreeDiskSpaceX(cur_file->GetTempPath()));
 			if (nTotalAvailableSpace < thePrefs.GetMinFreeDiskSpace())
-			{
+				{   ///snow:可用磁盘空间已经小于设定的最小磁盘空间了
 				if (cur_file->IsNormalFile())
 				{
 					// Normal files: pause the file only if it would still grow
 					uint64 nSpaceToGrow = cur_file->GetNeededSpace();
-					if (nSpaceToGrow > 0)
+					if (nSpaceToGrow > 0)   ///snow:还需磁盘空间
 						cur_file->PauseFile(true/*bInsufficient*/);
 				}
 				else
@@ -1195,6 +1203,7 @@ void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 	}
 }
 
+///snow:遍历filelist，统计各partfile的状态
 void CDownloadQueue::GetDownloadSourcesStats(SDownloadStats& results)
 {
 	memset(&results, 0, sizeof results);
@@ -1230,6 +1239,8 @@ void CDownloadQueue::GetDownloadSourcesStats(SDownloadStats& results)
 	}
 }
 
+///snow:下列几个函数与源客户端相关
+///snow:提取filelist中各partfile的指定IP地址的source
 CUpDownClient* CDownloadQueue::GetDownloadClientByIP(uint32 dwIP){
 	for (POSITION pos = filelist.GetHeadPosition();pos != 0;){
 		CPartFile* cur_file = filelist.GetNext(pos);
@@ -1281,6 +1292,10 @@ bool CDownloadQueue::IsInList(const CUpDownClient* client) const
 	return false;
 }
 
+///snow:分类与优先级
+
+
+///snow:将指定分类置0，大于指定分类的，-1
 void CDownloadQueue::ResetCatParts(UINT cat)
 {
 	CPartFile* cur_file;
@@ -1295,6 +1310,8 @@ void CDownloadQueue::ResetCatParts(UINT cat)
 	}
 }
 
+
+///snow:优先级相关函数
 void CDownloadQueue::SetCatPrio(UINT cat, uint8 newprio)
 {
 	for (POSITION pos = filelist.GetHeadPosition(); pos != 0; ){
@@ -1310,6 +1327,7 @@ void CDownloadQueue::SetCatPrio(UINT cat, uint8 newprio)
 			}
 	}
 
+	///snow:对下载的文件重新按优先级排序，需要重新检查磁盘
     theApp.downloadqueue->SortByPriority();
 	theApp.downloadqueue->CheckDiskspaceTimed();
 }
@@ -1513,6 +1531,7 @@ void CDownloadQueue::RemoveLocalServerRequest(CPartFile* pFile)
 	}
 }
 
+///snow：Process()中调用
 void CDownloadQueue::ProcessLocalRequests()
 {
 	if ( (!m_localServerReqQueue.IsEmpty()) && (m_dwNextTCPSrcReq < ::GetTickCount()) )
@@ -1611,6 +1630,7 @@ void CDownloadQueue::ProcessLocalRequests()
 	}
 }
 
+///snow:CPartFile::Process()中调用
 void CDownloadQueue::SendLocalSrcRequest(CPartFile* sender){
 	ASSERT ( !m_localServerReqQueue.Find(sender) );
 	m_localServerReqQueue.AddTail(sender);
@@ -1928,6 +1948,7 @@ void CDownloadQueue::OnConnectionState(bool bConnected)
 	}
 }
 
+///snow:找出最合适的下载临时目录
 CString CDownloadQueue::GetOptimalTempDir(UINT nCat, EMFileSize nFileSize){
 	// shortcut
 	if (thePrefs.tempdir.GetCount() == 1)

@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="CDownloadQueue" Collapsed="true">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <NestedTypes>
+      <Struct Name="CDownloadQueue::__unnamed_0127_1" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>DownloadQueue.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+      <Typedef Name="CDownloadQueue::SDownloadStats" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>DownloadQueue.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Typedef>
+      <Struct Name="CDownloadQueue::TransferredData" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>DownloadQueue.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>LglGJBRQCgCDgExgDkKEEmURhAIhkgIJBUIKBCPUCwg=</HashCode>
+      <FileName>DownloadQueue.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CUploadQueue" Collapsed="true">
+    <Position X="5.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>MIAJBBSAA0IBEwBiRhgEsWigEoABCIQmgACIOAIqCAA=</HashCode>
+      <FileName>UploadQueue.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CUpDownClient">
+    <Position X="7" Y="0.5" Width="1.5" />
+    <NestedTypes>
+      <Struct Name="CUpDownClient::TransferredData" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>UpdownClient.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>r///+3//31//798//3bnvf+/2979vnen/f9/3/9+//8=</HashCode>
+      <FileName>UpdownClient.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CPartFile" Collapsed="true">
+    <Position X="1.25" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>Qd0ly/Y3g3D/JOC/X3+HxBd/1Cs/8VILOTcq3vqHbsY=</HashCode>
+      <FileName>PartFile.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CAbstractFile" Collapsed="true">
+    <Position X="2.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>KAAQgnQAQCIAAFQACYSAgmAASIIAgApQEKYmCgo4QKA=</HashCode>
+      <FileName>AbstractFile.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CCollectionFile" Collapsed="true">
+    <Position X="0.5" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAGAAAAAAAAAAEAAGAAAAAAA=</HashCode>
+      <FileName>CollectionFile.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CSearchFile" Collapsed="true">
+    <Position X="2.5" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BwYAINCCoAA8MEAGASiGIAYESHlGGKCEEEACzQVgUAQ=</HashCode>
+      <FileName>SearchFile.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CShareableFile" Collapsed="true">
+    <Position X="4.25" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CABABAQAAAAAFABAAQEAAEAAAAACIkAEEEAAAAABAgA=</HashCode>
+      <FileName>ShareableFile.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CKnownFile" Collapsed="true">
+    <Position X="4.25" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AoAJKARCoEDEwMMAC0MSoMnBMhxIRADGUJQEEFweGAA=</HashCode>
+      <FileName>KnownFile.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Microsoft YaHei" Size="9" />
+</ClassDiagram>
