@@ -1187,6 +1187,8 @@ VOID CALLBACK CUploadQueue::HSUploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR
 	}
 }
 
+
+///snow:统计raFiles中的各file对应的准备上传的客户端累计总数
 uint32 CUploadQueue::GetWaitingUserForFileCount(const CSimpleArray<CObject*>& raFiles, bool bOnlyIfChanged)
 {
 	if (bOnlyIfChanged && !m_bStatisticsWaitingListDirty)
