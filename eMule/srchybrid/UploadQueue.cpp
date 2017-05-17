@@ -785,6 +785,7 @@ bool CUploadQueue::RemoveFromWaitingQueue(CUpDownClient* client, bool updatewind
 		return false;
 }
 
+///snow:什么情况下从waitinglist中删除？
 void CUploadQueue::RemoveFromWaitingQueue(POSITION pos, bool updatewindow){	
 	m_bStatisticsWaitingListDirty = true;
 	CUpDownClient* todelete = waitinglist.GetAt(pos);
