@@ -2795,6 +2795,8 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 	return datarate;
 }
 
+
+///snow:主要检查是不是本机IP或是是服务器IP
 bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16 serverport, UINT* pdebug_lowiddropped, bool Ed2kID)
 {
 	//The incoming ID could have the userid in the Hybrid format.. 
@@ -2838,7 +2840,7 @@ bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16
 	}
 
 	//This allows *.*.*.0 clients to not be removed if Ed2kID == false
-	if ( IsLowID(hybridID) && theApp.IsFirewalled())
+	if ( IsLowID(hybridID) && theApp.IsFirewalled())   ///snow:本机与远程客户端都是lowID
 	{
 		if (pdebug_lowiddropped)
 			(*pdebug_lowiddropped)++;
@@ -2880,20 +2882,20 @@ void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 server
 		// check the HighID(IP) - "Filter LAN IPs" and "IPfilter" the received sources IP addresses
 		if (!IsLowID(userid))
 		{
-			if (!IsGoodIP(userid))
+			if (!IsGoodIP(userid))   ///snow:不是正常IP
 			{ 
 				// check for 0-IP, localhost and optionally for LAN addresses
 				//if (thePrefs.GetLogFilteredIPs())
 				//	AddDebugLogLine(false, _T("Ignored source (IP=%s) received from server - bad IP"), ipstr(userid));
 				continue;
 			}
-			if (theApp.ipfilter->IsFiltered(userid))
+			if (theApp.ipfilter->IsFiltered(userid))    ///snow:IP被过滤
 			{
 				if (thePrefs.GetLogFilteredIPs())
 					AddDebugLogLine(false, _T("Ignored source (IP=%s) received from server - IP filter (%s)"), ipstr(userid), theApp.ipfilter->GetLastHit());
 				continue;
 			}
-			if (theApp.clientlist->IsBannedClient(userid)){
+			if (theApp.clientlist->IsBannedClient(userid)){   ///snow:IP被加入黑名单
 #ifdef _DEBUG
 				if (thePrefs.GetLogBannedClients()){
 					CUpDownClient* pClient = theApp.clientlist->FindClientByIP(userid);
@@ -2969,6 +2971,7 @@ void CPartFile::AddSource(LPCTSTR pszURL, uint32 nIP)
 }
 
 // SLUGFILLER: heapsortCompletesrc
+///snow:CDownloadQueue中也有HeapSort
 static void HeapSort(CArray<uint16, uint16>& count, UINT first, UINT last){
 	UINT r;
 	for ( r = first; !(r & (UINT)INT_MIN) && (r<<1) < last; ){
@@ -3108,6 +3111,8 @@ void CPartFile::UpdatePartsInfo()
 	UpdateDisplayedInfo();
 }	
 
+
+///snow:Block 处理
 bool CPartFile::RemoveBlockFromList(uint64 start, uint64 end)
 {
 	ASSERT( start <= end );
@@ -3134,6 +3139,8 @@ void CPartFile::RemoveAllRequestedBlocks(void)
 	requestedblocks_list.RemoveAll();
 }
 
+
+///snow:gaplist.IsEmpty()后参数bIsHashingDone以false调用，partFileHashFinished()中参数bIsHashingDone以true调用
 void CPartFile::CompleteFile(bool bIsHashingDone)
 {
 	theApp.downloadqueue->RemoveLocalServerRequest(this);
@@ -3143,7 +3150,7 @@ void CPartFile::CompleteFile(bool bIsHashingDone)
 	if (srcarevisible)
 		theApp.emuledlg->transferwnd->GetDownloadList()->HideSources(this);
 	
-	if (!bIsHashingDone){
+	if (!bIsHashingDone){    ///snow:尚未hash，对文件进行Hash
 		SetStatus(PS_COMPLETING);
 		datarate = 0;
 		CAddFileThread* addfilethread = (CAddFileThread*) AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_BELOW_NORMAL,0, CREATE_SUSPENDED);
@@ -3183,6 +3190,8 @@ void CPartFile::CompleteFile(bool bIsHashingDone)
 	UpdateDisplayedInfo(true);
 }
 
+
+///snow:CompleteThreadProc()中调用
 UINT CPartFile::CompleteThreadProc(LPVOID pvParams) 
 { 
 	DbgSetThreadName("PartFileComplete");
@@ -3190,8 +3199,8 @@ UINT CPartFile::CompleteThreadProc(LPVOID pvParams)
 	CPartFile* pFile = (CPartFile*)pvParams;
 	if (!pFile)
 		return (UINT)-1; 
-	CoInitialize(NULL);
-   	pFile->PerformFileComplete();
+	CoInitialize(NULL);   ///snow:这边为什么初始化COM组件环境？
+	pFile->PerformFileComplete();   ///snow:这里调用了COM组件
 	CoUninitialize();
    	return 0; 
 }
@@ -3472,12 +3481,14 @@ BOOL CPartFile::PerformFileComplete()
 	sLock.Unlock();
 
 	if (theApp.emuledlg && theApp.emuledlg->IsRunning())
+		///snow:通知主线程文件下载完成了
 		VERIFY( PostMessage(theApp.emuledlg->m_hWnd, TM_FILECOMPLETED, FILE_COMPLETION_THREAD_SUCCESS | (renamed ? FILE_COMPLETION_THREAD_RENAMED : 0), (LPARAM)this) );
 	return TRUE;
 }
 
 // 'End' of file completion, to avoid multi threading synchronization problems, this is to be invoked from within the
 // main thread!
+///snow:emuleDlg中的OnFileCompleted()调用，处理TM_FILECOMPLETED消息
 void CPartFile::PerformFileCompleteEnd(DWORD dwResult)
 {
 	if (dwResult & FILE_COMPLETION_THREAD_SUCCESS)
@@ -3855,6 +3866,7 @@ void CPartFile::PauseFile(bool bInsufficient, bool resort)
 	if (status==PS_COMPLETE || status==PS_COMPLETING)
 		return;
 
+	///snow:向提供下载方发送停止传送指令
 	Packet* packet = new Packet(OP_CANCELTRANSFER,0);
 	for( POSITION pos = srclist.GetHeadPosition(); pos != NULL; )
 	{
@@ -4006,6 +4018,8 @@ int CPartFile::getPartfileStatusRang() const
 	return 2; // downloading?
 } 
 
+
+///snow:计算剩余时间
 time_t CPartFile::getTimeRemainingSimple() const
 {
 	if (GetDatarate() == 0)
@@ -4050,6 +4064,8 @@ time_t CPartFile::getTimeRemaining() const
 	return estimate;
 }
 
+
+///snow:预览partfile
 void CPartFile::PreviewFile()
 {
 	if (thePreviewApps.Preview(this))
