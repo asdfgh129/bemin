@@ -4228,9 +4228,11 @@ void CPartFile::UpdateAvailablePartsCount()
 
 Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byRequestedVersion, uint16 nRequestedOptions) const
 {
+	///snow:不是partFile，调用父类的相应函数
 	if (!IsPartFile() || srclist.IsEmpty())
 		return CKnownFile::CreateSrcInfoPacket(forClient, byRequestedVersion, nRequestedOptions);
 
+	///snow:比较客户端的fileID是否与本fileID一致
 	if (md4cmp(forClient->GetUploadFileID(), GetFileHash()) != 0) {
 		// should never happen
 		DEBUG_ONLY( DebugLogError(_T("*** %hs - client (%s) upload file \"%s\" does not match file \"%s\""), __FUNCTION__, forClient->DbgGetClientInfo(), DbgGetFileInfo(forClient->GetUploadFileID()), GetFileName()) );
@@ -4252,6 +4254,8 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byR
 		return NULL;
 
 	CSafeMemFile data(1024);
+
+	///snow:请求的数据包分两种：SX1和SX2  SourceeXchange，SX2有RequestedVersion要求，如果是SX2，回复的数据包第一个字节是版本号
 	
 	uint8 byUsedVersion;
 	bool bIsSX2Packet;
@@ -4260,7 +4264,7 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byR
 		// and we send the highest version we know, but of course not higher than his request
 		byUsedVersion = min(byRequestedVersion, (uint8)SOURCEEXCHANGE2_VERSION);
 		bIsSX2Packet = true;
-		data.WriteUInt8(byUsedVersion);
+		data.WriteUInt8(byUsedVersion);   ///snow:第一个字节是版本号
 
 		// we don't support any special SX2 options yet, reserved for later use
 		if (nRequestedOptions != 0)
@@ -4268,22 +4272,22 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byR
 	}
 	else{
 		byUsedVersion = forClient->GetSourceExchange1Version();
-		bIsSX2Packet = false;
+		bIsSX2Packet = false;    ///snow:没有写入版本号
 		if (forClient->SupportsSourceExchange2())
 			DebugLogWarning(_T("Client which announced to support SX2 sent SX1 packet instead (%s)"), forClient->DbgGetClientInfo());
 	}
 
 	UINT nCount = 0;
-	data.WriteHash16(m_FileIdentifier.GetMD4Hash());
-	data.WriteUInt16((uint16)nCount);
+	data.WriteHash16(m_FileIdentifier.GetMD4Hash());   ///snow:写入16字节的fileID
+	data.WriteUInt16((uint16)nCount);                  ///snow:两字节的part数，后面应该会修改
 	
 	bool bNeeded;
 	const uint8* reqstatus = forClient->GetUpPartStatus();
 	for (POSITION pos = srclist.GetHeadPosition();pos != 0;){
 		bNeeded = false;
 		const CUpDownClient* cur_src = srclist.GetNext(pos);
-		if (cur_src->HasLowID() || !cur_src->IsValidSource())
-			continue;
+		if (cur_src->HasLowID() || !cur_src->IsValidSource())   
+			continue;     ///snow:跳过低ID客户端和无可用源客户端
 		const uint8* srcstatus = cur_src->GetPartStatus();
 		if (srcstatus){
 			if (cur_src->GetPartCount() == GetPartCount()){
