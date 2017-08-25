@@ -4635,6 +4635,8 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 		   The requests will still not exceed 180k, but may be smaller to
 		   fill a gap.
 */
+
+///snow:代替BlockReceived()，因为原来的函数会浪费丢弃接收到小于180K的数据，本函数在将数据写入磁盘前先写入缓存
 uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start, uint64 end, Requested_Block_Struct *block, 
 								const CUpDownClient* client)
 {
@@ -4642,18 +4644,21 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 	ASSERT( start <= end );
 
 	// Increment transferred bytes counter for this file
+	///snow:统计已传送的数据字节数
 	m_uTransferred += transize;
 
 	// This is needed a few times
+	///snow:本次拟写入的数据长度
 	uint32 lenData = (uint32)(end - start + 1);
 	ASSERT( (int)lenData > 0 && (uint64)(end - start + 1) == lenData);
 
-	if (lenData > transize) {
+	if (lenData > transize) {   ///snow:是压缩数据
 		m_uCompressionGain += lenData - transize;
 		thePrefs.Add2SavedFromCompression(lenData - transize);
 	}
 
 	// Occasionally packets are duplicated, no point writing it twice
+	///snow:接收到重复数据
 	if (IsComplete(start, end, false))
 	{
 		if (thePrefs.GetVerbose())
@@ -4661,13 +4666,14 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 		return 0;
 	}
 	// security sanitize check to make sure we do not write anything into an already hashed complete chunk
+	///snow:检查确保不会写入已hash的完成块
 	const uint64 nStartChunk = start / PARTSIZE;
 	const uint64 nEndChunk = end / PARTSIZE;
 	if (IsComplete(PARTSIZE * (uint64)nStartChunk, (PARTSIZE * (uint64)(nStartChunk + 1)) - 1, false)){
 		DebugLogError( _T("PrcBlkPkt: Received data touches already hashed chunk - ignored (start) %s; File=%s; %s"), DbgGetBlockInfo(start, end), GetFileName(), client->DbgGetClientInfo());
 		return 0;
 	}
-	else if (nStartChunk != nEndChunk) {
+	else if (nStartChunk != nEndChunk) {   ///snow:数据不在同一个块
 		if (IsComplete(PARTSIZE * (uint64)nEndChunk, (PARTSIZE * (uint64)(nEndChunk + 1)) - 1, false)){
 			DebugLogError( _T("PrcBlkPkt: Received data touches already hashed chunk - ignored (end) %s; File=%s; %s"), DbgGetBlockInfo(start, end), GetFileName(), client->DbgGetClientInfo());
 			return 0;
@@ -4677,6 +4683,7 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 	}
 	
 	// log transferinformation in our "blackbox"
+	///snow:将传输日志写入黑盒子
 	m_CorruptionBlackBox.TransferredData(start, end, client);
 
 	// Create copy of data as new buffer
@@ -4730,6 +4737,7 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 	return lenData;
 }
 
+///snow:将缓存的数据写入磁盘
 void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 {
 	bool bIncreasedFile=false;
@@ -5149,7 +5157,7 @@ UINT AFX_CDECL CPartFile::AllocateSpaceThread(LPVOID lpParam)
 // 'Gaps' returned are really the filled areas, and guaranteed to be in order
 void CPartFile::GetFilledList(CTypedPtrList<CPtrList, Gap_Struct*> *filled) const
 {
-	if (gaplist.GetHeadPosition() == NULL )
+	if (gaplist.GetHeadPosition() == NULL )   ///snow:gaplist成员变量，filled为同型指针
 		return;
 
 	Gap_Struct *gap=NULL;
@@ -5160,13 +5168,13 @@ void CPartFile::GetFilledList(CTypedPtrList<CPtrList, Gap_Struct*> *filled) cons
 
 	// Loop until done
 	bool finished = false;
-	while (!finished)
+	while (!finished)    ///snow:循环直到finished
 	{
 		finished = true;
 		// Find first gap after current start pos
-		bestEnd = m_nFileSize;
+		bestEnd = m_nFileSize;   ///snow:EMFileSize型成员变量
 		pos = gaplist.GetHeadPosition();
-		while (pos != NULL)
+		while (pos != NULL)   ///snow:从gaplist中取gap->end值最小的gap
 		{
 			gap = gaplist.GetNext(pos);
 			if ( (gap->start >= start) && (gap->end < bestEnd))
@@ -5184,12 +5192,12 @@ void CPartFile::GetFilledList(CTypedPtrList<CPtrList, Gap_Struct*> *filled) cons
 			return;
 		}
 
-		if (!finished)
+		if (!finished)   ///snow:存在gap->end值最小的gap
 		{
 			if (best->start>0) {
 				// Invert this gap
 				gap = new Gap_Struct;
-				gap->start = start;
+				gap->start = start;   ///snow:start初值为0，后被赋值为best->end + 1
 				gap->end = best->start - 1;
 				filled->AddTail(gap);
 				start = best->end + 1;
@@ -5207,6 +5215,8 @@ void CPartFile::GetFilledList(CTypedPtrList<CPtrList, Gap_Struct*> *filled) cons
 	}
 }
 
+
+///snow:更新文件评级注释
 void CPartFile::UpdateFileRatingCommentAvail(bool bForceUpdate)
 {
 	bool bOldHasComment = m_bHasComment;
@@ -5216,6 +5226,7 @@ void CPartFile::UpdateFileRatingCommentAvail(bool bForceUpdate)
 	UINT uRatings = 0;
 	UINT uUserRatings = 0;
 
+	///snow:先从srclist，再从m_kadNotes中更新注释和评级
 	for (POSITION pos = srclist.GetHeadPosition(); pos != NULL;)
 	{
 		const CUpDownClient* cur_src = srclist.GetNext(pos);
@@ -5459,6 +5470,15 @@ struct Chunk {
 };
 #pragma pack()
 
+
+///snow:下载片选择算法，edonkey 网络的关键算法之一
+/***********************************
+    为了预防过早的停止下载，所有请求下载的片（180K）应该位于同一个源的同一个块(9M）内
+	越稀有的块应越优先下载
+	用于预览的块优先下载
+	最接近完成下载的块优先下载
+
+************************************/
 bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender, 
                                       Requested_Block_Struct** newblocks, 
 									  uint16* count) /*const*/
@@ -5481,7 +5501,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 	//      completed before starting to download other one.
 	//  
 	// The frequency criterion defines several zones: very rare, rare, almost rare,
-	// and common. Inside each zone, the criteria have a specific 憌eight? used 
+	// and common. Inside each zone, the criteria have a specific weight used 
 	// to calculate the priority of chunks. The chunk(s) with the highest 
 	// priority (highest=0, lowest=0xffff) is/are selected first.
 	//  
