@@ -22,6 +22,8 @@
 
 enum EFileType;
 
+
+///snow: 在基类的基础上，增加文件目录、路径、共享目录、已验证文件类型等属性
 class CShareableFile : public CAbstractFile
 {
 	DECLARE_DYNAMIC(CShareableFile)

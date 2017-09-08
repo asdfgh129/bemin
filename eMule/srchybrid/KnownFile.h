@@ -31,6 +31,8 @@ class CAICHHashAlgo;
 
 typedef CTypedPtrList<CPtrList, CUpDownClient*> CUpDownClientPtrList;
 
+
+///snow:增加了文件存储读取、AICHHashSet、Date、分块、优先级、上传下载客户端、关键字、KAD相关属性
 class CKnownFile : public CShareableFile
 {
 	DECLARE_DYNAMIC(CKnownFile)

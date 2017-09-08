@@ -5,23 +5,6 @@
     <Compartments>
       <Compartment Name="Fields" Collapsed="true" />
     </Compartments>
-    <NestedTypes>
-      <Struct Name="CDownloadQueue::__unnamed_0127_1" Collapsed="true">
-        <TypeIdentifier>
-          <NewMemberFileName>DownloadQueue.h</NewMemberFileName>
-        </TypeIdentifier>
-      </Struct>
-      <Typedef Name="CDownloadQueue::SDownloadStats" Collapsed="true">
-        <TypeIdentifier>
-          <NewMemberFileName>DownloadQueue.h</NewMemberFileName>
-        </TypeIdentifier>
-      </Typedef>
-      <Struct Name="CDownloadQueue::TransferredData" Collapsed="true">
-        <TypeIdentifier>
-          <NewMemberFileName>DownloadQueue.h</NewMemberFileName>
-        </TypeIdentifier>
-      </Struct>
-    </NestedTypes>
     <TypeIdentifier>
       <HashCode>LglGJBRQCgCDgExgDkKEEmURhAIhkgIJBUIKBCPUCwg=</HashCode>
       <FileName>DownloadQueue.h</FileName>
@@ -36,8 +19,11 @@
   </Class>
   <Class Name="CUpDownClient">
     <Position X="7" Y="0.5" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
     <NestedTypes>
-      <Struct Name="CUpDownClient::TransferredData" Collapsed="true">
+      <Struct Name="CUpDownClient::TransferredData">
         <TypeIdentifier>
           <NewMemberFileName>UpdownClient.h</NewMemberFileName>
         </TypeIdentifier>
@@ -55,13 +41,6 @@
       <FileName>PartFile.h</FileName>
     </TypeIdentifier>
   </Class>
-  <Class Name="CAbstractFile" Collapsed="true">
-    <Position X="2.5" Y="0.5" Width="1.5" />
-    <TypeIdentifier>
-      <HashCode>KAAQgnQAQCIAAFQACYSAgmAASIIAgApQEKYmCgo4QKA=</HashCode>
-      <FileName>AbstractFile.h</FileName>
-    </TypeIdentifier>
-  </Class>
   <Class Name="CCollectionFile" Collapsed="true">
     <Position X="0.5" Y="2" Width="1.5" />
     <TypeIdentifier>
@@ -71,6 +50,23 @@
   </Class>
   <Class Name="CSearchFile" Collapsed="true">
     <Position X="2.5" Y="2" Width="1.5" />
+    <NestedTypes>
+      <Struct Name="CSearchFile::SClient" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>SearchFile.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+      <Struct Name="CSearchFile::SServer" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>SearchFile.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+      <Enum Name="CSearchFile::EKnownType" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>SearchFile.h</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
     <TypeIdentifier>
       <HashCode>BwYAINCCoAA8MEAGASiGIAYESHlGGKCEEEACzQVgUAQ=</HashCode>
       <FileName>SearchFile.h</FileName>
@@ -88,6 +84,17 @@
     <TypeIdentifier>
       <HashCode>AoAJKARCoEDEwMMAC0MSoMnBMhxIRADGUJQEEFweGAA=</HashCode>
       <FileName>KnownFile.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="CAbstractFile">
+    <Position X="2.5" Y="0.5" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>KAAQgnQAQCIAAFQACYSAgmAASIIAgApQEKYmCgo4QKA=</HashCode>
+      <FileName>AbstractFile.h</FileName>
     </TypeIdentifier>
   </Class>
   <Font Name="Microsoft YaHei" Size="9" />

@@ -5479,6 +5479,7 @@ struct Chunk {
 	最接近完成下载的块优先下载
 
 ************************************/
+///snow:CUpDownClient::CreateBlockRequests(int iMaxBlocks)中调用
 bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender, 
                                       Requested_Block_Struct** newblocks, 
 									  uint16* count) /*const*/
@@ -5530,10 +5531,11 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 
 	// Main loop
 	uint16 newBlockCount = 0;
-	while(newBlockCount != *count){
+	while(newBlockCount != *count){   ///snow:block数还未达到
 		// Create a request block stucture if a chunk has been previously selected
 		if(tempLastPartAsked != (uint16)-1){
 			Requested_Block_Struct* pBlock = new Requested_Block_Struct;
+			///snow:从同一个part中取block
 			if(GetNextEmptyBlockInPart(tempLastPartAsked, pBlock) == true){
                 //AddDebugLogLine(false, _T("Got request block. Interval %i-%i. File %s. Client: %s"), pBlock->StartOffset, pBlock->EndOffset, GetFileName(), sender->DbgGetClientInfo());
 				// Keep a track of all pending requested blocks
@@ -5543,7 +5545,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 				// Skip end of loop (=> CPU load)
 				continue;
 			} 
-			else {
+			else {   ///snow:同一个part中无block可选
 				// All blocks for this chunk have been already requested
 				delete pBlock;
 				// => Try to select another chunk
@@ -5573,6 +5575,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 					break; // Exit main loop while()
 				}
 
+				///snow:判定block的稀有情况
                 // Define the bounds of the zones (very rare, rare etc)
 				// more depending on available sources
 				uint16 limit = (uint16)ceil(GetSourceCount()/ 10.0);
@@ -5589,6 +5592,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 				for(POSITION pos = chunksList.GetHeadPosition(); pos != NULL; ){
 					Chunk& cur_chunk = chunksList.GetNext(pos);
 
+					///snow:计算chunk在文件中的偏移位置
 					// Offsets of chunk
 					UINT uCurChunkPart = cur_chunk.part; // help VC71...
 					const uint64 uStart = (uint64)uCurChunkPart * PARTSIZE;
@@ -6084,6 +6088,8 @@ void CPartFile::SetFileOpProgress(UINT uProgress)
 	m_uFileOpProgress = uProgress;
 }
 
+
+///snow:比较两个文件的优先级
 bool CPartFile::RightFileHasHigherPrio(CPartFile* left, CPartFile* right)
 {
     if(!right) {
@@ -6110,6 +6116,8 @@ bool CPartFile::RightFileHasHigherPrio(CPartFile* left, CPartFile* right)
     }
 }
 
+
+///snow:重新请求AICH，因为文件损坏？AICH值错了？
 void CPartFile::RequestAICHRecovery(UINT nPart)
 {
 	if (!m_pAICHRecoveryHashSet->HasValidMasterHash() || (m_pAICHRecoveryHashSet->GetStatus() != AICH_TRUSTED && m_pAICHRecoveryHashSet->GetStatus() != AICH_VERIFIED)){
@@ -6123,6 +6131,7 @@ void CPartFile::RequestAICHRecovery(UINT nPart)
 		return;
 	}
 
+	///snow:内存中已存在该AICH值
 	// first check if we have already the recoverydata, no need to rerequest it then
 	if (m_pAICHRecoveryHashSet->IsPartDataAvailable((uint64)nPart*PARTSIZE)){
 		AddDebugLogLine(DLP_DEFAULT, false, _T("Found PartRecoveryData in memory"));
@@ -6130,6 +6139,8 @@ void CPartFile::RequestAICHRecovery(UINT nPart)
 		return;
 	}
 
+
+	///snow:从srclist中随机抽取一个具有AICH的client，发送AICH请求
 	ASSERT( nPart < GetPartCount() );
 	// find some random client which support AICH to ask for the blocks
 	// first lets see how many we have at all, we prefer high id very much
@@ -6184,6 +6195,8 @@ void CPartFile::RequestAICHRecovery(UINT nPart)
 	pClient->SendAICHRequest(this, (uint16)nPart);
 }
 
+
+///snow:对损坏的block进行AICH校验，替换掉错误的block
 void CPartFile::AICHRecoveryDataAvailable(UINT nPart)
 {
 	if (GetPartCount() < nPart){

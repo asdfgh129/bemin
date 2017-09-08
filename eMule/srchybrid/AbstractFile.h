@@ -43,6 +43,8 @@ class CTag;
 
 typedef CTypedPtrList<CPtrList, Kademlia::CEntry*> CKadEntryPtrList;
 
+
+///snow:处理文件的filename、type、Indentifier、Hash、Ed2kLink、Size、Tags、Comment、Rating、Note等信息
 class CAbstractFile: public CObject
 {
 	DECLARE_DYNAMIC(CAbstractFile)

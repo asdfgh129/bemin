@@ -217,6 +217,7 @@ static void HeapSort(CArray<uint16,uint16> &count, UINT first, UINT last){
 }
 // SLUGFILLER: heapsortCompletesrc
 
+///snow:更新注释和评级
 void CKnownFile::UpdateFileRatingCommentAvail(bool bForceUpdate)
 {
 	bool bOldHasComment = m_bHasComment;
@@ -248,13 +249,19 @@ void CKnownFile::UpdateFileRatingCommentAvail(bool bForceUpdate)
 		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.UpdateFile(this);
 }
 
+
+///snow:这里也是一个上传算法策略，目的也是为了更好的达到可用源（完成源）更多
+///snow:本函数主要是统计文件各part的下载完成情况，统计出已完成下载的可用完全源数，并根据各客户端统计的可用完全源数，调节自己看到的可用完全源数
+
 void CKnownFile::UpdatePartsInfo()
 {
 	// Cache part count
 	UINT partcount = GetPartCount();
-	bool flag = (time(NULL) - m_nCompleteSourcesTime > 0); 
+	bool flag = (time(NULL) - m_nCompleteSourcesTime > 0);    ///snow:m_nCompleteSourcesTime代表什么呢？在构造函数里被赋值为time(NULL),为构造时当前时间；在本函数后面被赋值  m_nCompleteSourcesTime = time(NULL) + (60);
+	///snow:flag的意思是距离上次更新不到1分钟？
 	
 	// Reset part counters
+	///snow:重置m_AvailPartFrequency大小，并清零
 	if ((UINT)m_AvailPartFrequency.GetSize() < partcount)
 		m_AvailPartFrequency.SetSize(partcount);
 	for (UINT i = 0; i < partcount; i++)
@@ -263,6 +270,8 @@ void CKnownFile::UpdatePartsInfo()
 	CArray<uint16, uint16> count;
 	if (flag)
 		count.SetSize(0, m_ClientUploadList.GetSize());
+
+	///snow:遍历提供源的客户端，更新part可用数和完全源数
 	for (POSITION pos = m_ClientUploadList.GetHeadPosition(); pos != 0; )
 	{
 		CUpDownClient* cur_src = m_ClientUploadList.GetNext(pos);
@@ -287,12 +296,14 @@ void CKnownFile::UpdatePartsInfo()
 			m_nCompleteSourcesCount = m_AvailPartFrequency[0];
 		for (UINT i = 1; i < partcount; i++)
 		{
-			if (m_nCompleteSourcesCount > m_AvailPartFrequency[i])
+			if (m_nCompleteSourcesCount > m_AvailPartFrequency[i])  ///snow:该判断式成立，表示该文件还未下载完成
 				m_nCompleteSourcesCount = m_AvailPartFrequency[i];
 		}
 	
+		///snow:count统计的是各源客户端统计的下载完成的完全源数（各客户端统计的会有差异）
 		count.Add(m_nCompleteSourcesCount+1); // plus 1 since we have the file complete too
 	
+		///snow:进行堆排序，按可用完全源数的大小排序
 		int n = count.GetSize();
 		if (n > 0)
 		{
@@ -322,6 +333,7 @@ void CKnownFile::UpdatePartsInfo()
 			//  Adjust 100% network and 0% what we see.
 			if (n < 20)
 			{
+				///snow:比较count.GetAt(i) 和 m_nCompleteSourcesCount，取大值
 				if ( count.GetAt(i) < m_nCompleteSourcesCount )
 					m_nCompleteSourcesCountLo = m_nCompleteSourcesCount;
 				else
@@ -332,6 +344,7 @@ void CKnownFile::UpdatePartsInfo()
 					m_nCompleteSourcesCountHi = m_nCompleteSourcesCount;
 			}
 			else
+				///snow:什么是low guess?Normal?High?  应该是按可以看到完全源的数量的多少排序的客户端
 			//Many sources..
 			//For low guess
 			//	Use what we see.
@@ -349,12 +362,15 @@ void CKnownFile::UpdatePartsInfo()
 					m_nCompleteSourcesCountHi = m_nCompleteSourcesCount;
 			}
 		}
-		m_nCompleteSourcesTime = time(NULL) + (60);
+		m_nCompleteSourcesTime = time(NULL) + (60);   ///snow:决定更新时间间隔
 	}
 	if (theApp.emuledlg->sharedfileswnd->m_hWnd)
 		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.UpdateFile(this);
 }
 
+
+
+///snow:添加新的可下载客户端到列表
 void CKnownFile::AddUploadingClient(CUpDownClient* client){
 	POSITION pos = m_ClientUploadList.Find(client); // to be sure
 	if(pos == NULL){
@@ -363,6 +379,7 @@ void CKnownFile::AddUploadingClient(CUpDownClient* client){
 	}
 }
 
+///snow:从列表中移除客户端
 void CKnownFile::RemoveUploadingClient(CUpDownClient* client){
 	POSITION pos = m_ClientUploadList.Find(client); // to be sure
 	if(pos != NULL){
@@ -394,7 +411,7 @@ void CKnownFile::SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystem
 		pFile = theApp.sharedfiles->GetFileByID(GetFileHash());
 
 	if (pFile && pFile == this)
-		theApp.sharedfiles->RemoveKeywords(this);
+		theApp.sharedfiles->RemoveKeywords(this);   ///snow:先除去
 
 	CAbstractFile::SetFileName(pszFileName, bReplaceInvalidFileSystemChars, true, bRemoveControlChars);
 	m_verifiedFileType = FILETYPE_UNKNOWN;
@@ -410,7 +427,7 @@ void CKnownFile::SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystem
 		Kademlia::CSearchManager::GetWords(GetFileName(), &wordlist);
 
 	if (pFile && pFile == this)
-		theApp.sharedfiles->AddKeywords(this);
+		theApp.sharedfiles->AddKeywords(this);    ///snow:再添加
 } 
 
 bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOID pvProgressParam)
@@ -578,6 +595,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	return true;	
 }
 
+///snow:CAICHSyncThread::Run()中调用，处理过程与CreateFromFile一致
 bool CKnownFile::CreateAICHHashSetOnly()
 {
 	ASSERT( !IsPartFile() );
@@ -891,7 +909,7 @@ bool CKnownFile::LoadTagsFromFile(CFileDataIO* file)
 		//	DebugLog(_T("Succeeded to load AICH Part HashSet for file %s"), GetFileName());
 	}
 
-	// 05-J鋘-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
+	// 05-Jan-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
 	// the chance to clean any available meta data tags and provide only tags which were determined by us.
 	// It's a brute force method, but that wrong meta data is driving me crazy because wrong meta data is even worse than
 	// missing meta data.
