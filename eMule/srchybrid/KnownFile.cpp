@@ -931,6 +931,7 @@ bool CKnownFile::LoadDateFromFile(CFileDataIO* file){
 	return true;
 }
 
+
 bool CKnownFile::LoadFromFile(CFileDataIO* file){
 	// SLUGFILLER: SafeHash - load first, verify later
 	bool ret1 = LoadDateFromFile(file);
@@ -941,6 +942,8 @@ bool CKnownFile::LoadFromFile(CFileDataIO* file){
 	// SLUGFILLER: SafeHash
 }
 
+
+///snow:文件结构：4字节的最后编辑时间|MD4Hash(2字节的MD4Hash,2字节的Part数，2*Part数的MD4HashSet）|4字节的TagCount|文件名|文件大小|AICHHash|FT_LASTSHARED|FT_AICHHASHSET|FT_ATTRANSFERRED|FT_ATTRANSFERREDHI|FT_ATREQUESTED|FT_ATACCEPTED|FT_ULPRIORITY|FT_KADLASTPUBLISHSRC|FT_KADLASTPUBLISHNOTES|FT_FLAGS
 bool CKnownFile::WriteToFile(CFileDataIO* file)
 {
 	// date
@@ -949,14 +952,17 @@ bool CKnownFile::WriteToFile(CFileDataIO* file)
 	// hashset
 	m_FileIdentifier.WriteMD4HashsetToFile(file);
 
+	///snow:Tags:4字节的TagCount,
 	uint32 uTagCount = 0;
 	ULONG uTagCountFilePos = (ULONG)file->GetPosition();
 	file->WriteUInt32(uTagCount);
 
+	///snow:文件名
 	CTag nametag(FT_FILENAME, GetFileName());
 	nametag.WriteTagToFile(file, utf8strOptBOM);
 	uTagCount++;
 	
+	///snow:文件大小
 	CTag sizetag(FT_FILESIZE, m_nFileSize, IsLargeFile());
 	sizetag.WriteTagToFile(file);
 	uTagCount++;
@@ -1236,6 +1242,9 @@ bool CKnownFile::CreateHash(const uchar* pucData, uint32 uSize, uchar* pucHash, 
 	return bResult;
 }
 
+
+///snow:创建源信息包：格式：SOURCEEXCHANGE2_VERSION|FILEHASHID|TAGS|请求上传的各客户端的ID信息
+	for (POSITION pos = m_ClientUplo
 Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byRequestedVersion, uint16 nRequestedOptions) const
 {
 	if (m_ClientUploadList.IsEmpty())
@@ -1283,6 +1292,8 @@ Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 by
 	data.WriteHash16(forClient->GetUploadFileID());
 	data.WriteUInt16(nCount);
 	uint32 cDbgNoSrc = 0;
+
+	///snow:写入每个请求上传的ID信息
 	for (POSITION pos = m_ClientUploadList.GetHeadPosition(); pos != 0; )
 	{
 		/*const*/ CUpDownClient* cur_src = m_ClientUploadList.GetNext(pos);
@@ -1304,6 +1315,7 @@ Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 by
 		if (!cur_src->IsEd2kClient())
 			continue;
 
+		///snow:判断是否有需要的块
 		bool bNeeded = false;
 		const uint8* rcvstatus = forClient->GetUpPartStatus();
 		if (rcvstatus)
@@ -1367,6 +1379,7 @@ Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 by
 			}
 		}
 
+		///snow:有需要的块的客户端的信息将被写入，没有需要的就不写入
 		if (bNeeded)
 		{
 			nCount++;
@@ -1405,6 +1418,7 @@ Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 by
 	data.Seek(bIsSX2Packet ? 17 : 16, SEEK_SET);
 	data.WriteUInt16((uint16)nCount);
 
+	///snow:包的协议，操作码
 	Packet* result = new Packet(&data, OP_EMULEPROT);
 	result->opcode = bIsSX2Packet ? OP_ANSWERSOURCES2 : OP_ANSWERSOURCES;
 	// (1+)16+2+501*(4+2+4+2+16+1) = 14547 (14548) bytes max.
@@ -1443,6 +1457,8 @@ void CKnownFile::SetFileRating(UINT uRating)
 	}
 }
 
+
+///snow:自动调整上传优先级，队列>20-->LOW，队列>1-->NORMAL，其它-->HIGH
 void CKnownFile::UpdateAutoUpPriority(){
 	if( !IsAutoUpPriority() )
 		return;
@@ -1509,6 +1525,10 @@ void SecToTimeLength(unsigned long ulSec, CStringW& rstrTimeLength)
 	}
 }
 
+
+///snow:下面的这些函数跟文件类型有关
+
+
 void CKnownFile::RemoveMetaDataTags(UINT uTagType)
 {
 	static const struct
@@ -1525,7 +1545,7 @@ void CKnownFile::RemoveMetaDataTags(UINT uTagType)
 		{ FT_MEDIA_CODEC,   TAGTYPE_STRING }
 	};
 
-	// 05-J鋘-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
+	// 05-Jan-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
 	// the chance to clean any available meta data tags and provide only tags which were determined by us.
 	// Remove all meta tags. Never ever trust the meta tags received from other clients or servers.
 	for (int j = 0; j < _countof(_aEmuleMetaTags); j++)
@@ -1550,6 +1570,8 @@ void CKnownFile::RemoveMetaDataTags(UINT uTagType)
 	m_uMetaDataVer = 0;
 }
 
+
+///snow:除去破碎的UNICODEMetaDataTags
 void CKnownFile::RemoveBrokenUnicodeMetaDataTags()
 {
 	static const struct
@@ -1582,7 +1604,7 @@ void CKnownFile::RemoveBrokenUnicodeMetaDataTags()
 			const CTag* pTag = taglist[i];
 			if (   pTag->GetNameID() == _aEmuleMetaTags[j].nID
 				&& pTag->IsStr()
-				&& _tcschr(pTag->GetStr(), _T('?')) != NULL)
+				&& _tcschr(pTag->GetStr(), _T('?')) != NULL)   ///snow:包含有字符'?'
 			{
 				delete pTag;
 				taglist.RemoveAt(i);
@@ -1686,9 +1708,11 @@ void TruncateED2KMetaData(CString& rstrData)
 	}
 }
 
+
+///snow:根据文件属性添加媒体标签
 void CKnownFile::UpdateMetaDataTags()
 {
-	// 05-J鋘-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
+	// 05-Jan-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
 	// the chance to clean any available meta data tags and provide only tags which were determined by us.
 	RemoveMetaDataTags();
 
@@ -1970,6 +1994,8 @@ void CKnownFile::GrabbingFinished(CxImage** imgResults, uint8 nFramesGrabbed, vo
 	delete[] imgResults;
 }
 
+
+///snow:重写了基类的函数
 CString CKnownFile::GetInfoSummary(bool bNoFormatCommands) const
 {
 	CString strFolder = GetPath();

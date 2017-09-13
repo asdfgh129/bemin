@@ -420,7 +420,7 @@ void CPartFile::Dump(CDumpContext& dc) const
 
 void CPartFile::CreatePartFile(UINT cat)
 {
-	if (m_nFileSize > (uint64)MAX_EMULE_FILE_SIZE){
+	if (m_nFileSize > (uint64)MAX_EMULE_FILE_SIZE){   ///snow:256G
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_CREATEPARTFILE));
 		SetStatus(PS_ERROR);
 		return;
@@ -442,13 +442,14 @@ void CPartFile::CreatePartFile(UINT cat)
 	SetPath(tempdirtouse);
 	m_fullname.Format(_T("%s\\%s"), tempdirtouse, m_partmetfilename);
 
+	///snow:文件名标签
 	CTag* partnametag = new CTag(FT_PARTFILENAME,RemoveFileExtension(m_partmetfilename));
 	taglist.Add(partnametag);
 	
 	///snow:Gap_Struct包括两个成员:start和end
 	Gap_Struct* gap = new Gap_Struct;
 	gap->start = 0;
-	gap->end = m_nFileSize - (uint64)1;
+	gap->end = m_nFileSize - (uint64)1;   ///snow:在CPartFile构造函数中读取文件中的tag(FileSize)，调用SetFileSize()为m_nFileSize赋值
 	gaplist.AddTail(gap);
 
 	///snow:新建Part文件
@@ -464,6 +465,7 @@ void CPartFile::CreatePartFile(UINT cat)
 		/*稀疏文件(Sparse File), 指的是文件中出现大量的0数据，这些数据对我们用处不大，但是却一样的占用我们的空间，针对此，WINNT 3.51中的NTFS文件系统对此进行了优化，那些无用的0字节被用一定的算法压缩起来，使得这些0字节不再占用那么多的空间，在你声明一个很大的稀疏文件时(例如 100GB)，这个文件实际上并不需要占用这么大的空间，因为里面大都是无用的0数据，那么，NTFS对稀疏文件的压缩算法可以释放这些无用的0字节空间，可以说这是对磁盘占用空间以及效率的一种优化，记住，FAT32上并不支持稀疏文件的压缩（至少我在自己机子上测试得出如此结论）。*/
 
 			DWORD dwReturnedBytes = 0;
+			///snow:调用DeviceIoControl与设备驱动程序通信
 			if (!DeviceIoControl(m_hpartfile.m_hFile, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &dwReturnedBytes, NULL))
 			{
 				// Errors:
@@ -474,6 +476,26 @@ void CPartFile::CreatePartFile(UINT cat)
 			}
 		}
 
+ /*******************************************************************
+
+
+ //   struct stat  
+ //   {  
+ //   dev_t       st_dev;     /* ID of device containing file -文件所在设备的ID*/  
+ //   ino_t       st_ino;     /* inode number -inode节点号*/  
+ //   mode_t      st_mode;    /* protection -保护模式?*/  
+ //   nlink_t     st_nlink;   /* number of hard links -链向此文件的连接数(硬连接)*/  
+ //   uid_t       st_uid;     /* user ID of owner -user id*/  
+ //   gid_t       st_gid;     /* group ID of owner - group id*/  
+ //   dev_t       st_rdev;    /* device ID (if special file) -设备号，针对设备文件*/  
+ //   off_t       st_size;    /* total size, in bytes -文件大小，字节为单位*/  
+ //   blksize_t   st_blksize; /* blocksize for filesystem I/O -系统块的大小*/  
+ //   blkcnt_t    st_blocks;  /* number of blocks allocated -文件所占块数*/  
+ //   time_t      st_atime;   /* time of last access -最近存取时间*/  
+ //   time_t      st_mtime;   /* time of last modification -最近修改时间*/  
+ //   time_t      st_ctime;   /* time of last status change - */  
+ //   };  
+ //*****************************************************************************************************/
 		struct _stat fileinfo;
 		if (_tstat(partfull, &fileinfo) == 0){
 			m_tLastModified = fileinfo.st_mtime;
@@ -785,6 +807,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 	m_fullname.Format(_T("%s\\%s"), GetPath(), m_partmetfilename);
 	
 	// readfile data form part.met file
+	///snow:打开part.met文件
 	CSafeBufferedFile metFile;
 	CFileException fexpMet;
 	if (!metFile.Open(m_fullname, CFile::modeRead|CFile::osSequentialScan|CFile::typeBinary|CFile::shareDenyWrite, &fexpMet)){
@@ -798,33 +821,36 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 		LogError(LOG_STATUSBAR, _T("%s"), strError);
 		return PLR_FAILED_METFILE_NOACCESS;
 	}
-	setvbuf(metFile.m_pStream, NULL, _IOFBF, 16384);
+	setvbuf(metFile.m_pStream, NULL, _IOFBF, 16384);  ///snow:把缓冲区与流相关,满缓冲
 
+
+	///snow:文件结构：version|style|MD4Hash
 	try{
 		version = metFile.ReadUInt8();
-		
+
+		///snow:三种版本：0xe0,0xe1,0xe2
 		if (version != PARTFILE_VERSION && version != PARTFILE_SPLITTEDVERSION && version != PARTFILE_VERSION_LARGEFILE){
 			metFile.Close();
-			if (version==83) {				
+			if (version==83) {		///snow:shareaza的临时文件		
 				return ImportShareazaTempfile(in_directory, in_filename, pOutCheckFileFormat);
 			}
 			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_BADMETVERSION), m_partmetfilename, GetFileName());
 			return PLR_FAILED_METFILE_CORRUPT;
 		}
 		
-		isnewstyle = (version == PARTFILE_SPLITTEDVERSION);
+		isnewstyle = (version == PARTFILE_SPLITTEDVERSION);  ///snow:0xe1
 		partmettype = isnewstyle ? PMT_SPLITTED : PMT_DEFAULTOLD;
 		if (!isnewstyle) {
 			uint8 test[4];
-			metFile.Seek(24, CFile::begin);
+			metFile.Seek(24, CFile::begin);   ///snow:定位到第25字节，读取4字节
 			metFile.Read(&test[0], 1);
 			metFile.Read(&test[1], 1);
 			metFile.Read(&test[2], 1);
 			metFile.Read(&test[3], 1);
 
-			metFile.Seek(1, CFile::begin);
+			metFile.Seek(1, CFile::begin);    ///snow:定位到第2字节
 
-			if (test[0]==0 && test[1]==0 && test[2]==2 && test[3]==1) {
+			if (test[0]==0 && test[1]==0 && test[2]==2 && test[3]==1) {    ///snow:0021,第三种partmetType
 				isnewstyle = true;	// edonkeys so called "old part style"
 				partmettype = PMT_NEWOLD;
 			}
@@ -832,7 +858,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 
 		if (isnewstyle) {
 			uint32 temp;
-			metFile.Read(&temp,4);
+			metFile.Read(&temp,4);   ///snow:读取第2-5字节，如果是0，LoadMD4HashsetFromFile，如果不是0，重新定位到第3字节，LoadDateFromFile，读取2字节的HAsh
 
 			if (temp == 0) {	// 0.48 partmets - different again
 				m_FileIdentifier.LoadMD4HashsetFromFile(&metFile, false);
@@ -850,6 +876,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 			m_FileIdentifier.LoadMD4HashsetFromFile(&metFile, false);
 		}
 
+		///snow:Tags
 		bool bHadAICHHashSetTag = false;
 		UINT tagcount = metFile.ReadUInt32();
 		for (UINT j = 0; j < tagcount; j++){
@@ -1160,7 +1187,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 		}
 
 		metFile.Close();
-	}
+	}   ///snow:end of try
 	catch(CFileException* error){
 		if (error->m_cause == CFileException::endOfFile)
 			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), m_partmetfilename, GetFileName());
@@ -1193,6 +1220,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 	}
 
 	// Now to flush the map into the list (Slugfiller)
+	///snow:gap_map在哪里装填呢？在本函数前面tags处理里的default中装填，说明了met文件中包含有大量的gap tags
 	for (POSITION pos = gap_map.GetStartPosition(); pos != NULL; ){
 		Gap_Struct* gap;
 		UINT gapkey;
@@ -1207,6 +1235,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 		// SLUGFILLER: SafeHash
 	}
 
+	///snow:校验损坏的part列表
 	// verify corrupted parts list
 	POSITION posCorruptedPart = corrupted_list.GetHeadPosition();
 	while (posCorruptedPart)
@@ -1218,7 +1247,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 	}
 
 	//check if this is a backup
-	if(_tcsicmp(_tcsrchr(m_fullname, _T('.')), PARTMET_TMP_EXT) == 0 || _tcsicmp(_tcsrchr(m_fullname, _T('.')), PARTMET_BAK_EXT) == 0)
+	if(_tcsicmp(_tcsrchr(m_fullname, _T('.')), PARTMET_TMP_EXT/* ".backup" */) == 0 || _tcsicmp(_tcsrchr(m_fullname, _T('.')), PARTMET_BAK_EXT /* ".bak" */) == 0)
 		m_fullname = RemoveFileExtension(m_fullname);
 
 	// open permanent handle
@@ -1238,7 +1267,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 	}
 
 	// read part file creation time
-	struct _stat fileinfo;
+	struct _stat fileinfo;   ///snow:读取文件属性
 	if (_tstat(searchpath, &fileinfo) == 0){
 		m_tLastModified = fileinfo.st_mtime;
 		m_tCreated = fileinfo.st_ctime;
@@ -1265,7 +1294,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 		m_SrcpartFrequency.SetSize(GetPartCount());
 		for (UINT i = 0; i < GetPartCount();i++)
 			m_SrcpartFrequency[i] = 0;
-		SetStatus(PS_EMPTY);
+		SetStatus(PS_EMPTY);   ///snow:PS:partfilestatus
 		// check hashcount, filesatus etc
 		if (!m_FileIdentifier.HasExpectedMD4HashCount()){
 			ASSERT( m_FileIdentifier.GetRawMD4HashSet().GetSize() == 0 );
@@ -1282,6 +1311,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 			}
 		}
 
+		///snow:gaplist是空，表示文件已经下载完毕
 		if (gaplist.IsEmpty()){	// is this file complete already?
 			CompleteFile(false);
 			return PLR_LOADSUCCESS;
@@ -1307,6 +1337,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory,LPCTSTR in_file
 			else
 				AdjustNTFSDaylightFileTime(fdate, filestatus.m_szFullName);
 
+			///snow:如果最后编辑时间不对，就重建Hash
 			if (m_tUtcLastModified != fdate){
 				CString strFileInfo;
 				strFileInfo.Format(_T("%s (%s)"), GetFilePath(), GetFileName());
@@ -1350,7 +1381,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 			return false;
 	}
 
-	// search part file
+	// search part file   ///snow:搜索part文件，找不到记录错误
 	CFileFind ff;
 	CString searchpath(RemoveFileExtension(m_fullname));
 	bool end = !ff.FindFile(searchpath,0);
@@ -1412,7 +1443,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		m_FileIdentifier.WriteMD4HashsetToFile(&file);
 
 		UINT uTagCount = 0;
-		ULONG uTagCountFilePos = (ULONG)file.GetPosition();
+		ULONG uTagCountFilePos = (ULONG)file.GetPosition();  ///snow:记录文件位置，后面要重写这个值
 		file.WriteUInt32(uTagCount);
 
 		CTag nametag(FT_FILENAME, GetFileName());
@@ -1423,6 +1454,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		sizetag.WriteTagToFile(&file);
 		uTagCount++;
 
+		///snow:下面的这些成员变量在下载过程中会被更新
 		if (m_uTransferred){
 			CTag transtag(FT_TRANSFERRED, m_uTransferred, IsLargeFile());
 			transtag.WriteTagToFile(&file);
@@ -1490,7 +1522,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 			uTagCount++;
 		}
 
-		// statistics
+		// statistics    ///snow:统计信息
 		if (statistic.GetAllTimeTransferred()){
 			CTag attag1(FT_ATTRANSFERRED, (uint32)statistic.GetAllTimeTransferred());
 			attag1.WriteTagToFile(&file);
@@ -1519,7 +1551,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 			uTagCount++;
 		}
 
-		// currupt part infos
+		// corrupt part infos   ///snow:把所有的损坏的part串起来，作为一个tag写入文件
         POSITION posCorruptedPart = corrupted_list.GetHeadPosition();
 		if (posCorruptedPart)
 		{
@@ -1573,6 +1605,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 			}
 		}
 
+		///snow:其它tag，如媒体信息等
 		for (int j = 0; j < taglist.GetCount(); j++){
 			if (taglist[j]->IsStr() || taglist[j]->IsInt()){
 				taglist[j]->WriteTagToFile(&file, utf8strOptBOM);
@@ -1580,7 +1613,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 			}
 		}
 
-		//gaps
+		//gaps   ///snow:每一个gap两个tag，一个start，一个end
 		char namebuffer[10];
 		char* number = &namebuffer[1];
 		UINT i_pos = 0;
@@ -1602,6 +1635,9 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 			
 			i_pos++;
 		}
+
+
+		///snow:缓冲区中的数据按gap处理
 		// Add buffered data as gap too - at the time of writing this file, this data does not exists on
 		// the disk, so not addding it as gaps leads to inconsistencies which causes problems in case of
 		// failing to write the buffered data (for example on disk full errors)
@@ -1645,6 +1681,9 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		file.WriteUInt32(uTagCount);
 		file.SeekToEnd();
 
+
+
+		///snow:将文件从缓冲区写入磁盘
 		if (thePrefs.GetCommitFiles() >= 2 || (thePrefs.GetCommitFiles() >= 1 && !theApp.emuledlg->IsRunning())){
 			file.Flush(); // flush file stream buffers to disk buffers
 			if (_commit(_fileno(file.m_pStream)) != 0) // commit disk buffers to disk
@@ -1688,6 +1727,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		return false;
 	}
 
+	///snow:创建备份文件
 	// create a backup of the successfully written part.met file
 	CString BAKName(m_fullname);
 	BAKName.Append(PARTMET_BAK_EXT);
@@ -1699,18 +1739,23 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 	return true;
 }
 
+
+///snow:PartFile Hash完成，CemuleDlg::OnFileHashed()中调用
 void CPartFile::PartFileHashFinished(CKnownFile* result){
 	ASSERT( result->GetFileIdentifier().GetTheoreticalMD4PartHashCount() == m_FileIdentifier.GetTheoreticalMD4PartHashCount() );
 	ASSERT( result->GetFileIdentifier().GetTheoreticalAICHPartHashCount() == m_FileIdentifier.GetTheoreticalAICHPartHashCount() );
 	newdate = true;
 	bool errorfound = false;
 	// check each part
+	///snow:对每一个part进行校验
 	for (uint16 nPart = 0; nPart < GetPartCount(); nPart++)
 	{
 		const uint64 nPartStartPos = (uint64)nPart *  PARTSIZE;
 		const uint64 nPartEndPos = min(((uint64)(nPart + 1) *  PARTSIZE) - 1, GetFileSize() - (uint64)1);
 		ASSERT( IsComplete(nPartStartPos, nPartEndPos, true) == IsComplete(nPartStartPos, nPartEndPos, false) );
-		if (IsComplete(nPartStartPos, nPartEndPos, false))
+		///snow:校验的方式有点看不懂，下面的这些比较不是针对整个文件的吗？难道是针对每一个part的？
+		///snow:这下看懂了，除了nPart==0外，其余的都是GetMD4PartHash(nPart)
+		if (IsComplete(nPartStartPos, nPartEndPos, false))   ///snow:false决定不放弃缓冲区中数据
 		{
 			bool bMD4Error = false;
 			bool bMD4Checked = false; 
@@ -1722,10 +1767,11 @@ void CPartFile::PartFileHashFinished(CKnownFile* result){
 				bMD4Checked = true;
 				bMD4Error = md4cmp(result->GetFileIdentifier().GetMD4Hash(), GetFileIdentifier().GetMD4Hash()) != 0;
 			}
-			else if (m_FileIdentifier.HasExpectedMD4HashCount())
+			else if (m_FileIdentifier.HasExpectedMD4HashCount())  ///snow:Theoretical==Available 理论==可用
 			{
 				bMD4Checked = true;
 				if (result->GetFileIdentifier().GetMD4PartHash(nPart) && GetFileIdentifier().GetMD4PartHash(nPart))
+					///snow:这里使用了nPart作为参数，所以比较的是part的Hash，下面的AICH也是这样
 					bMD4Error = md4cmp(result->GetFileIdentifier().GetMD4PartHash(nPart), m_FileIdentifier.GetMD4PartHash(nPart)) != 0;
 				else
 					ASSERT( false );
@@ -1742,11 +1788,13 @@ void CPartFile::PartFileHashFinished(CKnownFile* result){
 				{
 					bAICHChecked = true;
 					if (result->GetFileIdentifier().GetAvailableAICHPartHashCount() > nPart && GetFileIdentifier().GetAvailableAICHPartHashCount() > nPart)
+						///snow:这里使用了nPart作为参数，所以比较的是part的Hash
 						bAICHError = result->GetFileIdentifier().GetRawAICHHashSet()[nPart] != GetFileIdentifier().GetRawAICHHashSet()[nPart];
 					else
 						ASSERT( false );
 				}
 			}
+			///snow:如果有错，则将该part 加入gaplist
 			if (bMD4Error || bAICHError)
 			{
 				errorfound = true;
@@ -1817,20 +1865,28 @@ void CPartFile::AddGap(uint64 start, uint64 end)
 	POSITION pos1, pos2;
 	for (pos1 = gaplist.GetHeadPosition();(pos2 = pos1) != NULL;){
 		Gap_Struct* cur_gap = gaplist.GetNext(pos1);
+		///snow:准备加入的gap大于gaplist中的已有的gap
 		if (cur_gap->start >= start && cur_gap->end <= end){ // this gap is inside the new gap - delete
 			gaplist.RemoveAt(pos2);
 			delete cur_gap;
 		}
+		///snow:准备加入的gap与gaplist中的有部分重叠的第一种情况--新的后面与旧的重叠
+		///    |------------|   准备加入的gap
+		///             |-------------|    已存在于gaplist中的gap
 		else if (cur_gap->start >= start && cur_gap->start <= end){// a part of this gap is in the new gap - extend limit and delete
 			end = cur_gap->end;
 			gaplist.RemoveAt(pos2);
 			delete cur_gap;
 		}
+		///snow:准备加入的gap与gaplist中的有部分重叠的第二种情况--新的前面与旧的重叠
+		///         |------------|   准备加入的gap
+		///     ------------|    已存在于gaplist中的gap
 		else if (cur_gap->end <= end && cur_gap->end >= start){// a part of this gap is in the new gap - extend limit and delete
 			start = cur_gap->start;
 			gaplist.RemoveAt(pos2);
 			delete cur_gap;
 		}
+		///snow:已有较小粒度的gap
 		else if (start >= cur_gap->start && end <= cur_gap->end){// new gap is already inside this gap - return
 			return;
 		}
@@ -1843,6 +1899,7 @@ void CPartFile::AddGap(uint64 start, uint64 end)
 	newdate = true;
 }
 
+///snow:判断一个part是否已完成，如果gaplist中存在有gap与这个part有重叠部分，则尚未完成；bIgnoreBufferedData决定是否检查缓冲区的数据，true检查，false不检查
 bool CPartFile::IsComplete(uint64 start, uint64 end, bool bIgnoreBufferedData) const
 {
 	ASSERT( start <= end );
@@ -1852,6 +1909,7 @@ bool CPartFile::IsComplete(uint64 start, uint64 end, bool bIgnoreBufferedData) c
 	for (POSITION pos = gaplist.GetHeadPosition();pos != 0;)
 	{
 		const Gap_Struct* cur_gap = gaplist.GetNext(pos);
+		///snow:gap有部分还未完成
 		if (   (cur_gap->start >= start          && cur_gap->end   <= end)
 			|| (cur_gap->start >= start          && cur_gap->start <= end)
 			|| (cur_gap->end   <= end            && cur_gap->end   >= start)
@@ -1862,10 +1920,11 @@ bool CPartFile::IsComplete(uint64 start, uint64 end, bool bIgnoreBufferedData) c
 		}
 	}
 
-	if (bIgnoreBufferedData){
+	if (bIgnoreBufferedData){  ///snow:决定检查缓冲区的数据，这个变量起名是否有点不妥？
 		for (POSITION pos = m_BufferedData_list.GetHeadPosition();pos != 0;)
 		{
 			const PartFileBufferedData* cur_gap = m_BufferedData_list.GetNext(pos);
+			///snow:缓冲区中的gap还有未完成的部分
 			if (   (cur_gap->start >= start          && cur_gap->end   <= end)
 				|| (cur_gap->start >= start          && cur_gap->start <= end)
 				|| (cur_gap->end   <= end            && cur_gap->end   >= start)
@@ -1879,6 +1938,8 @@ bool CPartFile::IsComplete(uint64 start, uint64 end, bool bIgnoreBufferedData) c
 	return true;
 }
 
+
+///snow:是否是比gaplist中的gap粒度更小的part
 bool CPartFile::IsPureGap(uint64 start, uint64 end) const
 {
 	ASSERT( start <= end );
@@ -1894,12 +1955,18 @@ bool CPartFile::IsPureGap(uint64 start, uint64 end) const
 	return false;
 }
 
+
+///snow:part是否已在请求队列中，bCheckBuffers决定是否检查缓冲区
 bool CPartFile::IsAlreadyRequested(uint64 start, uint64 end, bool bCheckBuffers) const
 {
 	ASSERT( start <= end );
 	// check our requestlist
 	for (POSITION pos =  requestedblocks_list.GetHeadPosition();pos != 0; ){
 		const Requested_Block_Struct* cur_block = requestedblocks_list.GetNext(pos);
+		///snow:这里不考虑部分重叠问题，只考虑包含   X X X    !!
+		///snow:不对，其实这里包含了四种情况
+		///            |--------------|        |-------------|       |-------------|     |------------| cur_block
+		///         |--------------------|        |--------|      |------------|              |------------|
 		if ((start <= cur_block->EndOffset) && (end >= cur_block->StartOffset))
 			return true;
 	}
@@ -1907,6 +1974,7 @@ bool CPartFile::IsAlreadyRequested(uint64 start, uint64 end, bool bCheckBuffers)
 	if (bCheckBuffers){
 		for (POSITION pos =  m_BufferedData_list.GetHeadPosition();pos != 0; ){
 			const PartFileBufferedData* cur_block =  m_BufferedData_list.GetNext(pos);
+			///snow:只要有部分重叠就可以了
 			if ((start <= cur_block->end) && (end >= cur_block->start)){
 				DebugLogWarning(_T("CPartFile::IsAlreadyRequested, collision with buffered data found"));
 				return true;
@@ -1916,6 +1984,7 @@ bool CPartFile::IsAlreadyRequested(uint64 start, uint64 end, bool bCheckBuffers)
 	return false;
 }
 
+///snow:决定是否缩减gap的范围，以避免反复请求block
 bool CPartFile::ShrinkToAvoidAlreadyRequested(uint64& start, uint64& end) const
 {
 	ASSERT( start <= end );
@@ -1925,13 +1994,18 @@ bool CPartFile::ShrinkToAvoidAlreadyRequested(uint64& start, uint64& end) const
 #endif
 	for (POSITION pos =  requestedblocks_list.GetHeadPosition();pos != 0; ){
 		const Requested_Block_Struct* cur_block = requestedblocks_list.GetNext(pos);
-        if ((start <= cur_block->EndOffset) && (end >= cur_block->StartOffset)) {
-            if(start < cur_block->StartOffset) {
+        ///snow:存在重叠
+		if ((start <= cur_block->EndOffset) && (end >= cur_block->StartOffset)) {
+			if(start < cur_block->StartOffset) {      
+				///snow:去年两种情况，保留两种       |-------------|       |-------------|
+				///snow:                        |--------|            |---------------------|                     
                 end = cur_block->StartOffset - 1;
+				///snow:调整为               |-------------|    
+				///snow:              |------|             
                 if(start == end)
                     return false;
             }
-			else if(end > cur_block->EndOffset) {
+			else if(end > cur_block->EndOffset) {   ///snow:剩下的两种
                 start = cur_block->EndOffset + 1;
                 if(start == end) {
                     return false;
@@ -1942,6 +2016,7 @@ bool CPartFile::ShrinkToAvoidAlreadyRequested(uint64& start, uint64& end) const
         }
 	}
 
+	///snow:同理检查缓冲区的数据
 	// has been shrunk to fit requested, if needed shrink it further to not collidate with buffered data
 	// check our buffers
 	for (POSITION pos =  m_BufferedData_list.GetHeadPosition();pos != 0; ){
