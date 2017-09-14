@@ -2044,6 +2044,8 @@ bool CPartFile::ShrinkToAvoidAlreadyRequested(uint64& start, uint64& end) const
 	return true;
 }
 
+
+///snow:计算range范围内的gap的总大小
 uint64 CPartFile::GetTotalGapSizeInRange(uint64 uRangeStart, uint64 uRangeEnd) const
 {
 	ASSERT( uRangeStart <= uRangeEnd );
@@ -2058,17 +2060,22 @@ uint64 CPartFile::GetTotalGapSizeInRange(uint64 uRangeStart, uint64 uRangeEnd) c
 	{
 		const Gap_Struct* pGap = gaplist.GetNext(pos);
 
+		///snow:gap包含Range
 		if (pGap->start < uRangeStart && pGap->end > uRangeEnd)
 		{
 			uTotalGapSize += uRangeEnd - uRangeStart + 1;
 			break;
 		}
 
+		///snow:       |----------------|    |--------------|   gap
+		///snow:    |----------------|    |-------------------|  range
 		if (pGap->start >= uRangeStart && pGap->start <= uRangeEnd)
 		{
 			uint64 uEnd = (pGap->end > uRangeEnd) ? uRangeEnd : pGap->end;
 			uTotalGapSize += uEnd - pGap->start + 1;
 		}
+		///snow:        |----------------|             gap
+		///snow:             |---------------|
 		else if (pGap->end >= uRangeStart && pGap->end <= uRangeEnd)
 		{
 			uTotalGapSize += pGap->end - uRangeStart + 1;
@@ -2080,6 +2087,7 @@ uint64 CPartFile::GetTotalGapSizeInRange(uint64 uRangeStart, uint64 uRangeEnd) c
 	return uTotalGapSize;
 }
 
+///snow:同上一函数，计算part范围内的gap的总大小
 uint64 CPartFile::GetTotalGapSizeInPart(UINT uPart) const
 {
 	uint64 uRangeStart = (uint64)uPart * PARTSIZE;
@@ -2089,6 +2097,8 @@ uint64 CPartFile::GetTotalGapSizeInPart(UINT uPart) const
 	return GetTotalGapSizeInRange(uRangeStart, uRangeEnd);
 }
 
+
+///snow
 bool CPartFile::GetNextEmptyBlockInPart(UINT partNumber, Requested_Block_Struct *result) const
 {
 	Gap_Struct *firstGap;
@@ -2096,6 +2106,7 @@ bool CPartFile::GetNextEmptyBlockInPart(UINT partNumber, Requested_Block_Struct 
 	uint64 end;
 	uint64 blockLimit;
 
+	///snow:计算part的首尾地址，
 	// Find start of this part
 	uint64 partStart = PARTSIZE * (uint64)partNumber;
 	uint64 start = partStart;
@@ -2109,6 +2120,7 @@ bool CPartFile::GetNextEmptyBlockInPart(UINT partNumber, Requested_Block_Struct 
 	// Loop until find a suitable gap and return true, or no more gaps and return false
 	for (;;)
 	{
+		///snow:取part中符合要求的第一个gap
 		firstGap = NULL;
 
 		// Find the first gap from the start position
@@ -2133,19 +2145,21 @@ bool CPartFile::GetNextEmptyBlockInPart(UINT partNumber, Requested_Block_Struct 
 			start = firstGap->start;
 
 		// If this is not within part, exit
-		if (start > partEnd)
+		if (start > partEnd)    ///snow:超出part的范围了
 			return false;
 
 		// Find end, keeping within the max block size and the part limit
 		end = firstGap->end;
+		///snow:地址不要跨过block的尺寸，就是都是180K的整数倍
 		blockLimit = partStart + (uint64)((UINT)(start - partStart)/EMBLOCKSIZE + 1)*EMBLOCKSIZE - 1;
 		if (end > blockLimit)
 			end = blockLimit;
 		if (end > partEnd)
 			end = partEnd;
-    
+
+		///snow:检查该gap是否已在请求列表中
 		// If this gap has not already been requested, we have found a valid entry
-		if (!IsAlreadyRequested(start, end, true))
+		if (!IsAlreadyRequested(start, end, true))   ///snow:没有重叠部分
 		{
 			// Was this block to be returned
 			if (result != NULL)
@@ -2158,7 +2172,7 @@ bool CPartFile::GetNextEmptyBlockInPart(UINT partNumber, Requested_Block_Struct 
 			return true;
 		}
 		else
-		{
+		{    ///snow:有重叠部分，缩减范围
         	uint64 tempStart = start;
         	uint64 tempEnd = end;
 
@@ -2190,6 +2204,8 @@ bool CPartFile::GetNextEmptyBlockInPart(UINT partNumber, Requested_Block_Struct 
 	return false;
 }
 
+
+///snow:填充Gap，如果新下载了部分内容，就要相应修改gaplist中的有关的gap的范围
 void CPartFile::FillGap(uint64 start, uint64 end)
 {
 	ASSERT( start <= end );
@@ -2197,6 +2213,7 @@ void CPartFile::FillGap(uint64 start, uint64 end)
 	POSITION pos1, pos2;
 	for (pos1 = gaplist.GetHeadPosition();(pos2 = pos1) != NULL;){
 		Gap_Struct* cur_gap = gaplist.GetNext(pos1);
+		///snow:给定的范围包含了已有的gap，表示该gap已下载完毕，可以删除了
 		if (cur_gap->start >= start && cur_gap->end <= end){ // our part fills this gap completly
 			gaplist.RemoveAt(pos2);
 			delete cur_gap;
@@ -2207,9 +2224,12 @@ void CPartFile::FillGap(uint64 start, uint64 end)
 		else if (cur_gap->end <= end && cur_gap->end >= start){// a part of this gap is in the part - set limit
 			cur_gap->end = start-1;
 		}
-		else if (start >= cur_gap->start && end <= cur_gap->end){
+		else if (start >= cur_gap->start && end <= cur_gap->end){   ///snow:给定的范围被已有的gap包含
 			uint64 buffer = cur_gap->end;
-			cur_gap->end = start-1;
+			cur_gap->end = start-1;   ///snow:这句多余了吧？应该不是，cur_gap是个指针，这句修改了gaplist中已有gap的值了
+			///snow:    |-----------------------------------|   原gap
+			///snow:          |----------------|                下载完成部分
+			///snow:    |-----| 原gap的新值    |------------|  new gap 
 			cur_gap = new Gap_Struct;
 			cur_gap->start = end+1;
 			cur_gap->end = buffer;
@@ -2223,6 +2243,8 @@ void CPartFile::FillGap(uint64 start, uint64 end)
 	newdate = true;
 }
 
+
+///snow:统计所有gaplist中的gap的大小，通过未下载的大小反算出已下载的大小
 void CPartFile::UpdateCompletedInfos()
 {
    	uint64 allgaps = 0; 
@@ -2235,6 +2257,8 @@ void CPartFile::UpdateCompletedInfos()
 	UpdateCompletedInfos(allgaps);
 }
 
+
+///snow:计算下载进度，99.9%被统计为99%，而不是100%
 void CPartFile::UpdateCompletedInfos(uint64 uTotalGaps)
 {
 	if (uTotalGaps > m_nFileSize){
@@ -2248,12 +2272,14 @@ void CPartFile::UpdateCompletedInfos(uint64 uTotalGaps)
 		percentcompleted = (float)(floor((1.0 - (double)uTotalGaps/(uint64)m_nFileSize) * 1000.0) / 10.0);
 		completedsize = m_nFileSize - uTotalGaps;
 	} 
-	else{
+	else{    ///snow:没有gap了，表示已全部下载
 		percentcompleted = 100.0F;
 		completedsize = m_nFileSize;
 	}
 }
 
+
+///snow:更新进度条上的颜色显示
 void CPartFile::DrawShareStatusBar(CDC* dc, LPCRECT rect, bool onlygreyrect, bool bFlat) const
 {
 	if( !IsPartFile() )
@@ -2504,6 +2530,8 @@ void CPartFile::DrawStatusBar(CDC* dc, LPCRECT rect, bool bFlat) /*const*/
 	}
 }
 
+
+///snow:统计已完成的part的状态
 void CPartFile::WritePartStatus(CSafeMemFile* file) const
 {
 	UINT uED2KPartCount = GetED2KPartCount();
@@ -2513,6 +2541,7 @@ void CPartFile::WritePartStatus(CSafeMemFile* file) const
 	while (uPart != uED2KPartCount)
 	{
 		uint8 towrite = 0;
+		///snow:每8个part使用一个字节表示
 		for (UINT i = 0; i < 8; i++)
 		{
 			if (uPart < GetPartCount() && IsComplete((uint64)uPart*PARTSIZE, (uint64)(uPart + 1)*PARTSIZE - 1, true))
@@ -2530,6 +2559,7 @@ void CPartFile::WriteCompleteSourcesCount(CSafeMemFile* file) const
 	file->WriteUInt16(m_nCompleteSourcesCount);
 }
 
+///snow:统计可用源数，如果srclist中的下载状态为DS_ONQUEUE 、DS_DOWNLOADING 、DS_CONNECTED 、DS_REMOTEQUEUEFULL，则可用源数+1
 int CPartFile::GetValidSourcesCount() const
 {
 	int counter = 0;
@@ -2541,6 +2571,8 @@ int CPartFile::GetValidSourcesCount() const
 	return counter;
 }
 
+
+///snow:统计无当前源数，如果srclist中的下载状态不是DS_ONQUEUE、DS_DOWNLOADING两者之一，则统计数+1
 UINT CPartFile::GetNotCurrentSourcesCount() const
 {
 	UINT counter = 0;
@@ -2552,6 +2584,8 @@ UINT CPartFile::GetNotCurrentSourcesCount() const
 	return counter;
 }
 
+
+///snow:计算需要的磁盘空间
 uint64 CPartFile::GetNeededSpace() const
 {
 	if (m_hpartfile.GetLength() > GetFileSize())
@@ -2566,10 +2600,10 @@ EPartFileStatus CPartFile::GetStatus(bool ignorepause) const
 	else if (paused)
 		return PS_PAUSED;
 	else
-		return PS_INSUFFICIENT;
+		return PS_INSUFFICIENT;   ///snow:磁盘空间不足
 }
 
-///snow:CUpDownClient::SetDownloadState()中调用
+///snow:CUpDownClient::SetDownloadState()中调用，添加下载源客户端
 void CPartFile::AddDownloadingSource(CUpDownClient* client){
 	POSITION pos = m_downloadingSourceList.Find(client); // to be sure
 	if(pos == NULL){
@@ -2578,6 +2612,8 @@ void CPartFile::AddDownloadingSource(CUpDownClient* client){
 	}
 }
 
+
+///snow:上一函数的反操作
 void CPartFile::RemoveDownloadingSource(CUpDownClient* client){
 	POSITION pos = m_downloadingSourceList.Find(client); // to be sure
 	if(pos != NULL){
