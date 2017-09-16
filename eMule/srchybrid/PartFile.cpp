@@ -2911,13 +2911,15 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16 serverport, UINT* pdebug_lowiddropped, bool Ed2kID)
 {
 	//The incoming ID could have the userid in the Hybrid format.. 
+	///snow:什么是Hybrid format?(混合格式）
+
 	uint32 hybridID = 0;
-	if( Ed2kID )
+	if( Ed2kID )  ///snow:决定字节序
 	{
 		if(IsLowID(userid))
 			hybridID = userid;
 		else
-			hybridID = ntohl(userid);
+			hybridID = ntohl(userid);  ///snow:ntohl函数，是将一个无符号长整形数从网络字节顺序转换为主机字节顺序， ntohl()返回一个以主机字节顺序表达的数。ntohs是16位的，ntohl是32位，主机字节序是小端字节序，网络字节序是大端字节序
 	}
 	else
 	{
@@ -2945,7 +2947,7 @@ bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16
 	}
 	if (Kademlia::CKademlia::IsConnected())
 	{
-		if(!Kademlia::CKademlia::IsFirewalled())
+		if(!Kademlia::CKademlia::IsFirewalled())  ///snow:kad未被墙
 			if(Kademlia::CKademlia::GetIPAddress() == hybridID && thePrefs.GetPort() == port)
 				return false;
 	}
@@ -2961,6 +2963,8 @@ bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16
 	return true;
 }
 
+///snow:从信息包里添加source，客户端发来的一般是单个source，服务器发来的是多个source
+///snow:在downloadqueue、serversocket、udpsocket中调用
 void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 serverport, bool bWithObfuscationAndHash)
 {
 	UINT count = sources->ReadUInt8();   ///snow:读取Source数
@@ -2971,12 +2975,12 @@ void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 server
 	bool bSkip = false;
 	for (UINT i = 0; i < count; i++)
 	{
-		uint32 userid = sources->ReadUInt32();
+		uint32 userid = sources->ReadUInt32();   ///snow:是ID还是IP?
 		uint16 port = sources->ReadUInt16();
 		uint8 byCryptOptions = 0;
-		if (bWithObfuscationAndHash){
+		if (bWithObfuscationAndHash){      ///snow:加密和Hash
 			byCryptOptions = sources->ReadUInt8();
-			if ((byCryptOptions & 0x80) > 0)
+			if ((byCryptOptions & 0x80) > 0)    ///snow:首位为1 ，1000xxxx，表示有Hash值，4字节
 				sources->ReadHash16(achUserHash);
 
 			if ((thePrefs.IsClientCryptLayerRequested() && (byCryptOptions & 0x01/*supported*/) > 0 && (byCryptOptions & 0x80) == 0)
@@ -2991,7 +2995,7 @@ void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 server
 			continue;
 
 		// check the HighID(IP) - "Filter LAN IPs" and "IPfilter" the received sources IP addresses
-		if (!IsLowID(userid))
+		if (!IsLowID(userid))   ///snow:HighID
 		{
 			if (!IsGoodIP(userid))   ///snow:不是正常IP
 			{ 
@@ -3026,7 +3030,7 @@ void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 server
 		}
 
 
-		if( GetMaxSources() > this->GetSourceCount() )
+		if( GetMaxSources() > this->GetSourceCount() )   ///snow:还未达到最大源数
 		{
 			debug_possiblesources++;
 			CUpDownClient* newsource = new CUpDownClient(this,port,userid,serverip,serverport,true);
@@ -3034,7 +3038,7 @@ void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 server
 
 			if ((byCryptOptions & 0x80) != 0)
 				newsource->SetUserHash(achUserHash);
-			theApp.downloadqueue->CheckAndAddSource(this,newsource);
+			theApp.downloadqueue->CheckAndAddSource(this,newsource);   ///snow:发起客户端测试
 		}
 		else
 		{
@@ -3049,19 +3053,21 @@ void CPartFile::AddSources(CSafeMemFile* sources, uint32 serverip, uint16 server
 		AddDebugLogLine(false, _T("SXRecv: Server source response; Count=%u, Dropped=%u, PossibleSources=%u, File=\"%s\""), count, debug_lowiddropped, debug_possiblesources, GetFileName());
 }
 
+
+///snow:从URL地址添加source
 void CPartFile::AddSource(LPCTSTR pszURL, uint32 nIP)
 {
 	if (stopped)
 		return;
 
-	if (!IsGoodIP(nIP))
+	if (!IsGoodIP(nIP))   ///snow:LAN IP
 	{ 
 		// check for 0-IP, localhost and optionally for LAN addresses
 		//if (thePrefs.GetLogFilteredIPs())
 		//	AddDebugLogLine(false, _T("Ignored URL source (IP=%s) \"%s\" - bad IP"), ipstr(nIP), pszURL);
 		return;
 	}
-	if (theApp.ipfilter->IsFiltered(nIP))
+	if (theApp.ipfilter->IsFiltered(nIP))  ///snow:黑名单
 	{
 		if (thePrefs.GetLogFilteredIPs())
 			AddDebugLogLine(false, _T("Ignored URL source (IP=%s) \"%s\" - IP filter (%s)"), ipstr(nIP), pszURL, theApp.ipfilter->GetLastHit());
@@ -3069,7 +3075,7 @@ void CPartFile::AddSource(LPCTSTR pszURL, uint32 nIP)
 	}
 
 	CUrlClient* client = new CUrlClient;
-	if (!client->SetUrl(pszURL, nIP))
+	if (!client->SetUrl(pszURL, nIP))   ///snow:URL解析错误
 	{
 		LogError(LOG_STATUSBAR, _T("Failed to process URL source \"%s\""), pszURL);
 		delete client;
@@ -3082,7 +3088,7 @@ void CPartFile::AddSource(LPCTSTR pszURL, uint32 nIP)
 }
 
 // SLUGFILLER: heapsortCompletesrc
-///snow:CDownloadQueue中也有HeapSort
+///snow:CDownloadQueue中也有HeapSort，还有本类的基类中也定义了一个一模一样的函数
 static void HeapSort(CArray<uint16, uint16>& count, UINT first, UINT last){
 	UINT r;
 	for ( r = first; !(r & (UINT)INT_MIN) && (r<<1) < last; ){
@@ -3115,18 +3121,18 @@ void CPartFile::UpdatePartsInfo()
 	bool flag = (time(NULL) - m_nCompleteSourcesTime > 0); 
 
 	// Reset part counters
-	if ((UINT)m_SrcpartFrequency.GetSize() < partcount)
+	if ((UINT)m_SrcpartFrequency.GetSize() < partcount)   ///snow:与父类函数开始不同，父类是m_AvailPartFrequency，下同
 		m_SrcpartFrequency.SetSize(partcount);
 	for (UINT i = 0; i < partcount; i++)
 		m_SrcpartFrequency[i] = 0;
 	
 	CArray<uint16, uint16> count;
 	if (flag)
-		count.SetSize(0, srclist.GetSize());
+		count.SetSize(0, srclist.GetSize());    ///snow:父类函数中是count.SetSize(0, m_ClientUploadList.GetSize());下同
 	for (POSITION pos = srclist.GetHeadPosition(); pos != 0; )
 	{
 		CUpDownClient* cur_src = srclist.GetNext(pos);
-		if( cur_src->GetPartStatus() )
+		if( cur_src->GetPartStatus() )   ///snow:父类函数：if (cur_src->m_abyUpPartStatus && cur_src->GetUpPartCount() == partcount)
 		{		
 			for (UINT i = 0; i < partcount; i++)
 			{
@@ -3177,7 +3183,7 @@ void CPartFile::UpdatePartsInfo()
 			//When still a part file, adjust your guesses by 20% to what you see..
 
 			//Not many sources, so just use what you see..
-			if (n < 5)
+			if (n < 5)   ///snow:比父类多出部分
 			{
 //				m_nCompleteSourcesCount;
 				m_nCompleteSourcesCountLo= m_nCompleteSourcesCount;
@@ -3219,11 +3225,12 @@ void CPartFile::UpdatePartsInfo()
 		}
 		m_nCompleteSourcesTime = time(NULL) + (60);
 	}
-	UpdateDisplayedInfo();
+	UpdateDisplayedInfo();  ///snow:与父类不同处理
 }	
 
 
 ///snow:Block 处理
+///snow:从requestedblocks_list中移除参数指定范围内的block，可能一个，可能多个
 bool CPartFile::RemoveBlockFromList(uint64 start, uint64 end)
 {
 	ASSERT( start <= end );
@@ -3264,6 +3271,7 @@ void CPartFile::CompleteFile(bool bIsHashingDone)
 	if (!bIsHashingDone){    ///snow:尚未hash，对文件进行Hash
 		SetStatus(PS_COMPLETING);
 		datarate = 0;
+		///snow:启动新的线程，对文件进行hash处理
 		CAddFileThread* addfilethread = (CAddFileThread*) AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_BELOW_NORMAL,0, CREATE_SUSPENDED);
 		if (addfilethread){
 			SetFileOp(PFOP_HASHING);
@@ -3283,6 +3291,7 @@ void CPartFile::CompleteFile(bool bIsHashingDone)
 	else{
 		StopFile();
 		SetStatus(PS_COMPLETING);
+		///snow:启动新的线程，对文件进行完成处理
 		CWinThread *pThread = AfxBeginThread(CompleteThreadProc, this, THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED); // Lord KiRon - using threads for file completion
 		if (pThread){
 			SetFileOp(PFOP_COPYING);
@@ -3315,10 +3324,11 @@ UINT CPartFile::CompleteThreadProc(LPVOID pvParams)
 	CoUninitialize();
    	return 0; 
 }
-
+///snow:PerformFileComplete()中调用。
 void UncompressFile(LPCTSTR pszFilePath, CPartFile* pPartFile)
 {
 	// check, if it's a compressed file
+	///snow:非压缩文件
 	DWORD dwAttr = GetFileAttributes(pszFilePath);
 	if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_COMPRESSED) == 0)
 		return;
@@ -3327,6 +3337,7 @@ void UncompressFile(LPCTSTR pszFilePath, CPartFile* pPartFile)
 	PathRemoveFileSpec(strDir.GetBuffer());
 	strDir.ReleaseBuffer();
 
+	///snow:目录具有压缩属性，不解压文件
 	// If the directory of the file has the 'Compress' attribute, do not uncomress the file
 	dwAttr = GetFileAttributes(strDir);
 	if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_COMPRESSED) != 0)
@@ -3344,6 +3355,7 @@ void UncompressFile(LPCTSTR pszFilePath, CPartFile* pPartFile)
 
 	USHORT usInData = COMPRESSION_FORMAT_NONE;
 	DWORD dwReturned = 0;
+	///snow:还是调用DeviceIoControl
 	if (!DeviceIoControl(hFile, FSCTL_SET_COMPRESSION, &usInData, sizeof usInData, NULL, 0, &dwReturned, NULL)){
 		if (thePrefs.GetVerbose())
 			theApp.QueueDebugLogLine(true, _T("Failed to decompress file \"%s\" - %s"), pszFilePath, GetErrorMessage(GetLastError(), 1));
@@ -3368,6 +3380,8 @@ EXTERN_C const IID CLSID_PersistentZoneIdentifier;
 const GUID CLSID_PersistentZoneIdentifier = { 0x0968E258, 0x16C7, 0x4DBA, { 0xAA, 0x86, 0x46, 0x2D, 0xD6, 0x1E, 0x31, 0xA3 } };
 #endif
 
+
+///snow:ATL组件，保存文件
 void SetZoneIdentifier(LPCTSTR pszFilePath)
 {
 	if (!thePrefs.GetCheckFileOpen())
@@ -3392,6 +3406,7 @@ void SetZoneIdentifier(LPCTSTR pszFilePath)
 	}
 }
 
+///snow:回调函数，发送TM_FILEOPPROGRESS消息，在 CemuleDlg::OnFileOpProgress()中调用
 DWORD CALLBACK CopyProgressRoutine(LARGE_INTEGER TotalFileSize, LARGE_INTEGER TotalBytesTransferred,
 								   LARGE_INTEGER /*StreamSize*/, LARGE_INTEGER /*StreamBytesTransferred*/, DWORD /*dwStreamNumber*/,
 								   DWORD /*dwCallbackReason*/, HANDLE /*hSourceFile*/, HANDLE /*hDestinationFile*/, 
@@ -3413,6 +3428,8 @@ DWORD CALLBACK CopyProgressRoutine(LARGE_INTEGER TotalFileSize, LARGE_INTEGER To
 	return PROGRESS_CONTINUE;
 }
 
+
+///snow:将part文件拷贝成原文件（已完成），调用系统API函数MoveFileWithProgress
 DWORD MoveCompletedPartFile(LPCTSTR pszPartFilePath, LPCTSTR pszNewPartFilePath, CPartFile* pPartFile)
 {
 	DWORD dwMoveResult = ERROR_INVALID_FUNCTION;
@@ -3421,6 +3438,7 @@ DWORD MoveCompletedPartFile(LPCTSTR pszPartFilePath, LPCTSTR pszNewPartFilePath,
 	HMODULE hLib = GetModuleHandle(_T("kernel32"));
 	if (hLib)
 	{
+		///snow:定义函数指针，指向kernel32.dll中的MoveFileWithProgress()函数
 		BOOL (WINAPI *pfnMoveFileWithProgress)(LPCTSTR lpExistingFileName, LPCTSTR lpNewFileName, LPPROGRESS_ROUTINE lpProgressRoutine, LPVOID lpData, DWORD dwFlags);
 		(FARPROC&)pfnMoveFileWithProgress = GetProcAddress(hLib, _TWINAPI("MoveFileWithProgress"));
 		if (pfnMoveFileWithProgress)
@@ -3448,6 +3466,7 @@ DWORD MoveCompletedPartFile(LPCTSTR pszPartFilePath, LPCTSTR pszNewPartFilePath,
 // NOTE: This function is executed within a seperate thread, do *NOT* use any lists/queues of the main thread without
 // synchronization. Even the access to couple of members of the CPartFile (e.g. filename) would need to be properly
 // synchronization to achive full multi threading compliance.
+///snow:执行文件下载完成操作，在单独的线程内启动
 BOOL CPartFile::PerformFileComplete() 
 {
 	// If that function is invoked from within the file completion thread, it's ok if we wait (and block) the thread.
@@ -3460,16 +3479,17 @@ BOOL CPartFile::PerformFileComplete()
 	CString strNewname;
 	CString indir;
 
+	///snow:先从分类打
 	if (PathFileExists(thePrefs.GetCategory(GetCategory())->strIncomingPath)){
 		indir = thePrefs.GetCategory(GetCategory())->strIncomingPath;
 		strNewname.Format(_T("%s\\%s"), indir, newfilename);
 	}
-	else{
+	else{  ///snow:再从主目录找
 		indir = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
 		strNewname.Format(_T("%s\\%s"), indir, newfilename);
 	}
 
-	// close permanent handle
+	// close permanent handle   ///snow:持久性
 	try{
 		if (m_hpartfile.m_hFile != INVALID_HANDLE_VALUE)
 			m_hpartfile.Close();
@@ -3482,6 +3502,7 @@ BOOL CPartFile::PerformFileComplete()
 		//return false;
 	}
 
+	///snow:文件名处理
 	bool renamed = false;
 	if(PathFileExists(strNewname))
 	{
@@ -3529,6 +3550,7 @@ BOOL CPartFile::PerformFileComplete()
 	free(newfilename);
 
 	DWORD dwMoveResult;
+	///snow:调用winAPI对文件进行改名
 	if ((dwMoveResult = MoveCompletedPartFile(strPartfilename, strNewname, this)) != ERROR_SUCCESS)
 	{
 		theApp.QueueLogLine(true,GetResString(IDS_ERR_COMPLETIONFAILED) + _T(" - \"%s\": ") + GetErrorMessage(dwMoveResult), GetFileName(), strNewname);
@@ -3542,10 +3564,12 @@ BOOL CPartFile::PerformFileComplete()
 		m_bCompletionError = true;
 		SetFileOp(PFOP_NONE);
 		if (theApp.emuledlg && theApp.emuledlg->IsRunning())
+			///snow:通知主线程完成文件下载出错了(无函数处理?)
 			VERIFY( PostMessage(theApp.emuledlg->m_hWnd, TM_FILECOMPLETED, FILE_COMPLETION_THREAD_FAILED, (LPARAM)this) );
 		return FALSE;
 	}
 
+	///snow:这边为什么要解压缩呢？
 	UncompressFile(strNewname, this);
 	SetZoneIdentifier(strNewname);		// may modify the file's "Last Modified" time
 
@@ -3554,14 +3578,17 @@ BOOL CPartFile::PerformFileComplete()
 	// that file will be rehashed at next startup and there would also be a duplicate entry (hash+size) in known.met
 	// because of different file date!
 	ASSERT( m_hpartfile.m_hFile == INVALID_HANDLE_VALUE ); // the file must be closed/commited!
+	///snow:获取文件属性
 	struct _stat st;
 	if (_tstat(strNewname, &st) == 0)
 	{
 		m_tLastModified = st.st_mtime;
 		m_tUtcLastModified = m_tLastModified;
+		///snow:调整最后编辑时间
 		AdjustNTFSDaylightFileTime(m_tUtcLastModified, strNewname);
 	}
 
+	///snow:善后处理，清除part.met、bak文件
 	// remove part.met file
 	if (_tremove(m_fullname))
 		theApp.QueueLogLine(true, GetResString(IDS_ERR_DELETEFAILED) + _T(" - ") + CString(_tcserror(errno)), m_fullname);
@@ -3585,6 +3612,7 @@ BOOL CPartFile::PerformFileComplete()
 	paused = false;
 	SetFileOp(PFOP_NONE);
 
+	///snow:清除损坏黑盒子
 	// clear the blackbox to free up memory
 	m_CorruptionBlackBox.Free();
 
@@ -3599,15 +3627,16 @@ BOOL CPartFile::PerformFileComplete()
 
 // 'End' of file completion, to avoid multi threading synchronization problems, this is to be invoked from within the
 // main thread!
-///snow:emuleDlg中的OnFileCompleted()调用，处理TM_FILECOMPLETED消息
+///snow:emuleDlg中的OnFileCompleted()调用，处理TM_FILECOMPLETED消息，处理上一函数PerformFileComplete()中发出的的消息：FILE_COMPLETION_THREAD_SUCCESS |(FILE_COMPLETION_THREAD_RENAMED:0）
+///snow:但未处理FILE_COMPLETION_THREAD_FAILED，未打到其它处理函数
 void CPartFile::PerformFileCompleteEnd(DWORD dwResult)
 {
-	if (dwResult & FILE_COMPLETION_THREAD_SUCCESS)
+	if (dwResult & FILE_COMPLETION_THREAD_SUCCESS)   ///snow:成功处理
 	{
 		SetStatus(PS_COMPLETE); // (set status and) update status-modification related GUI elements
-		theApp.knownfiles->SafeAddKFile(this);
-		theApp.downloadqueue->RemoveFile(this);
-		theApp.mmserver->AddFinishedFile(this);
+		theApp.knownfiles->SafeAddKFile(this);   ///snow:添加到Knownlist
+		theApp.downloadqueue->RemoveFile(this);  ///snow:从下载队列中摘除
+		theApp.mmserver->AddFinishedFile(this);  ///snow:添加到MobileMuleServer
 		if (thePrefs.GetRemoveFinishedDownloads())
 			theApp.emuledlg->transferwnd->GetDownloadList()->RemoveFile(this);
 		else
@@ -3615,21 +3644,24 @@ void CPartFile::PerformFileCompleteEnd(DWORD dwResult)
 
 		theApp.emuledlg->transferwnd->GetDownloadList()->ShowFilesCount();
 
+		///snow:修改配置状态信息
 		thePrefs.Add2DownCompletedFiles();
 		thePrefs.Add2DownSessionCompletedFiles();
 		thePrefs.SaveCompletedDownloadsStat();
 
-		// 05-J鋘-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
+		// 05-Jan-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
 		// the chance to clean any available meta data tags and provide only tags which were determined by us.
+		///snow:媒体文件更新tag
 		UpdateMetaDataTags();
 
 		// republish that file to the ed2k-server to update the 'FT_COMPLETE_SOURCES' counter on the server.
+		///snow:添加到共享文件列表，并发布
 		theApp.sharedfiles->RepublishFile(this);
 
 		// give visual response
 		Log(LOG_SUCCESS | LOG_STATUSBAR, GetResString(IDS_DOWNLOADDONE), GetFileName());
 		theApp.emuledlg->ShowNotifier(GetResString(IDS_TBN_DOWNLOADDONE) + _T('\n') + GetFileName(), TBN_DOWNLOADFINISHED, GetFilePath());
-		if (dwResult & FILE_COMPLETION_THREAD_RENAMED)
+		if (dwResult & FILE_COMPLETION_THREAD_RENAMED)  ///snow:如果改名了
 		{
 			CString strFilePath(GetFullName());
 			PathStripPath(strFilePath.GetBuffer());
@@ -3650,6 +3682,8 @@ void CPartFile::PerformFileCompleteEnd(DWORD dwResult)
 	theApp.downloadqueue->StartNextFileIfPrefs(GetCategory());
 }
 
+
+///snow:除去所有的源客户端，但需要考虑的是该客户端是否还有其它文件被请求，参数bTryToSwap决定是否向该客户端发起下载另一文件的请求
 void  CPartFile::RemoveAllSources(bool bTryToSwap){
 	POSITION pos1,pos2;
 	for( pos1 = srclist.GetHeadPosition(); ( pos2 = pos1 ) != NULL; ){
@@ -3666,7 +3700,7 @@ void  CPartFile::RemoveAllSources(bool bTryToSwap){
 
 	//[enkeyDEV(Ottavio84) -A4AF-]
 	// remove all links A4AF in sources to this file
-	if(!A4AFsrclist.IsEmpty())
+	if(!A4AFsrclist.IsEmpty())   ///snow:ask for another file source list 非空
 	{
 		POSITION pos1, pos2;
 		for(pos1 = A4AFsrclist.GetHeadPosition();(pos2=pos1)!=NULL;)
@@ -3674,12 +3708,14 @@ void  CPartFile::RemoveAllSources(bool bTryToSwap){
 			A4AFsrclist.GetNext(pos1);
 			
 			POSITION pos3 = A4AFsrclist.GetAt(pos2)->m_OtherRequests_list.Find(this); 
-			if(pos3)
+			if(pos3)   ///snow:如果存在于m_OtherRequests_list，先从m_OtherRequests_list中除去
 			{ 
 				A4AFsrclist.GetAt(pos2)->m_OtherRequests_list.RemoveAt(pos3);
 				theApp.emuledlg->transferwnd->GetDownloadList()->RemoveSource(this->A4AFsrclist.GetAt(pos2),this);
 			}
-			else{
+			else{ 
+
+				///snow:否则，再检查是否存在于m_OtherNoNeeded_list中，如果有，也除去
 				pos3 = A4AFsrclist.GetAt(pos2)->m_OtherNoNeeded_list.Find(this); 
 				if(pos3)
 				{ 
@@ -3688,12 +3724,13 @@ void  CPartFile::RemoveAllSources(bool bTryToSwap){
 				}
 			}
 		}
-		A4AFsrclist.RemoveAll();
+		A4AFsrclist.RemoveAll();   ///snow:清空所有的A4AFsrclist
 	}
 	
 	UpdateFileRatingCommentAvail();
 }
 
+///snow:删除文件
 void CPartFile::DeleteFile(){
 	ASSERT ( !m_bPreviewing );
 
@@ -3707,6 +3744,7 @@ void CPartFile::DeleteFile(){
 		return;
 	}
 
+	///snow:与文件有关联的清理
 	theApp.sharedfiles->RemoveFile(this, true);
 	theApp.downloadqueue->RemoveFile(this);
 	theApp.emuledlg->transferwnd->GetDownloadList()->RemoveFile(this);
@@ -3715,6 +3753,7 @@ void CPartFile::DeleteFile(){
 	if (m_hpartfile.m_hFile != INVALID_HANDLE_VALUE)
 		m_hpartfile.Close();
 
+	///snow:删除相关的文件
 	if (_tremove(m_fullname))
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_DELETE) + _T(" - ") + CString(_tcserror(errno)), m_fullname);
 	CString partfilename(RemoveFileExtension(m_fullname));
@@ -3734,6 +3773,8 @@ void CPartFile::DeleteFile(){
 	delete this;
 }
 
+
+///snow:在CPartFile::FlushBuffer()和AICHRecoveryDataAvailable()中调用，校验该part的正确性
 bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 {
 	// Right now we demand that AICH (if we have one) and MD4 agree on a parthash, no matter what
@@ -3744,6 +3785,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 	// issue, with the current implementation at least nothing can go horribly wrong (from a security PoV)
 	if (pbAICHReportedOK != NULL)
 		*pbAICHReportedOK = false;
+	///snow:hashset出了问题，需要重新hash
 	if (!m_FileIdentifier.HasExpectedMD4HashCount() && !(m_FileIdentifier.HasAICHHash() && m_FileIdentifier.HasExpectedAICHHashCount()))
 	{
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_HASHERRORWARNING), GetFileName());
@@ -3779,15 +3821,18 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 		bool bAICHError = false;
 		bool bAICHChecked = false;
 
+		///snow:处理MD4Hash
 		if (m_FileIdentifier.HasExpectedMD4HashCount())
 		{
 			bMD4Checked = true;
 			if (GetPartCount() > 1 || GetFileSize()== (uint64)PARTSIZE)
 			{
 				if (m_FileIdentifier.GetAvailableMD4PartHashCount() > partnumber)
+					///snow:比较前后两次的HAsh值是否相同
 					bMD4Error = md4cmp(hashresult, m_FileIdentifier.GetMD4PartHash(partnumber)) != 0;
 				else
-				{
+				{   
+					///snow:出错了，需要重新Hash
 					ASSERT( false );
 					m_bMD4HashsetNeeded = true;
 				}
@@ -3801,6 +3846,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 			m_bMD4HashsetNeeded = true;
 		}
 
+		///snow:处理AICHHash
 		if (m_FileIdentifier.HasAICHHash() && m_FileIdentifier.HasExpectedAICHHashCount() && phtAICHPartHash != NULL)
 		{
 			ASSERT( phtAICHPartHash->m_bHashValid );
@@ -3854,6 +3900,8 @@ bool CPartFile::IsPreviewableFileType() const {
     return IsArchive(true) || IsMovie();
 }
 
+
+///snow:设置下载优先级
 void CPartFile::SetDownPriority(uint8 np, bool resort)
 {
 	//Changed the default resort to true. As it is was, we almost never sorted the download list when a priority changed.
@@ -3879,7 +3927,7 @@ void CPartFile::SetDownPriority(uint8 np, bool resort)
 		UpdateDisplayedInfo(true);
 		//Save the partfile. We do this so that if we restart eMule before this files does
 		//any transfers, it will remember the new priority.
-		SavePartFile();
+		SavePartFile();   ///snow:因为改变了优先级，所以需要保存，以便下次启动时读取优先级
 	}
 }
 
@@ -3906,6 +3954,8 @@ bool CPartFile::CanStopFile() const
 	return (!IsStopped() && GetStatus()!=PS_ERROR && !bFileDone);
 }
 
+
+///snow:参数resort决定是否重新对下载队列进行排序，参数bCancel决定是否放弃缓冲区中的数据
 void CPartFile::StopFile(bool bCancel, bool resort)
 {
 	// Barry - Need to tell any connected clients to stop sending the file
@@ -3922,7 +3972,7 @@ void CPartFile::StopFile(bool bCancel, bool resort)
 	memset(net_stats,0,sizeof(net_stats));	//Xman Bugfix
 
 	if (!bCancel)
-		FlushBuffer(true);
+		FlushBuffer(true);   ///snow:将缓冲区中的数据写入磁盘
     if(resort) {
 	    theApp.downloadqueue->SortByPriority();
 	    theApp.downloadqueue->CheckDiskspace();
@@ -3954,6 +4004,8 @@ bool CPartFile::CanPauseFile() const
 	return (GetStatus()!=PS_PAUSED && GetStatus()!=PS_ERROR && !bFileDone);
 }
 
+
+///snow:参数bInsufficient说明是否是因为磁盘满而暂停
 void CPartFile::PauseFile(bool bInsufficient, bool resort)
 {
 	// if file is already in 'insufficient' state, don't set it again to insufficient. this may happen if a disk full
@@ -3966,7 +4018,7 @@ void CPartFile::PauseFile(bool bInsufficient, bool resort)
 		m_iLastPausePurge = time(NULL);
 	theApp.downloadqueue->RemoveLocalServerRequest(this);
 
-	if(GetKadFileSearchID())
+	if(GetKadFileSearchID())   ///snow:停止KAD网的搜索
 	{
 		Kademlia::CSearchManager::StopSearch(GetKadFileSearchID(), true);
 		m_LastSearchTimeKad = 0; //If we were in the middle of searching, reset timer so they can resume searching.
@@ -4002,14 +4054,14 @@ void CPartFile::PauseFile(bool bInsufficient, bool resort)
 	}
 	NotifyStatusChange();
 	datarate = 0;
-	m_anStates[DS_DOWNLOADING] = 0; // -khaos--+++> Renamed var.
+	m_anStates[DS_DOWNLOADING] = 0; // -khaos--+++> Renamed var.   ///snow:清除m_anStatus数组中DS_DOWNLOADING的计数
 	if (!bInsufficient)
 	{
         if(resort) {
 		    theApp.downloadqueue->SortByPriority();
 		    theApp.downloadqueue->CheckDiskspace();
         }
-		SavePartFile();
+		SavePartFile();  ///snow；保存文件状态，下次eMule启动时不会开始下载
 	}
 	UpdateDisplayedInfo(true);
 }
@@ -4019,13 +4071,14 @@ bool CPartFile::CanResumeFile() const
 	return (GetStatus()==PS_PAUSED || GetStatus()==PS_INSUFFICIENT || (GetStatus()==PS_ERROR && GetCompletionError()));
 }
 
+///snow:重新开始下载
 void CPartFile::ResumeFile(bool resort)
 {
 	if (status==PS_COMPLETE || status==PS_COMPLETING)
 		return;
 	if (status==PS_ERROR && m_bCompletionError){
 		ASSERT( gaplist.IsEmpty() );
-		if (gaplist.IsEmpty()){
+		if (gaplist.IsEmpty()){   ///snow:文件下载完成
 			// rehashing the file could probably be avoided, but better be in the safe side..
 			m_bCompletionError = false;
 			CompleteFile(false);
@@ -4046,11 +4099,12 @@ void CPartFile::ResumeFile(bool resort)
 	UpdateDisplayedInfo(true);
 }
 
+///snow:什么意思？重启因为磁盘满而暂停的下载？
 void CPartFile::ResumeFileInsufficient()
 {
 	if (status==PS_COMPLETE || status==PS_COMPLETING)
 		return;
-	if (!insufficient)
+	if (!insufficient)   ///snow:还没解除磁盘满的问题
 		return;
 	AddLogLine(false, _T("Resuming download of \"%s\""), GetFileName());
 	insufficient = false;
