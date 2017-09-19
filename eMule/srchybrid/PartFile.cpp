@@ -3775,6 +3775,7 @@ void CPartFile::DeleteFile(){
 
 
 ///snow:在CPartFile::FlushBuffer()和AICHRecoveryDataAvailable()中调用，校验该part的正确性
+///snow:返回值为true时，表示MD4和AICH两者的hash都错了
 bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 {
 	// Right now we demand that AICH (if we have one) and MD4 agree on a parthash, no matter what
@@ -3785,7 +3786,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 	// issue, with the current implementation at least nothing can go horribly wrong (from a security PoV)
 	if (pbAICHReportedOK != NULL)
 		*pbAICHReportedOK = false;
-	///snow:hashset出了问题，需要重新hash
+	///snow:hashset出了问题，MD4不对,AICH也不对，需要重新hash，这时函数返回true
 	if (!m_FileIdentifier.HasExpectedMD4HashCount() && !(m_FileIdentifier.HasAICHHash() && m_FileIdentifier.HasExpectedAICHHashCount()))
 	{
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_HASHERRORWARNING), GetFileName());
@@ -3793,18 +3794,21 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 		m_bAICHPartHashsetNeeded = true;
 		return true;		
 	}
-	else{
+	else{  ///snow:MD4和AICH至少有一个是对的
 		uchar hashresult[16];
 		m_hpartfile.Seek((LONGLONG)PARTSIZE*(uint64)partnumber,0);
 		uint32 length = PARTSIZE;
+		///snow:超过了part文件的大小，表示是最后一个part
 		if ((ULONGLONG)PARTSIZE*(uint64)(partnumber+1) > m_hpartfile.GetLength()){
 			length = (UINT)(m_hpartfile.GetLength() - ((ULONGLONG)PARTSIZE*(uint64)partnumber));
 			ASSERT( length <= PARTSIZE );
 		}
 		
 		CAICHHashTree* phtAICHPartHash = NULL;
+		
 		if (m_FileIdentifier.HasAICHHash() && m_FileIdentifier.HasExpectedAICHHashCount())
-		{
+		{  
+			///snow:AICH未发现错误，提取该part的partTree，存入pPartTree
 			const CAICHHashTree* pPartTree = m_pAICHRecoveryHashSet->FindPartHash((uint16)partnumber);
 			if (pPartTree != NULL)
 			{
@@ -3814,7 +3818,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 			else
 				ASSERT( false );
 		}
-		CreateHash(&m_hpartfile, length, hashresult, phtAICHPartHash);
+		CreateHash(&m_hpartfile, length, hashresult, phtAICHPartHash);   ///snow:重建AICHhash，存入phtAICHPartHash
 
 		bool bMD4Error = false;
 		bool bMD4Checked = false;
@@ -3824,6 +3828,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 		///snow:处理MD4Hash
 		if (m_FileIdentifier.HasExpectedMD4HashCount())
 		{
+			///snow:MD4hash未发现错误
 			bMD4Checked = true;
 			if (GetPartCount() > 1 || GetFileSize()== (uint64)PARTSIZE)
 			{
@@ -3841,7 +3846,8 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 				bMD4Error = md4cmp(hashresult, m_FileIdentifier.GetMD4Hash()) != 0;
 		}
 		else
-		{
+		{   
+			///snow:MD4Hash错了，需要重新HASH
 			DebugLogError(_T("MD4 HashSet not present while veryfing part %u for file %s"), partnumber, GetFileName());
 			m_bMD4HashsetNeeded = true;
 		}
@@ -3850,7 +3856,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 		if (m_FileIdentifier.HasAICHHash() && m_FileIdentifier.HasExpectedAICHHashCount() && phtAICHPartHash != NULL)
 		{
 			ASSERT( phtAICHPartHash->m_bHashValid );
-			bAICHChecked = true;
+			bAICHChecked = true;    ///snow:表示检查过AICH了
 			if (GetPartCount() > 1)
 			{
 				if (m_FileIdentifier.GetAvailableAICHPartHashCount() > partnumber)
@@ -4199,18 +4205,21 @@ time_t CPartFile::getTimeRemaining() const
 	time_t estimate = -1;
 	if( GetDatarate() > 0 )
 	{
+		///snow:时间估计=（文件长度-已完成长度）/当前下载速率
 		simple = (time_t)((uint64)(GetFileSize() - completesize) / (uint64)GetDatarate());
 	}
+
+	///snow:时间估计=（文件长度-已完成长度）/（已完成长度/下载时间）
 	if( GetDlActiveTime() && completesize >= (uint64)512000 )
 		estimate = (time_t)((uint64)(GetFileSize() - completesize) / ((double)completesize / (double)GetDlActiveTime()));
 
-	if( simple == -1 )
+	if( simple == -1 )  ///snow:当前速率为0
 	{
 		//We are not transferring at the moment.
-		if( estimate == -1 )
+		if( estimate == -1 )   ///snow:已下载的长度太短
 			//We also don't have enough data to guess
 			return -1;
-		else if( estimate > HR2S(24*15) )
+		else if( estimate > HR2S(24*15) )    ///snow:估计的时间超过
 			//The estimate is too high
 			return -1;
 		else
@@ -4223,7 +4232,7 @@ time_t CPartFile::getTimeRemaining() const
 	}
 	if( simple < estimate )
 		return simple;
-	if( estimate > HR2S(24*15) )
+	if( estimate > HR2S(24*15) )   ///snow:时间超过15天
 		//The estimate is too high..
 		return -1;
 	return estimate;
@@ -4236,18 +4245,18 @@ void CPartFile::PreviewFile()
 	if (thePreviewApps.Preview(this))
 		return;
 
-	if (IsArchive(true)){
+	if (IsArchive(true)){    ///snow:压缩文件
 		if (!m_bRecoveringArchive && !m_bPreviewing)
 			CArchiveRecovery::recover(this, true, thePrefs.GetPreviewCopiedArchives());
 		return;
 	}
 
-	if (!IsReadyForPreview()){
+	if (!IsReadyForPreview()){    ///snow:还没准备好
 		ASSERT( false );
 		return;
 	}
 
-	if (thePrefs.IsMoviePreviewBackup()){
+	if (thePrefs.IsMoviePreviewBackup()){   ///snow:如果是影片，启动线程对影片进行预览
 		if (!CheckFileOpen(GetFilePath(), GetFileName()))
 			return;
 		m_bPreviewing = true;
@@ -4267,6 +4276,7 @@ bool CPartFile::IsReadyForPreview() const
 		return (ePreviewAppsRes == CPreviewApps::Yes);
 
 	// Barry - Allow preview of archives of any length > 1k
+	///snow:处理压缩文件
 	if (IsArchive(true))
 	{
 		//if (GetStatus() != PS_COMPLETE && GetStatus() != PS_COMPLETING 
@@ -4277,10 +4287,12 @@ bool CPartFile::IsReadyForPreview() const
 
 		// check part file state
 	    EPartFileStatus uState = GetStatus();
+		///snow:已下载完毕，没必要预览了
 		if (uState == PS_COMPLETE || uState == PS_COMPLETING)
 			return false;
 
 		// check part file size(s)
+		///snow:文件太小
 		if (GetFileSize() < (uint64)1024 || GetCompletedSize() < (uint64)1024)
 			return false;
 
@@ -4289,6 +4301,7 @@ bool CPartFile::IsReadyForPreview() const
 			return false;
 
 		// check free disk space
+		///snow:计算需要的最小磁盘空间
 		uint64 uMinFreeDiskSpace = (thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() > 0)
 									? thePrefs.GetMinFreeDiskSpace()
 									: 20*1024*1024;
@@ -4296,18 +4309,20 @@ bool CPartFile::IsReadyForPreview() const
 			uMinFreeDiskSpace += (uint64)(GetFileSize() * (uint64)2);
 		else
 			uMinFreeDiskSpace += (uint64)(GetCompletedSize() + (uint64)16*1024);
+		///snow:磁盘空间不够
 		if (GetFreeDiskSpaceX(GetTempPath()) < uMinFreeDiskSpace)
 			return false;
 		return true; 
 	}
 
+	///snow:处理影片文件
 	if (thePrefs.IsMoviePreviewBackup())
 	{
 		return !( (GetStatus() != PS_READY && GetStatus() != PS_PAUSED) 
 				|| m_bPreviewing || GetPartCount() < 5 || !IsMovie() || (GetFreeDiskSpaceX(GetTempPath()) + 100000000) < GetFileSize()
 				|| ( !IsComplete(0,PARTSIZE-1, false) || !IsComplete(PARTSIZE*(uint64)(GetPartCount()-1),GetFileSize() - (uint64)1, false)));
 	}
-	else
+	else    ///snow:调用外部播放器
 	{
 		TCHAR szVideoPlayerFileName[_MAX_FNAME];
 		_tsplitpath(thePrefs.GetVideoPlayer(), NULL, NULL, szVideoPlayerFileName, NULL);
@@ -4374,6 +4389,9 @@ bool CPartFile::IsReadyForPreview() const
 	}
 }
 
+
+
+///snow:遍历srclist中的客户端，更新可用的part源计数，
 void CPartFile::UpdateAvailablePartsCount()
 {
 	UINT availablecounter = 0;
@@ -4391,6 +4409,8 @@ void CPartFile::UpdateAvailablePartsCount()
 	availablePartsCount = availablecounter;
 }
 
+
+///snow:向请求上传的客户端发送源信息包
 Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byRequestedVersion, uint16 nRequestedOptions) const
 {
 	///snow:不是partFile，调用父类的相应函数
@@ -4447,7 +4467,7 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byR
 	data.WriteUInt16((uint16)nCount);                  ///snow:两字节的part数，后面应该会修改
 	
 	bool bNeeded;
-	const uint8* reqstatus = forClient->GetUpPartStatus();
+	const uint8* reqstatus = forClient->GetUpPartStatus();    ///snow:forClient(请求上传的客户端、本信息包发送对象）的请求上传part状态
 	for (POSITION pos = srclist.GetHeadPosition();pos != 0;){
 		bNeeded = false;
 		const CUpDownClient* cur_src = srclist.GetNext(pos);
@@ -4460,13 +4480,13 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byR
 					ASSERT( forClient->GetUpPartCount() == GetPartCount() );
 					// only send sources which have needed parts for this client
 					for (UINT x = 0; x < GetPartCount(); x++){
-						if (srcstatus[x] && !reqstatus[x]){
+						if (srcstatus[x] && !reqstatus[x]){    ///snow:srclist中的客户端有该part，且forClient(发送请求的客户端)没有该part
 							bNeeded = true;
 							break;
 						}
 					}
 				}
-				else{
+				else{   ///snow:该客户端需要所有的part
 					// We know this client is valid. But don't know the part count status.. So, currently we just send them.
 					for (UINT x = 0; x < GetPartCount(); x++){
 						if (srcstatus[x]){
@@ -4476,14 +4496,15 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byR
 					}
 				}
 			}
-			else{
+			else{   ///snow:part的计算不一致，文件有误
 				// should never happen
 				if (thePrefs.GetVerbose())
 					DEBUG_ONLY(DebugLogError(_T("*** %hs - found source (%s) with wrong partcount (%u) attached to partfile \"%s\" (partcount=%u)"), __FUNCTION__, cur_src->DbgGetClientInfo(), cur_src->GetPartCount(), GetFileName(), GetPartCount()));
 			}
 		}
 
-		if (bNeeded){
+
+		if (bNeeded){   ///srclist中的客户端有forClient(发出请求客户端)需要的part
 			nCount++;
 			uint32 dwID;
 			if (byUsedVersion >= 3)
@@ -4529,6 +4550,8 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byR
 	return result;
 }
 
+
+///snow:添加客户端提供的源，CreateSrcInfoPacket()发送的信息包的处理函数
 void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, bool bSourceExchange2, const CUpDownClient* pClient)
 {
 	if (stopped)
@@ -4543,8 +4566,9 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 		AddDebugLogLine(false, _T("SXRecv: Client source response; SX2=%s, Ver=%u, %sFile=\"%s\""), bSourceExchange2 ? _T("Yes") : _T("No"), uClientSXVersion, strDbgClientInfo, GetFileName());
 	}
 
+	///snow:版本检查
 	UINT uPacketSXVersion = 0;
-	if (!bSourceExchange2){
+	if (!bSourceExchange2){    ///snow:针对SX1版本用户
 		// for SX1 (deprecated):
 		// Check if the data size matches the 'nCount' for v1 or v2 and eventually correct the source
 		// exchange version while reading the packet data. Otherwise we could experience a higher
@@ -4552,6 +4576,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 		nCount = sources->ReadUInt16();
 		UINT uDataSize = (UINT)(sources->GetLength() - sources->GetPosition());
 		// Checks if version 1 packet is correct size
+		///snow；V1版本，只有ip、port、serverip、serverport
 		if (nCount*(4+2+4+2) == uDataSize)
 		{
 			// Received v1 packet: Check if remote client supports at least v1
@@ -4566,6 +4591,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 			}
 			uPacketSXVersion = 1;
 		}
+		///snow:版本v2、v3，带有hash
 		// Checks if version 2&3 packet is correct size
 		else if (nCount*(4+2+4+2+16) == uDataSize)
 		{
@@ -4585,6 +4611,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 				uPacketSXVersion = 3;
 		}
 		// v4 packets
+		///snow:版本V4，带有加密选项
 		else if (nCount*(4+2+4+2+16+1) == uDataSize)
 		{
 			// Received v4 packet: Check if remote client supports at least v4
@@ -4601,6 +4628,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 		}
 		else
 		{
+			///snow:版本太高了
 			// If v5+ inserts additional data (like v2), the above code will correctly filter those packets.
 			// If v5+ appends additional data after <count>(<Sources>)[count], we are in trouble with the 
 			// above code. Though a client which does not understand v5+ should never receive such a packet.
@@ -4615,6 +4643,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 		ASSERT( uPacketSXVersion != 0 );
 	}
 	else{
+		///snow:针对SX1版本用户，SX2版本处理，同样的分为V1、V2、V3、V4
 		// for SX2:
 		// We only check if the version is known by us and do a quick sanitize check on known version
 		// other then SX1, the packet will be ignored if any error appears, sicne it can't be a "misunderstanding" anymore
@@ -4632,6 +4661,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 		nCount = sources->ReadUInt16();
 		UINT uDataSize = (UINT)(sources->GetLength() - sources->GetPosition());	
 		bool bError = false;
+		///snow:分版本校验信息包长度
 		switch (uClientSXVersion){
 			case 1:
 				bError = nCount*(4+2+4+2) != uDataSize;
@@ -4659,6 +4689,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 		}
 		uPacketSXVersion = uClientSXVersion;
 	}
+	///snow:版本检查完毕
 
 	for (UINT i = 0; i < nCount; i++)
 	{
@@ -4668,15 +4699,15 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 		uint16 nServerPort = sources->ReadUInt16();
 
 		uchar achUserHash[16];
-		if (uPacketSXVersion >= 2)
+		if (uPacketSXVersion >= 2)  ///snow:V2以上版本带hash
 			sources->ReadHash16(achUserHash);
 
 		uint8 byCryptOptions = 0;
-		if (uPacketSXVersion >= 4)
+		if (uPacketSXVersion >= 4)   ///snow:V4以上版本带加密选项
 			byCryptOptions = sources->ReadUInt8();
 
 		// Clients send ID's in the Hyrbid format so highID clients with *.*.*.0 won't be falsely switched to a lowID..
-		if (uPacketSXVersion >= 3)
+		if (uPacketSXVersion >= 3)   ///snow:V3以上版本，需要转换网络字节序，并检查IP的有效性
 		{
 			uint32 dwIDED2K = ntohl(dwID);
 
@@ -4715,7 +4746,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 				continue;
 			}
 		}
-		else
+		else   ///snow:V2及以下版本，同样检查IP有效性 ，个人认为这段代码重复了，应该跟上面的合二为一
 		{
 			// check the HighID(IP) - "Filter LAN IPs" and "IPfilter" the received sources IP addresses
 			if (!IsLowID(dwID))
@@ -4753,6 +4784,8 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 			}
 		}
 
+		
+		///snow:还未达到最大源数，将该客户端添加到下载列表
 		if (GetMaxSources() > GetSourceCount())
 		{
 			CUpDownClient* newsource;
@@ -4802,6 +4835,7 @@ void CPartFile::AddClientSources(CSafeMemFile* sources, uint8 uClientSXVersion, 
 */
 
 ///snow:代替BlockReceived()，因为原来的函数会浪费丢弃接收到小于180K的数据，本函数在将数据写入磁盘前先写入缓存
+///snow:CUpDownClient::ProcessBlockPacket()和ProcessHttpBlockPacket()中调用，接收到block数据时，先不写入磁盘
 uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start, uint64 end, Requested_Block_Struct *block, 
 								const CUpDownClient* client)
 {
@@ -4851,10 +4885,12 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 	///snow:将传输日志写入黑盒子
 	m_CorruptionBlackBox.TransferredData(start, end, client);
 
+	///snow:分配缓冲区
 	// Create copy of data as new buffer
 	BYTE *buffer = new BYTE[lenData];
 	memcpy(buffer, data, lenData);
 
+	///snow:创建新缓冲队列条目
 	// Create a new buffered queue entry
 	PartFileBufferedData *item = new PartFileBufferedData;
 	item->data = buffer;
@@ -4862,6 +4898,8 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 	item->end = end;
 	item->block = block;
 
+
+	///snow:根据区块结束位置，将item条目添加到m_BuffererData_list中的对应位置
 	// Add to the queue in the correct position (most likely the end)
 	PartFileBufferedData *queueItem;
 	bool added = false;
@@ -4877,17 +4915,20 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 			break;
 		}
 	}
-	if (!added)
+	if (!added)   ///snow:队列中还没有比这更靠前的区块，添加到队列头部
 		m_BufferedData_list.AddHead(item);
 
 	// Increment buffer size marker
 	m_nTotalBufferData += lenData;
 
+	///snow:修改Gaplist信息，标记该gap已下载
 	// Mark this small section of the file as filled
 	FillGap(item->start, item->end);
 
 	// Update the flushed mark on the requested block 
 	// The loop here is unfortunate but necessary to detect deleted blocks.
+	
+	///snow:从请求区块列表中删除该block
 	pos = requestedblocks_list.GetHeadPosition();
 	while (pos != NULL)
 	{	
@@ -4895,7 +4936,7 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 			item->block->transferred += lenData;
 	}
 
-	if (gaplist.IsEmpty())
+	if (gaplist.IsEmpty())   ///snow:如果gaplist空了，表示文件已下载完毕，则清空缓存，写入磁盘
 		FlushBuffer(true);
 
 	// Return the length of data written to the buffer
@@ -4908,10 +4949,10 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 	bool bIncreasedFile=false;
 
 	m_nLastBufferFlushTime = GetTickCount();
-	if (m_BufferedData_list.IsEmpty())
+	if (m_BufferedData_list.IsEmpty())   ///snow:缓冲区中没有数据可写
 		return;
 
-	if (m_AllocateThread!=NULL) {
+	if (m_AllocateThread!=NULL) {    ///snow:磁盘被占用
 		// diskspace is being allocated right now.
 		// so dont write and keep the data in the buffer for later.
 		return;
@@ -4923,6 +4964,8 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 	//if (thePrefs.GetVerbose())
 	//	AddDebugLogLine(false, _T("Flushing file %s - buffer size = %ld bytes (%ld queued items) transferred = %ld [time = %ld]"), GetFileName(), m_nTotalBufferData, m_BufferedData_list.GetCount(), m_uTransferred, m_nLastBufferFlushTime);
 
+
+	///snow:初始化changedPart数组，标记哪些part发生改变了
 	UINT partCount = GetPartCount();
 	bool *changedPart = new bool[partCount];
 	// Remember which parts need to be checked at the end of the flush
@@ -4931,11 +4974,12 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 
 	try
 	{
+		///snow:检查磁盘空间
 		bool bCheckDiskspace = thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() > 0;
 		ULONGLONG uFreeDiskSpace = bCheckDiskspace ? GetFreeDiskSpaceX(GetTempPath()) : 0;
 
 		// Check free diskspace for compressed/sparse files before possibly increasing the file size
-		if (bCheckDiskspace && !IsNormalFile())
+		if (bCheckDiskspace && !IsNormalFile())///snow:检查是不是压缩文件或稀疏文件
 		{
 			// Compressed/sparse files; regardless whether the file is increased in size, 
 			// check the amount of data which will be written
@@ -4945,9 +4989,12 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 		}
 
 		// Ensure file is big enough to write data to (the last item will be the furthest from the start)
+	
+		///snow:后进先出队列，非也，只是根据队列中的最后一个块的地址，决定是否增加文件长度
 		PartFileBufferedData *item = m_BufferedData_list.GetTail();
-		if (m_hpartfile.GetLength() <= item->end)
+		if (m_hpartfile.GetLength() <= item->end)   ///snow:需要增加part文件的长度
 		{
+			///snow:是否一次性分配文件长度的空间
 			uint64 newsize = thePrefs.GetAllocCompleteMode() ? GetFileSize() : (item->end + 1);
 			ULONGLONG uIncrease = newsize - m_hpartfile.GetLength();
 
@@ -4960,11 +5007,12 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 					AfxThrowFileException(CFileException::diskFull, 0, m_hpartfile.GetFileName());
 			}
 
-			if (!IsNormalFile() || uIncrease<2097152) 
+			if (!IsNormalFile() || uIncrease<2097152)    ///snow:增加的长度小于2M，不启动新线程，直接修改文件长度
 				forcewait=true;	// <2MB -> alloc it at once
 
 			// Allocate filesize
-			if (!forcewait) {
+			if (!forcewait) {   
+				///snow:启动新线程AllocateSpaceThread处理
 				m_AllocateThread= AfxBeginThread(AllocateSpaceThread, this, THREAD_PRIORITY_LOWEST, 0, CREATE_SUSPENDED);
 				if (m_AllocateThread == NULL)
 				{
@@ -4982,12 +5030,13 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 				bIncreasedFile=true;
 				// If this is a NTFS compressed file and the current block is the 1st one to be written and there is not 
 				// enough free disk space to hold the entire *uncompressed* file, windows throws a 'diskFull'!?
-				if (IsNormalFile())
+				if (IsNormalFile())   ///snow:是正常文件（非压缩、稀疏文件），直接增加文件长度
 					m_hpartfile.SetLength(newsize); // allocate disk space (may throw 'diskFull')
 			}
 		}
 
 		// Loop through queue
+		///snow:遍历m_BufferedData_list，逐个将part写入part磁盘文件
 		for (int i = m_BufferedData_list.GetCount(); i>0; i--)
 		{
 			// Get top item
@@ -4997,13 +5046,14 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 			uint32 lenData = (uint32)(item->end - item->start + 1);
 
 			// SLUGFILLER: SafeHash - could be more than one part
+			///snow:m_BufferedData_list中的一个item，可能包含数个part
 			for (uint32 curpart = (uint32)(item->start/PARTSIZE); curpart <= item->end/PARTSIZE; curpart++)
 				changedPart[curpart] = true;
 			// SLUGFILLER: SafeHash
 
 			// Go to the correct position in file and write block of data
 			m_hpartfile.Seek(item->start, CFile::begin);
-			m_hpartfile.Write(item->data, lenData);
+			m_hpartfile.Write(item->data, lenData);   ///snow:这里也没有实际写入磁盘，而是放入磁盘缓冲区
 
 			// Remove item from queue
 			m_BufferedData_list.RemoveHead();
@@ -5024,9 +5074,11 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 		}
 
 		// Flush to disk
-		m_hpartfile.Flush();
+		m_hpartfile.Flush();  ///snow:这里才是真正的写入磁盘
 
 		// Check each part of the file
+		///snow:检查每个part
+		///snow:partRange起什么作用？标识出一个part的大小，因为最后一个part不是标准大小(9M)，所以如果不是最后一个，则partRange为PARTSIZE - 1，如果是最后一个，为(m_hpartfile.GetLength() % PARTSIZE) - 1
 		uint32 partRange = (UINT)((m_hpartfile.GetLength() % PARTSIZE > 0) ? ((m_hpartfile.GetLength() % PARTSIZE) - 1) : (PARTSIZE - 1));
 		for (int iPartNumber = partCount-1; iPartNumber >= 0; iPartNumber--)
 		{
@@ -5034,17 +5086,19 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 			if (changedPart[uPartNumber] == false)
 			{
 				// Any parts other than last must be full size
-				partRange = PARTSIZE - 1;
+				partRange = PARTSIZE - 1;   ///snow:表示 不是最后一个part，因为iiPartNumber是从 partCount-1开始
 				continue;
 			}
 
 			// Is this 9MB part complete
+			///snow:该part已下载完毕
 			if (IsComplete(PARTSIZE * (uint64)uPartNumber, (PARTSIZE * (uint64)(uPartNumber + 1)) - 1, false))
 			{
 				// Is part corrupt
 				bool bAICHAgreed = false;
-				if (!HashSinglePart(uPartNumber, &bAICHAgreed))
+				if (!HashSinglePart(uPartNumber, &bAICHAgreed))   ///snow:该part的HASH验证不一致，HashSinglePart()中检验AICH无误时，bAICHAgreed返回值为true
 				{
+					///snow:将该part添加到gaplist中，需要重新下载
 					LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_PARTCORRUPT), uPartNumber, GetFileName());
 					AddGap(PARTSIZE*(uint64)uPartNumber, PARTSIZE*(uint64)uPartNumber + partRange);
 
@@ -5060,7 +5114,7 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 					m_uCorruptionLoss += (partRange + 1);
 					thePrefs.Add2LostFromCorruption(partRange + 1);
 				}
-				else
+				else   ///snow:该part检查无误
 				{
 					if (!m_bMD4HashsetNeeded){
 						if (thePrefs.GetVerbose())
@@ -5071,6 +5125,7 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 					m_CorruptionBlackBox.VerifiedData(PARTSIZE*(uint64)uPartNumber, PARTSIZE*(uint64)uPartNumber + partRange);
 
 					// if this part was successfully completed (although ICH is active), remove from corrupted list
+					///snow:从损坏列表中摘除该part
 					POSITION posCorrupted = corrupted_list.Find((uint16)uPartNumber);
 					if (posCorrupted)
 						corrupted_list.RemoveAt(posCorrupted);
@@ -5089,10 +5144,11 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 					}
 				}
 			}
+			///snow:该part已损坏
 			else if (IsCorruptedPart(uPartNumber) && (thePrefs.IsICHEnabled() || bForceICH))
 			{
 				// Try to recover with minimal loss
-				if (HashSinglePart(uPartNumber))
+				if (HashSinglePart(uPartNumber))   ///snow:为什么hash会返回true?返回true不是表示hash一致！！！是表示MD4Hash和AICHhash都错了！
 				{
 					m_uPartsSavedDueICH++;
 					thePrefs.Add2SessionPartsSavedByICH(1);
