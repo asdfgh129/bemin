@@ -394,6 +394,7 @@ void CUpDownClient::CreateNextBlockPackage(bool bBigBuffer){
 	}
 }
 
+///snow:处理客户端发来请求上传的信息包？
 bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile* data, CKnownFile* tempreqfile)
 {
 	delete[] m_abyUpPartStatus;
@@ -423,7 +424,7 @@ bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile* data, CKnownFile* tempreqf
 		uint16 done = 0;
 		while (done != m_nUpPartCount)
 		{
-			uint8 toread = data->ReadUInt8();
+			uint8 toread = data->ReadUInt8();   ///snow:每个字节8bit，每bit代表一个part的状态，1代表需要上传，0代表不需要？待确认
 			for (UINT i = 0; i != 8; i++)
 			{
 				m_abyUpPartStatus[done] = ((toread >> i) & 1) ? 1 : 0;

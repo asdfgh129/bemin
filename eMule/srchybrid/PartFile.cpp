@@ -1924,7 +1924,7 @@ bool CPartFile::IsComplete(uint64 start, uint64 end, bool bIgnoreBufferedData) c
 		for (POSITION pos = m_BufferedData_list.GetHeadPosition();pos != 0;)
 		{
 			const PartFileBufferedData* cur_gap = m_BufferedData_list.GetNext(pos);
-			///snow:缓冲区中的gap还有未完成的部分
+			///snow:缓冲区中的数据也未能填充完全gap，表示该part中还有gap未完成下载
 			if (   (cur_gap->start >= start          && cur_gap->end   <= end)
 				|| (cur_gap->start >= start          && cur_gap->start <= end)
 				|| (cur_gap->end   <= end            && cur_gap->end   >= start)
@@ -3775,7 +3775,7 @@ void CPartFile::DeleteFile(){
 
 
 ///snow:在CPartFile::FlushBuffer()和AICHRecoveryDataAvailable()中调用，校验该part的正确性
-///snow:返回值为true时，表示MD4和AICH两者的hash都错了
+///snow:返回值为true时，表示MD4和AICH两者的hash都错了或两者都没错，参数pbAICHReportedOK返回AICH校验情况
 bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 {
 	// Right now we demand that AICH (if we have one) and MD4 agree on a parthash, no matter what
@@ -3792,7 +3792,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_HASHERRORWARNING), GetFileName());
 		m_bMD4HashsetNeeded = true;
 		m_bAICHPartHashsetNeeded = true;
-		return true;		
+		return true;		///snow:MD4和AICH都错了
 	}
 	else{  ///snow:MD4和AICH至少有一个是对的
 		uchar hashresult[16];
@@ -3882,7 +3882,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool* pbAICHReportedOK)
 			DebugLog(_T("Verifying part %u for file %s. MD4: %s - AICH: %s"), partnumber , GetFileName()
 			, bMD4Checked ? (bMD4Error ? _T("Corrupt") : _T("OK")) : _T("Unavailable"), bAICHChecked ? (bAICHError ? _T("Corrupt") : _T("OK")) : _T("Unavailable"));	
 #endif
-		return !bMD4Error && !bAICHError;
+		return !bMD4Error && !bAICHError;   ///snow:MD4和AICH两者都没错了的情况也是返回true!
 	}
 }
 
@@ -4467,6 +4467,7 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient* forClient, uint8 byR
 	data.WriteUInt16((uint16)nCount);                  ///snow:两字节的part数，后面应该会修改
 	
 	bool bNeeded;
+	///snow:一个partfile对应多个client，而每个client对象都设置两个数组，m_abyUpPartStatus，m_abyPartStatus，分别记录
 	const uint8* reqstatus = forClient->GetUpPartStatus();    ///snow:forClient(请求上传的客户端、本信息包发送对象）的请求上传part状态
 	for (POSITION pos = srclist.GetHeadPosition();pos != 0;){
 		bNeeded = false;
@@ -4943,7 +4944,40 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 	return lenData;
 }
 
+/**************************************************************************************
 ///snow:将缓存的数据写入磁盘
+///snow:哪几种情况下，调用FlushBuffer()？
+1、析构的时候：FlushBuffer(true, false, true);
+2、缓冲区满或时间达到100ms，且这时没有预览文件:
+Process(uint32 reducedownload, UINT icounter){...
+if ((m_nTotalBufferData > thePrefs.GetFileBufferSize()) || (dwCurTick > (m_nLastBufferFlushTime + thePrefs.GetFileBufferTimeLimit())))
+	{
+		// Avoid flushing while copying preview file
+		if (!m_bPreviewing)
+			FlushBuffer();   ///snow:SetStatus(PS_READY)
+	}
+...}
+3、停止下载文件，但不是取消下载：StopFile(bool bCancel, bool resort){...FlushBuffer(true);...}
+4、整个文件全下载完了：WriteToBuffer(){
+	if (gaplist.IsEmpty())
+		FlushBuffer(true);
+}
+5、AICH校验覆盖：AICHRecoveryDataAvailable(UINT nPart)
+{
+	if (GetPartCount() < nPart){
+		ASSERT( false );
+		return;
+	}
+	FlushBuffer(true, true, true);
+	...
+}
+6、调用外部程序进行预览：ExecutePartFile(CPartFile* file, LPCTSTR pszCommand, LPCTSTR pszCommandArgs)
+{
+...
+file->FlushBuffer(true);
+...
+}
+**************************************************************************************/
 void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 {
 	bool bIncreasedFile=false;
@@ -5092,11 +5126,11 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 
 			// Is this 9MB part complete
 			///snow:该part已下载完毕
-			if (IsComplete(PARTSIZE * (uint64)uPartNumber, (PARTSIZE * (uint64)(uPartNumber + 1)) - 1, false))
+			if (IsComplete(PARTSIZE * (uint64)uPartNumber, (PARTSIZE * (uint64)(uPartNumber + 1)) - 1, false)) ///snow:参数false表示不检查缓冲区数据，因为这时缓冲区已没数据
 			{
 				// Is part corrupt
 				bool bAICHAgreed = false;
-				if (!HashSinglePart(uPartNumber, &bAICHAgreed))   ///snow:该part的HASH验证不一致，HashSinglePart()中检验AICH无误时，bAICHAgreed返回值为true
+				if (!HashSinglePart(uPartNumber, &bAICHAgreed))   ///snow:该part的HASH验证MD4和AICH至少有一个不一致，HashSinglePart()中检验AICH无误时，bAICHAgreed返回值为true
 				{
 					///snow:将该part添加到gaplist中，需要重新下载
 					LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_PARTCORRUPT), uPartNumber, GetFileName());
@@ -5107,16 +5141,16 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 						corrupted_list.AddTail((uint16)uPartNumber);
 
 					// request AICH recovery data, except if AICH already agreed anyway or we explict dont want to
-					if (!bNoAICH && !bAICHAgreed)
+					if (!bNoAICH && !bAICHAgreed)   ///snow:bAICHAgreed返回false时，表示AICH校验出错了，需要重新计算AICH，并覆盖原AICH
 						RequestAICHRecovery((uint16)uPartNumber);
 
 					// update stats
 					m_uCorruptionLoss += (partRange + 1);
 					thePrefs.Add2LostFromCorruption(partRange + 1);
 				}
-				else   ///snow:该part检查无误
+				else   ///snow:该part检查无误或MD4和AICH都错了
 				{
-					if (!m_bMD4HashsetNeeded){
+					if (!m_bMD4HashsetNeeded){   ///MD4是对的
 						if (thePrefs.GetVerbose())
 							AddDebugLogLine(DLP_VERYLOW, false, _T("Finished part %u of \"%s\""), uPartNumber, GetFileName());
 					}
@@ -5144,16 +5178,21 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 					}
 				}
 			}
-			///snow:该part已损坏
+			///snow:该part尚未完成，且存在于已损坏列表中，之前有下载了，但校验未通过，所以被添加到损坏列表了，这次该part又下载完成了？
 			else if (IsCorruptedPart(uPartNumber) && (thePrefs.IsICHEnabled() || bForceICH))
 			{
 				// Try to recover with minimal loss
-				if (HashSinglePart(uPartNumber))   ///snow:为什么hash会返回true?返回true不是表示hash一致！！！是表示MD4Hash和AICHhash都错了！
+				///snow:有个疑问，该part还未下载完全，如何Hash?
+				///snow:该part能被加入corrupted_list，表示之前已下载完了，但是校验未通过，应该是part中的某一部分下载错了，这次重新下载了。但又有个新的问题，那为何IsComplete()不为真？
+				///snow:IsComplete()比较的gaplist中是否还有在该part范围内的gap
+				///snow:在WriteToBuffer时已经FillGap了
+				if (HashSinglePart(uPartNumber))   ///snow:为什么hash会返回true?返回true不是表示hash一致！！！是表示MD4Hash和AICHhash都错了或两者都没错！
 				{
 					m_uPartsSavedDueICH++;
 					thePrefs.Add2SessionPartsSavedByICH(1);
 
 					uint32 uRecovered = (uint32)GetTotalGapSizeInPart(uPartNumber);
+					///snow:该part已下载完了，填充gap，从requestedblocks_list中移除该part范围内的block请求
 					FillGap(PARTSIZE*(uint64)uPartNumber, PARTSIZE*(uint64)uPartNumber + partRange);
 					RemoveBlockFromList(PARTSIZE*(uint64)uPartNumber, PARTSIZE*(uint64)uPartNumber + partRange);
 
@@ -5161,6 +5200,7 @@ void CPartFile::FlushBuffer(bool forcewait, bool bForceICH, bool bNoAICH)
 					m_CorruptionBlackBox.VerifiedData(PARTSIZE*(uint64)uPartNumber, PARTSIZE*(uint64)uPartNumber + partRange);
 
 					// remove from corrupted list
+					///snow:从corrupted_list中移除对应part
 					POSITION posCorrupted = corrupted_list.Find((uint16)uPartNumber);
 					if (posCorrupted)
 						corrupted_list.RemoveAt(posCorrupted);
@@ -5376,6 +5416,8 @@ UINT AFX_CDECL CPartFile::AllocateSpaceThread(LPVOID lpParam)
 
 // Barry - This will invert the gap list, up to caller to delete gaps when done
 // 'Gaps' returned are really the filled areas, and guaranteed to be in order
+///snow:这个函数的目的是什么？
+///snow:gaplist中应该是按位置排好序的不重叠的gap的列表
 void CPartFile::GetFilledList(CTypedPtrList<CPtrList, Gap_Struct*> *filled) const
 {
 	if (gaplist.GetHeadPosition() == NULL )   ///snow:gaplist成员变量，filled为同型指针
@@ -5753,7 +5795,11 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 	// Main loop
 	uint16 newBlockCount = 0;
 	while(newBlockCount != *count){   ///snow:block数还未达到
+
+		///snow:分两种情况：1、 上次请求了某part，2、第一次请求
+
 		// Create a request block stucture if a chunk has been previously selected
+		///snow:1、上次请求了指定的part，则先请求同一part中的block，符合条件的添加到requestedblocks_list
 		if(tempLastPartAsked != (uint16)-1){
 			Requested_Block_Struct* pBlock = new Requested_Block_Struct;
 			///snow:从同一个part中取block
@@ -5772,15 +5818,17 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 				// => Try to select another chunk
 				sender->m_lastPartAsked = tempLastPartAsked = (uint16)-1;
 			}
-		}
+		}///snow:fi(tempLastPartAsked != (uint16)-1)
 
 		// Check if a new chunk must be selected (e.g. download starting, previous chunk complete)
+		///snow:2、上次未请求part，也分两种情况：1、chunklist is empty 2、chunklist not empty
 		if(tempLastPartAsked == (uint16)-1){
 
 			// Quantify all chunks (create list of chunks to download) 
 			// This is done only one time and only if it is necessary (=> CPU load)
 			if(chunksList.IsEmpty() == TRUE){
 				// Indentify the locally missing part(s) that this source has
+				///snow:把sender中所有可用的part添加到chunksList
 				for(uint16 i = 0; i < partCount; i++){
 					if(sender->IsPartAvailable(i) == true && GetNextEmptyBlockInPart(i, NULL) == true){
 						// Create a new entry for this chunk and add it to the list
@@ -5802,10 +5850,11 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 				uint16 limit = (uint16)ceil(GetSourceCount()/ 10.0);
 				if (limit<3) limit=3;
 
-				const uint16 veryRareBound = limit;
+				const uint16 veryRareBound = limit;   ///snow:veryRareBound>=3
 				const uint16 rareBound = 2*limit;
 				const uint16 almostRareBound = 4*limit;
 
+				///snow:依据2：用于预览的part
 				// Cache Preview state (Criterion 2)
                 const bool isPreviewEnable = (thePrefs.GetPreviewPrio() || thePrefs.IsExtControlsEnabled() && GetPreviewPrio()) && IsPreviewableFileType();
 
@@ -5817,6 +5866,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 					// Offsets of chunk
 					UINT uCurChunkPart = cur_chunk.part; // help VC71...
 					const uint64 uStart = (uint64)uCurChunkPart * PARTSIZE;
+					///snow:判断是否最后一个part，如果是最后一个part,uEnd=GetFileSize()-1，否则uEnd等于part end
 					const uint64 uEnd  = ((GetFileSize() - (uint64)1) < (uStart + PARTSIZE - 1)) ? 
 										  (GetFileSize() - (uint64)1) : (uStart + PARTSIZE - 1);
 					ASSERT( uStart <= uEnd );
@@ -5825,6 +5875,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 					// Remark: - We need to download the first part and the last part(s).
 					//        - When the last part is very small, it's necessary to 
 					//          download the two last parts.
+					///snow:用于预览的，先下载第一个part和最后一个part
 					bool critPreview = false;
 					if(isPreviewEnable == true){
 						if(cur_chunk.part == 0){
@@ -5833,7 +5884,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 						else if(cur_chunk.part == partCount-1){
 							critPreview = true; // Last chunk 
 						}
-						else if(cur_chunk.part == partCount-2){
+						else if(cur_chunk.part == partCount-2){  ///snow:最后一个part太小（小于3M），就把倒二捎上
 							// Last chunk - 1 (only if last chunk is too small)
 							if( (GetFileSize() - uEnd) < (uint64)PARTSIZE/3){
 								critPreview = true; // Last chunk - 1
@@ -5843,8 +5894,10 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 
 					// Criterion 3. Request state (downloading in process from other source(s))
 					//const bool critRequested = IsAlreadyRequested(uStart, uEnd);
-                    bool critRequested = false; // <--- This is set as a part of the second critCompletion loop below
+					///snow:依据3：已经在请求下载的part
+					bool critRequested = false; // <--- This is set as a part of the second critCompletion loop below
 
+					///snow:依据4：用于增加完成源的part
 					// Criterion 4. Completion
 					uint64 partSize = uEnd - uStart + 1; //If all is covered by gaps, we have downloaded PARTSIZE, or possibly less for the last chunk;
                     ASSERT(partSize <= PARTSIZE);
@@ -5852,23 +5905,23 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 						const Gap_Struct* cur_gap = gaplist.GetNext(pos);
 						// Check if Gap is into the limit
 						if(cur_gap->start < uStart) {
-							if(cur_gap->end > uStart && cur_gap->end < uEnd) {
-                                ASSERT(partSize >= (cur_gap->end - uStart + 1));
-								partSize -= cur_gap->end - uStart + 1;
+							if(cur_gap->end > uStart && cur_gap->end < uEnd) {   ///snow:           |---------|
+								ASSERT(partSize >= (cur_gap->end - uStart + 1)); ///snow:         |--------|    cur_gap
+ 								partSize -= cur_gap->end - uStart + 1;           ///snow: 调整为           |--| 
 							}
-							else if(cur_gap->end >= uEnd) {
-								partSize = 0;
-								break; // exit loop for()
+							else if(cur_gap->end >= uEnd) {   ///snow:       |---------|
+								partSize = 0;                 ///snow:    |-------------|    cur_gap
+								break; // exit loop for()     ///snow:不符合要求
 							}
 						}
-						else if(cur_gap->start <= uEnd) {
-							if(cur_gap->end < uEnd) {
+						else if(cur_gap->start <= uEnd) {                      ///snow:       |-----------|
+							if(cur_gap->end < uEnd) {                          ///snow:         |------|
                                 ASSERT(partSize >= (cur_gap->end - cur_gap->start + 1));
-								partSize -= cur_gap->end - cur_gap->start + 1;
+								partSize -= cur_gap->end - cur_gap->start + 1; ///snow:调整为 |-|      |--|
 							}
-							else {
-                                ASSERT(partSize >= (uEnd - cur_gap->start + 1));
-								partSize -= uEnd - cur_gap->start + 1;
+							else {                                              ///snow:       |---------|
+                                ASSERT(partSize >= (uEnd - cur_gap->start + 1));///snow:          |---------|
+								partSize -= uEnd - cur_gap->start + 1;          ///snow:调整为 |--|  
 							}
 						}
 					}
@@ -5877,46 +5930,54 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
                     // requested blocks from sources we are currently downloading from is counted as if already downloaded
                     // this code will cause bytes that has been requested AND transferred to be counted twice, so we can end
                     // up with a completion number > PARTSIZE. That's ok, since it's just a relative number to compare chunks.
+					///snow:这个循环主要是判断是否有已请求的block与chunk重叠
                     for(POSITION reqPos = requestedblocks_list.GetHeadPosition(); reqPos != NULL; ) {
                         const Requested_Block_Struct* reqBlock = requestedblocks_list.GetNext(reqPos);
-                        if(reqBlock->StartOffset < uStart) {
-                            if(reqBlock->EndOffset > uStart) {
+                        if(reqBlock->StartOffset < uStart) {      ///snow:       |---------|
+                            if(reqBlock->EndOffset > uStart) {    ///snow:     |---------|     reqBlock
                                 if(reqBlock->EndOffset < uEnd) {
                                     //ASSERT(partSize + (reqBlock->EndOffset - uStart + 1) <= (uEnd - uStart + 1));
 								    partSize += reqBlock->EndOffset - uStart + 1;
-                                    critRequested = true;
-                                } else if(reqBlock->EndOffset >= uEnd) {
+									critRequested = true;    ///snow:该part已经有block在请求下载，所以该part可以优先
+								} else if(reqBlock->EndOffset >= uEnd) {    ///snow:reqblock比chunk大
                                     //ASSERT(partSize + (uEnd - uStart + 1) <= uEnd - uStart);
                                     partSize += uEnd - uStart + 1;
                                     critRequested = true;
                                 }
 							}
-                        } else if(reqBlock->StartOffset <= uEnd) {
-							if(reqBlock->EndOffset < uEnd) {
+                        } else if(reqBlock->StartOffset <= uEnd) {   ///snow:       |-----------|
+							if(reqBlock->EndOffset < uEnd) {         ///snow:         |-------|
                                 //ASSERT(partSize + (reqBlock->EndOffset - reqBlock->StartOffset + 1) <= (uEnd - uStart + 1));
+								                                     ///snow:增加大小 |-------| 
 								partSize += reqBlock->EndOffset - reqBlock->StartOffset + 1;
                                 critRequested = true;
 							} else {
-                                //ASSERT(partSize +  (uEnd - reqBlock->StartOffset + 1) <= (uEnd - uStart + 1));
-								partSize += uEnd - reqBlock->StartOffset + 1;
-                                critRequested = true;
+                                //ASSERT(partSize +  (uEnd - reqBlock->StartOffset + 1) <= (uEnd - uStart + 1))
+;
+																				 ///snow:      |-----------|
+								partSize += uEnd - reqBlock->StartOffset + 1;    ///snow:         |---------|
+                                critRequested = true;                            ///snow:增加     |--------| 
 							}
 						}
                     }
                     //Don't check this (see comment above for explanation): ASSERT(partSize <= PARTSIZE && partSize <= (uEnd - uStart + 1));
 
-                    if(partSize > PARTSIZE) partSize = PARTSIZE;
+					if(partSize > PARTSIZE) partSize = PARTSIZE;    ///snow:调整partSize不大于9M
 
+					///snow；依据4
                     uint16 critCompletion = (uint16)ceil((double)(partSize*100)/PARTSIZE); // in [%]. Last chunk is always counted as a full size chunk, to not give it any advantage in this comparison due to smaller size. So a 1/3 of PARTSIZE downloaded in last chunk will give 33% even if there's just one more byte do download to complete the chunk.
                     if(critCompletion > 100) critCompletion = 100;
 
-                    // Criterion 5. Prefer to continue the same chunk
+					///snow:依据5：是否是同一chunk
+					// Criterion 5. Prefer to continue the same chunk
                     const bool sameChunk = (cur_chunk.part == sender->m_lastPartAsked);
 
-                    // Criterion 6. The more transferring clients that has this part, the better (i.e. lower).
+					///snow:依据6：已下载数据更多的客户端如果拥有这个part，则优先级更高
+					// Criterion 6. The more transferring clients that has this part, the better (i.e. lower).
                     uint16 transferringClientsScore = (uint16)m_downloadingSourceList.GetSize();
 
-                    // Criterion 7. Sooner to completion (how much of a part is completed, how fast can be transferred to this part, if all currently transferring clients with this part are put on it. Lower is better.)
+					///snow:依据7：一个part的完成进度取决于能提供多快的下载，下载慢的part优先
+					// Criterion 7. Sooner to completion (how much of a part is completed, how fast can be transferred to this part, if all currently transferring clients with this part are put on it. Lower is better.)
                     uint16 bandwidthScore = 2000;
 
                     // Calculate criterion 6 and 7
@@ -6008,6 +6069,8 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 				// Find and count the chunck(s) with the highest priority
 				uint16 count = 0; // Number of found chunks with same priority
 				uint16 rank = 0xffff; // Highest priority found
+				
+				///snow:统计chunklist中rank最低的chunk的数量
 				for(POSITION pos = chunksList.GetHeadPosition(); pos != NULL; ){
 					const Chunk& cur_chunk = chunksList.GetNext(pos);
 					if(cur_chunk.rank < rank){
@@ -6019,6 +6082,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient* sender,
 					}
 				}
 
+				///snow:使用随机数避免所有的人在同一时间下载同一个chunk，以达到在客户端中扩散该chunk的目的
 				// Use a random access to avoid that everybody tries to download the 
 				// same chunks at the same time (=> spread the selected chunk among clients)
 				uint16 randomness = 1 + (uint16)((((uint32)rand()*(count-1))+(RAND_MAX/2))/RAND_MAX);
